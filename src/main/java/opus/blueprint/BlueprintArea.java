@@ -8,6 +8,8 @@ import necesse.engine.save.SaveData;
 import necesse.inventory.InventoryItem;
 import necesse.level.gameObject.AirObject;
 import necesse.level.gameObject.GameObject;
+import necesse.level.gameObject.SwitchObject;
+import necesse.level.gameObject.WallTorchObject;
 import necesse.level.gameTile.GameTile;
 import necesse.level.maps.Level;
 import necesse.level.maps.multiTile.MultiTile;
@@ -22,24 +24,16 @@ import java.util.*;
 
 public class BlueprintArea {
 	private final String uniqueID;
-
 	private final int originX;
 	private final int originY;
-
 	private final int width;
 	private final int height;
-
 	private final BlueprintData blueprintData;
-
 	private final int settlementUniqueID;
-
 	private boolean constructionStarted;
 	private String constructionBlockedReason;
-
 	private boolean constructionComplete;
-
 	private final Map<Integer, Map<String, Integer>> builderMaterialAllocations = new HashMap<>();
-
 	private final Set<Integer> assignedBuilderIDs = new HashSet<>();
 
 	public BlueprintArea(
@@ -177,6 +171,14 @@ public class BlueprintArea {
 	}
 
 	public BlueprintObjectTarget findFirstObjectTarget(Level level) {
+		return findFirstObjectTarget(level, false);
+	}
+
+	public BlueprintObjectTarget findFirstWallObjectTarget(Level level) {
+		return findFirstObjectTarget(level, true);
+	}
+
+	private BlueprintObjectTarget findFirstObjectTarget(Level level, boolean wallObjects) {
 		for (int y = 0; y < height; y++) {
 			for (int x = 0; x < width; x++) {
 				BlueprintElement element = blueprintData.getElementAt(x, y);
@@ -191,7 +193,7 @@ public class BlueprintArea {
 				for (BlueprintLayerObject layerObject : element.getObjectsInPlacementOrder()) {
 					int layerID = resolveLayerID(layerObject.getLayerID());
 
-					if (layerID < 0 || !isObjectPlacementObject(layerObject)) {
+					if (layerID < 0 || isWallPlacementObject(layerID, layerObject) != wallObjects || !isObjectPlacementObject(layerObject)) {
 						continue;
 					}
 
@@ -277,8 +279,16 @@ public class BlueprintArea {
 					String layerStringID = ObjectLayerRegistry.getLayerStringID(layerID);
 					BlueprintLayerObject wanted = element == null ? null : element.getObjectAtLayer(layerStringID);
 
+					if (wanted != null
+							&& BlueprintObjectMaterialResolver.isPlacementPrerequisite(
+									currentObject.getStringID(), wanted.getObjectID())) {
+						continue;
+					}
+
+					GameObject wantedObject = wanted == null ? null : ObjectRegistry.getObject(wanted.getObjectID());
+
 					if (wanted == null
-							|| !currentObject.getStringID().equals(wanted.getObjectID())
+							|| !isSameBlueprintObject(currentObject, wantedObject)
 							|| level.getObjectRotation(layerID, worldX, worldY) != wanted.getRotation()
 							|| !isBlueprintObjectComplete(level, element, wanted, worldX, worldY)) {
 						return new BlueprintClearTarget(BlueprintClearTarget.Type.OBJECT, layerID, worldX, worldY);
@@ -428,9 +438,10 @@ public class BlueprintArea {
 		}
 
 		GameObject wantedObject = ObjectRegistry.getObject(layerObject.getObjectID());
+		GameObject currentObject = level.getObject(layerID, worldX, worldY);
 
 		if (wantedObject == null
-				|| level.getObjectID(layerID, worldX, worldY) != wantedObject.getID()
+				|| !isSameBlueprintObject(currentObject, wantedObject)
 				|| level.getObjectRotation(layerID, worldX, worldY) != layerObject.getRotation()) {
 			return false;
 		}
@@ -441,14 +452,34 @@ public class BlueprintArea {
 
 		for (Object valueObject : wantedObject.getMultiTile(layerObject.getRotation()).getIDs(worldX, worldY)) {
 			MultiTile.CoordinateValue value = (MultiTile.CoordinateValue)valueObject;
+			GameObject expectedObject = ObjectRegistry.getObject((Integer)value.value);
+			GameObject actualObject = level.getObject(layerID, value.tileX, value.tileY);
 
-			if (level.getObjectID(layerID, value.tileX, value.tileY) != (Integer)value.value
+			if (!isSameBlueprintObject(actualObject, expectedObject)
 					|| level.getObjectRotation(layerID, value.tileX, value.tileY) != layerObject.getRotation()) {
 				return false;
 			}
 		}
 
 		return true;
+	}
+
+	private boolean isSameBlueprintObject(GameObject currentObject, GameObject wantedObject) {
+		if (currentObject == null || wantedObject == null) {
+			return false;
+		}
+
+		if (currentObject.getID() == wantedObject.getID()) {
+			return true;
+		}
+
+		if (currentObject instanceof SwitchObject && wantedObject instanceof SwitchObject) {
+			SwitchObject currentSwitch = (SwitchObject)currentObject;
+			SwitchObject wantedSwitch = (SwitchObject)wantedObject;
+			return currentSwitch.counterID == wantedObject.getID() && wantedSwitch.counterID == currentObject.getID();
+		}
+
+		return false;
 	}
 
 	private boolean isObjectPlacementObject(BlueprintLayerObject layerObject) {
@@ -458,6 +489,15 @@ public class BlueprintArea {
 
 		GameObject object = ObjectRegistry.getObject(layerObject.getObjectID());
 		return object != null && object.isMultiTileMaster();
+	}
+
+	private boolean isWallPlacementObject(int layerID, BlueprintLayerObject layerObject) {
+		if (layerID == ObjectLayerRegistry.WALL_DECOR) {
+			return true;
+		}
+
+		GameObject object = ObjectRegistry.getObject(layerObject.getObjectID());
+		return object instanceof WallTorchObject;
 	}
 
 	private int resolveLayerID(String layerStringID) {
@@ -500,7 +540,16 @@ public class BlueprintArea {
 					}
 
 					if (!isObjectComplete(level, layerID, layerObject, worldX, worldY)) {
-						required.merge(layerObject.getObjectID(), 1, Integer::sum);
+						String prerequisiteItemID = BlueprintObjectMaterialResolver.getPlacementPrerequisiteItemID(
+								layerObject.getObjectID());
+
+						if (prerequisiteItemID != null
+								&& !BlueprintObjectMaterialResolver.isPlacementPrerequisite(
+										level.getObject(layerID, worldX, worldY).getStringID(), layerObject.getObjectID())) {
+							required.merge(prerequisiteItemID, 1, Integer::sum);
+						}
+
+						required.merge(BlueprintObjectMaterialResolver.getMaterialItemID(layerObject.getObjectID()), 1, Integer::sum);
 					}
 				}
 			}
@@ -559,6 +608,12 @@ public class BlueprintArea {
 			}
 		}
 
+		addOrderedRemainingObjectMaterialIDs(level, materials, false);
+		addOrderedRemainingObjectMaterialIDs(level, materials, true);
+		return materials;
+	}
+
+	private void addOrderedRemainingObjectMaterialIDs(Level level, List<String> materials, boolean wallObjects) {
 		for (int y = 0; y < height; y++) {
 			for (int x = 0; x < width; x++) {
 				BlueprintElement element = blueprintData.getElementAt(x, y);
@@ -573,18 +628,25 @@ public class BlueprintArea {
 				for (BlueprintLayerObject layerObject : element.getObjectsInPlacementOrder()) {
 					int layerID = resolveLayerID(layerObject.getLayerID());
 
-					if (layerID < 0 || !isObjectPlacementObject(layerObject)) {
+					if (layerID < 0 || isWallPlacementObject(layerID, layerObject) != wallObjects || !isObjectPlacementObject(layerObject)) {
 						continue;
 					}
 
 					if (!isObjectComplete(level, layerID, layerObject, worldX, worldY)) {
-						materials.add(layerObject.getObjectID());
+						String prerequisiteItemID = BlueprintObjectMaterialResolver.getPlacementPrerequisiteItemID(
+								layerObject.getObjectID());
+
+						if (prerequisiteItemID != null
+								&& !BlueprintObjectMaterialResolver.isPlacementPrerequisite(
+										level.getObject(layerID, worldX, worldY).getStringID(), layerObject.getObjectID())) {
+							materials.add(prerequisiteItemID);
+						}
+
+						materials.add(BlueprintObjectMaterialResolver.getMaterialItemID(layerObject.getObjectID()));
 					}
 				}
 			}
 		}
-
-		return materials;
 	}
 
 	public boolean isConstructionComplete() {

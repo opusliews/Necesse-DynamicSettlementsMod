@@ -273,6 +273,54 @@ public class ConstructionLevelJob extends TileLevelJob {
 						return ActiveJobResult.PERFORMING;
 					}
 
+					String prerequisiteItemID = BlueprintObjectMaterialResolver.getPlacementPrerequisiteItemID(
+							objectTarget.objectID);
+
+					if (prerequisiteItemID != null
+							&& !BlueprintObjectMaterialResolver.isPlacementPrerequisite(
+									getLevel().getObject(objectTarget.layerID, objectTarget.tileX, objectTarget.tileY).getStringID(),
+									objectTarget.objectID)) {
+						GameObject prerequisiteObject = ObjectRegistry.getObject(prerequisiteItemID);
+
+						if (prerequisiteObject == null) {
+							nextActionTime = currentTime + actionDelay;
+							return ActiveJobResult.PERFORMING;
+						}
+
+						String prerequisitePlaceError = prerequisiteObject.canPlace(
+								getLevel(), objectTarget.layerID, objectTarget.tileX, objectTarget.tileY,
+								objectTarget.rotation, true, false
+						);
+
+						if (prerequisitePlaceError != null) {
+							nextActionTime = currentTime + actionDelay;
+							return ActiveJobResult.PERFORMING;
+						}
+
+						BuilderHumanMob prerequisiteBuilder = area.consumeBuilderMaterial(getLevel(), prerequisiteItemID);
+
+						if (prerequisiteBuilder != null) {
+							BlueprintObjectTarget prerequisiteTarget = new BlueprintObjectTarget(
+									objectTarget.layerID, objectTarget.tileX, objectTarget.tileY,
+									prerequisiteItemID, objectTarget.rotation);
+							performObjectPlaceAction(getLevel(), prerequisiteTarget);
+							nextActionTime = currentTime + actionDelay;
+							Logging.logMessage("Builder " + worker.getMobWorker().getUniqueID()
+									+ " placed prerequisite " + prerequisiteItemID + " at "
+									+ objectTarget.tileX + ", " + objectTarget.tileY
+									+ " for " + objectTarget.objectID + " using material from Builder "
+									+ prerequisiteBuilder.getUniqueID());
+							return ActiveJobResult.PERFORMING;
+						}
+
+						if (queueRefillJobs(worker, priority, area, sequence)) {
+							return ActiveJobResult.FINISHED;
+						}
+
+						nextActionTime = currentTime + actionDelay;
+						return ActiveJobResult.PERFORMING;
+					}
+
 					String placeError = object.canPlace(
 							getLevel(), objectTarget.layerID, objectTarget.tileX, objectTarget.tileY,
 							objectTarget.rotation, true, false
@@ -283,7 +331,8 @@ public class ConstructionLevelJob extends TileLevelJob {
 						return ActiveJobResult.PERFORMING;
 					}
 
-					BuilderHumanMob materialBuilder = area.consumeBuilderMaterial(getLevel(), objectTarget.objectID);
+					String materialItemID = BlueprintObjectMaterialResolver.getMaterialItemID(objectTarget.objectID);
+					BuilderHumanMob materialBuilder = area.consumeBuilderMaterial(getLevel(), materialItemID);
 
 					if (materialBuilder != null) {
 						performObjectPlaceAction(getLevel(), objectTarget);
@@ -291,7 +340,109 @@ public class ConstructionLevelJob extends TileLevelJob {
 						Logging.logMessage("Builder " + worker.getMobWorker().getUniqueID()
 								+ " placed object " + objectTarget.objectID + " at "
 								+ objectTarget.tileX + ", " + objectTarget.tileY
-								+ " using material from Builder " + materialBuilder.getUniqueID());
+								+ " using " + materialItemID + " from Builder " + materialBuilder.getUniqueID());
+						return ActiveJobResult.PERFORMING;
+					}
+
+					if (queueRefillJobs(worker, priority, area, sequence)) {
+						return ActiveJobResult.FINISHED;
+					}
+
+					nextActionTime = currentTime + actionDelay;
+					return ActiveJobResult.PERFORMING;
+				}
+
+				BlueprintObjectTarget wallObjectTarget = area.findFirstWallObjectTarget(getLevel());
+
+				if (wallObjectTarget != null) {
+					GameObject object = ObjectRegistry.getObject(wallObjectTarget.objectID);
+
+					logWallObjectDebug(getLevel(), wallObjectTarget, "selected");
+
+					if (object == null) {
+						Logging.logMessage("WALL DEBUG object registry lookup failed for " + wallObjectTarget.objectID);
+						nextActionTime = currentTime + actionDelay;
+						return ActiveJobResult.PERFORMING;
+					}
+
+					String prerequisiteItemID = BlueprintObjectMaterialResolver.getPlacementPrerequisiteItemID(
+							wallObjectTarget.objectID);
+
+					if (prerequisiteItemID != null
+							&& !BlueprintObjectMaterialResolver.isPlacementPrerequisite(
+									getLevel().getObject(wallObjectTarget.layerID, wallObjectTarget.tileX, wallObjectTarget.tileY).getStringID(),
+									wallObjectTarget.objectID)) {
+						GameObject prerequisiteObject = ObjectRegistry.getObject(prerequisiteItemID);
+
+						if (prerequisiteObject == null) {
+							nextActionTime = currentTime + actionDelay;
+							return ActiveJobResult.PERFORMING;
+						}
+
+						String prerequisitePlaceError = prerequisiteObject.canPlace(
+								getLevel(), wallObjectTarget.layerID, wallObjectTarget.tileX, wallObjectTarget.tileY,
+								wallObjectTarget.rotation, true, false
+						);
+
+						if (prerequisitePlaceError != null) {
+							nextActionTime = currentTime + actionDelay;
+							return ActiveJobResult.PERFORMING;
+						}
+
+						BuilderHumanMob prerequisiteBuilder = area.consumeBuilderMaterial(getLevel(), prerequisiteItemID);
+
+						if (prerequisiteBuilder != null) {
+							BlueprintObjectTarget prerequisiteTarget = new BlueprintObjectTarget(
+									wallObjectTarget.layerID, wallObjectTarget.tileX, wallObjectTarget.tileY,
+									prerequisiteItemID, wallObjectTarget.rotation);
+							performObjectPlaceAction(getLevel(), prerequisiteTarget);
+							nextActionTime = currentTime + actionDelay;
+							Logging.logMessage("Builder " + worker.getMobWorker().getUniqueID()
+									+ " placed prerequisite " + prerequisiteItemID + " at "
+									+ wallObjectTarget.tileX + ", " + wallObjectTarget.tileY
+									+ " for " + wallObjectTarget.objectID + " using material from Builder "
+									+ prerequisiteBuilder.getUniqueID());
+							return ActiveJobResult.PERFORMING;
+						}
+
+						if (queueRefillJobs(worker, priority, area, sequence)) {
+							return ActiveJobResult.FINISHED;
+						}
+
+						nextActionTime = currentTime + actionDelay;
+						return ActiveJobResult.PERFORMING;
+					}
+
+					String placeError = object.canPlace(
+							getLevel(), wallObjectTarget.layerID, wallObjectTarget.tileX, wallObjectTarget.tileY,
+							wallObjectTarget.rotation, true, false
+					);
+
+					Logging.logMessage("WALL DEBUG canPlace " + wallObjectTarget.objectID
+							+ " at " + wallObjectTarget.tileX + ", " + wallObjectTarget.tileY
+							+ " layer=" + wallObjectTarget.layerID
+							+ " rotation=" + wallObjectTarget.rotation
+							+ " result=" + (placeError == null ? "OK" : placeError));
+
+					if (placeError != null) {
+						nextActionTime = currentTime + actionDelay;
+						return ActiveJobResult.PERFORMING;
+					}
+
+					String materialItemID = BlueprintObjectMaterialResolver.getMaterialItemID(wallObjectTarget.objectID);
+					BuilderHumanMob materialBuilder = area.consumeBuilderMaterial(getLevel(), materialItemID);
+
+					if (materialBuilder != null) {
+						Logging.logMessage("WALL DEBUG consuming material " + materialItemID
+								+ " for " + wallObjectTarget.objectID
+								+ " rotation=" + wallObjectTarget.rotation);
+						performObjectPlaceAction(getLevel(), wallObjectTarget);
+						logWallObjectDebug(getLevel(), wallObjectTarget, "after placement");
+						nextActionTime = currentTime + actionDelay;
+						Logging.logMessage("Builder " + worker.getMobWorker().getUniqueID()
+								+ " placed object " + wallObjectTarget.objectID + " at "
+								+ wallObjectTarget.tileX + ", " + wallObjectTarget.tileY
+								+ " using " + materialItemID + " from Builder " + materialBuilder.getUniqueID());
 						return ActiveJobResult.PERFORMING;
 					}
 
@@ -430,6 +581,33 @@ public class ConstructionLevelJob extends TileLevelJob {
 
 		sequence.add(getActiveJob(worker, priority, sequence));
 		return true;
+	}
+
+	private static void logWallObjectDebug(Level level, BlueprintObjectTarget target, String stage) {
+		GameObject currentLayerObject = level.getObject(target.layerID, target.tileX, target.tileY);
+		int currentLayerRotation = level.getObjectRotation(target.layerID, target.tileX, target.tileY);
+
+		Logging.logMessage("WALL DEBUG " + stage
+				+ " target=" + target.objectID
+				+ " tile=" + target.tileX + "," + target.tileY
+				+ " layer=" + target.layerID
+				+ " targetRotation=" + target.rotation
+				+ " currentLayerObject=" + currentLayerObject.getStringID()
+				+ " currentLayerRotation=" + currentLayerRotation);
+
+		logWallSupportObject(level, target.tileX, target.tileY - 1, "top");
+		logWallSupportObject(level, target.tileX + 1, target.tileY, "right");
+		logWallSupportObject(level, target.tileX, target.tileY + 1, "bottom");
+		logWallSupportObject(level, target.tileX - 1, target.tileY, "left");
+	}
+
+	private static void logWallSupportObject(Level level, int tileX, int tileY, String side) {
+		GameObject object = level.getObject(tileX, tileY);
+		int rotation = level.getObjectRotation(tileX, tileY);
+		Logging.logMessage("WALL DEBUG support " + side
+				+ " tile=" + tileX + "," + tileY
+				+ " object=" + object.getStringID()
+				+ " rotation=" + rotation);
 	}
 
 	private void performTilePlaceAction(Level level, BlueprintTileTarget target) {
@@ -818,6 +996,7 @@ public class ConstructionLevelJob extends TileLevelJob {
 		if (area.findFirstClearTarget(job.getLevel()) == null
 				&& area.findFirstTileTarget(job.getLevel()) == null
 				&& area.findFirstObjectTarget(job.getLevel()) == null
+				&& area.findFirstWallObjectTarget(job.getLevel()) == null
 				&& BlueprintInfrastructureSupport.findFirstWireTarget(area, job.getLevel()) == null
 				&& BlueprintInfrastructureSupport.findFirstLogicGateTarget(area, job.getLevel()) == null) {
 			job.beginBlueprintCompletion(job.getLevel(), area);

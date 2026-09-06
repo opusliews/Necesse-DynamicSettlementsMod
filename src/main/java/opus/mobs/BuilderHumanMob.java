@@ -454,23 +454,22 @@ public class BuilderHumanMob extends HumanShop {
 
 	@Override
 	public List<InventoryItem> getRecruitItems(ServerClient client) {
-		return Collections.emptyList();
-//		int tier = getRecruitTier(client);
-//
-//		GameRandom random = new GameRandom((long)this.getSettlerSeed() * 227L + tier * 7919L);
-//		String barID = getRecruitBarID(random, tier);
-//		String rockID = getRecruitRockID(random, tier);
-//		ArrayList<InventoryItem> items = new ArrayList<>();
-//
-//		items.add(new InventoryItem(barID, random.getIntBetween(4, 10)));
-//		items.add(new InventoryItem(rockID, random.getIntBetween(25, 50)));
-//
-//		if (tier == 7) {
-//			String crystalID = getRecruitCrystalID(random);
-//			items.add(new InventoryItem(crystalID, random.getIntBetween(3, 7)));
-//		}
-//
-//		return items;
+		int tier = getRecruitTier(client);
+
+		GameRandom random = new GameRandom((long)this.getSettlerSeed() * 227L + tier * 7919L);
+		String barID = getRecruitBarID(random, tier);
+		String rockID = getRecruitRockID(random, tier);
+		ArrayList<InventoryItem> items = new ArrayList<>();
+
+		items.add(new InventoryItem(barID, random.getIntBetween(4, 10)));
+		items.add(new InventoryItem(rockID, random.getIntBetween(25, 50)));
+
+		if (tier == 7) {
+			String crystalID = getRecruitCrystalID(random);
+			items.add(new InventoryItem(crystalID, random.getIntBetween(3, 7)));
+		}
+
+		return items;
 	}
 
 	private int getCombinedBuilderCount(ServerClient client) {
