@@ -1,5 +1,6 @@
 package opus.blueprint;
 
+import necesse.engine.registries.ObjectLayerRegistry;
 import necesse.engine.registries.ObjectRegistry;
 import necesse.engine.registries.TileRegistry;
 import necesse.engine.save.LoadData;
@@ -13,6 +14,7 @@ import necesse.level.maps.multiTile.MultiTile;
 import opus.mobs.BuilderHumanMob;
 import opus.tools.BlueprintData;
 import opus.tools.BlueprintElement;
+import opus.tools.BlueprintLayerObject;
 
 import java.awt.*;
 import java.util.List;
@@ -48,29 +50,20 @@ public class BlueprintArea {
 			int height,
 			BlueprintData blueprintData
 	) {
-		this(
-				UUID.randomUUID().toString(),
-				settlementUniqueID,
-				originX,
-				originY,
-				width,
-				height,
-				blueprintData,
-				false,
-				false
-		);
+		this(UUID.randomUUID().toString(), settlementUniqueID, originX, originY, width, height,
+				blueprintData, false, false);
 	}
 
 	private BlueprintArea(
-		String uniqueID,
-		int settlementUniqueID,
-		int originX,
-		int originY,
-		int width,
-		int height,
-		BlueprintData blueprintData,
-		boolean constructionStarted,
-		boolean constructionComplete
+			String uniqueID,
+			int settlementUniqueID,
+			int originX,
+			int originY,
+			int width,
+			int height,
+			BlueprintData blueprintData,
+			boolean constructionStarted,
+			boolean constructionComplete
 	) {
 		this.uniqueID = uniqueID;
 		this.settlementUniqueID = settlementUniqueID;
@@ -125,31 +118,24 @@ public class BlueprintArea {
 
 		for (int uniqueID : assignedBuilderIDs) {
 			BuilderHumanMob mob = (BuilderHumanMob)level.entityManager.mobs.get(uniqueID, false);
-			if (mob != null)
+			if (mob != null) {
 				builders.add(mob);
+			}
 		}
 
 		return builders;
 	}
 
-
 	public BlueprintData getBlueprintData() {
 		return blueprintData;
 	}
 
-
 	public Rectangle getTileBounds() {
-		return new Rectangle(
-			originX,
-			originY,
-			width,
-			height
-		);
+		return new Rectangle(originX, originY, width, height);
 	}
 
 	public List<Point> getOutsideBorderTiles() {
 		List<Point> tiles = new ArrayList<>();
-
 		int left = originX - 1;
 		int right = originX + width;
 		int top = originY - 1;
@@ -162,7 +148,6 @@ public class BlueprintArea {
 
 		for (int y = originY; y < originY + height; y++) {
 			tiles.add(new Point(left, y));
-
 			tiles.add(new Point(right, y));
 		}
 
@@ -196,20 +181,24 @@ public class BlueprintArea {
 			for (int x = 0; x < width; x++) {
 				BlueprintElement element = blueprintData.getElementAt(x, y);
 
-				if (!isObjectPlacementElement(element)) {
+				if (element == null) {
 					continue;
 				}
 
 				int worldX = originX + x;
 				int worldY = originY + y;
 
-				if (!isObjectComplete(level, element, worldX, worldY)) {
-					return new BlueprintObjectTarget(
-							worldX,
-							worldY,
-							element.getObjectID(),
-							element.getRotation()
-					);
+				for (BlueprintLayerObject layerObject : element.getObjectsInPlacementOrder()) {
+					int layerID = resolveLayerID(layerObject.getLayerID());
+
+					if (layerID < 0 || !isObjectPlacementObject(layerObject)) {
+						continue;
+					}
+
+					if (!isObjectComplete(level, layerID, layerObject, worldX, worldY)) {
+						return new BlueprintObjectTarget(
+								layerID, worldX, worldY, layerObject.getObjectID(), layerObject.getRotation());
+					}
 				}
 			}
 		}
@@ -220,25 +209,27 @@ public class BlueprintArea {
 	private boolean isBlueprintObjectComplete(
 			Level level,
 			BlueprintElement element,
+			BlueprintLayerObject layerObject,
 			int worldX,
 			int worldY
 	) {
-		if (element == null || element.getObjectID() == null) {
+		if (element == null || layerObject == null) {
 			return true;
 		}
 
-		GameObject wantedObject = ObjectRegistry.getObject(element.getObjectID());
+		int layerID = resolveLayerID(layerObject.getLayerID());
+		GameObject wantedObject = ObjectRegistry.getObject(layerObject.getObjectID());
 
-		if (wantedObject == null) {
+		if (layerID < 0 || wantedObject == null) {
 			return false;
 		}
 
 		if (wantedObject.isMultiTileMaster()) {
-			return isObjectComplete(level, element, worldX, worldY);
+			return isObjectComplete(level, layerID, layerObject, worldX, worldY);
 		}
 
 		Point masterPos = (Point)wantedObject
-				.getMultiTile(element.getRotation())
+				.getMultiTile(layerObject.getRotation())
 				.getMasterTilePos(worldX, worldY)
 				.orElse(null);
 
@@ -248,17 +239,15 @@ public class BlueprintArea {
 
 		int localMasterX = masterPos.x - originX;
 		int localMasterY = masterPos.y - originY;
+		BlueprintElement masterElement = blueprintData.getElementAt(localMasterX, localMasterY);
 
-		BlueprintElement masterElement =
-				blueprintData.getElementAt(localMasterX, localMasterY);
+		if (masterElement == null) {
+			return false;
+		}
 
-		return masterElement != null
-				&& isObjectComplete(
-				level,
-				masterElement,
-				masterPos.x,
-				masterPos.y
-		);
+		BlueprintLayerObject masterLayerObject = masterElement.getObjectAtLayer(layerObject.getLayerID());
+		return masterLayerObject != null
+				&& isObjectComplete(level, layerID, masterLayerObject, masterPos.x, masterPos.y);
 	}
 
 	public BlueprintClearTarget findFirstClearTarget(Level level) {
@@ -266,9 +255,7 @@ public class BlueprintArea {
 			for (int x = 0; x < width; x++) {
 				int worldX = originX + x;
 				int worldY = originY + y;
-
 				BlueprintElement element = blueprintData.getElementAt(x, y);
-
 				String wantedTileID = element == null ? null : element.getTileID();
 
 				if (wantedTileID != null) {
@@ -280,25 +267,21 @@ public class BlueprintArea {
 					}
 				}
 
-				GameObject currentObject = level.getObject(worldX, worldY);
+				for (int layerID : ObjectLayerRegistry.getLayerIDs()) {
+					GameObject currentObject = level.getObject(layerID, worldX, worldY);
 
-				if (!(currentObject instanceof AirObject)) {
-					String wantedObjectID = element == null ? null : element.getObjectID();
-
-					if (wantedObjectID == null) {
-						return new BlueprintClearTarget(BlueprintClearTarget.Type.OBJECT, worldX, worldY);
+					if (currentObject instanceof AirObject) {
+						continue;
 					}
 
-					if (!currentObject.getStringID().equals(wantedObjectID)) {
-						return new BlueprintClearTarget(BlueprintClearTarget.Type.OBJECT, worldX, worldY);
-					}
+					String layerStringID = ObjectLayerRegistry.getLayerStringID(layerID);
+					BlueprintLayerObject wanted = element == null ? null : element.getObjectAtLayer(layerStringID);
 
-					if (level.getObjectRotation(worldX, worldY) != element.getRotation()) {
-						return new BlueprintClearTarget(BlueprintClearTarget.Type.OBJECT, worldX, worldY);
-					}
-
-					if (!isBlueprintObjectComplete(level, element, worldX, worldY)) {
-						return new BlueprintClearTarget(BlueprintClearTarget.Type.OBJECT, worldX, worldY);
+					if (wanted == null
+							|| !currentObject.getStringID().equals(wanted.getObjectID())
+							|| level.getObjectRotation(layerID, worldX, worldY) != wanted.getRotation()
+							|| !isBlueprintObjectComplete(level, element, wanted, worldX, worldY)) {
+						return new BlueprintClearTarget(BlueprintClearTarget.Type.OBJECT, layerID, worldX, worldY);
 					}
 				}
 			}
@@ -314,7 +297,6 @@ public class BlueprintArea {
 	public void setConstructionStarted(boolean constructionStarted) {
 		this.constructionStarted = constructionStarted;
 	}
-
 
 	public boolean setConstructionBlockedReason(String reason) {
 		if (Objects.equals(constructionBlockedReason, reason)) {
@@ -344,21 +326,13 @@ public class BlueprintArea {
 
 	public SaveData getSaveData() {
 		SaveData save = new SaveData("BLUEPRINT_AREA");
-
 		save.addUnsafeString("uniqueID", uniqueID);
 		save.addInt("settlementUniqueID", settlementUniqueID);
-
 		save.addInt("originX", originX);
 		save.addInt("originY", originY);
-
 		save.addInt("width", width);
 		save.addInt("height", height);
-
-		save.addSafeString(
-				"blueprintData",
-				blueprintData.toJson()
-		);
-
+		save.addSafeString("blueprintData", blueprintData.toJson());
 		save.addBoolean("constructionStarted", constructionStarted);
 		save.addBoolean("constructionComplete", constructionComplete);
 
@@ -372,7 +346,6 @@ public class BlueprintArea {
 			for (int builderUniqueID : assignedBuilderIDs) {
 				SaveData builderSave = new SaveData("BUILDER");
 				builderSave.addInt("uniqueID", builderUniqueID);
-
 				Map<String, Integer> allocation = builderMaterialAllocations.get(builderUniqueID);
 
 				if (allocation != null && !allocation.isEmpty()) {
@@ -397,11 +370,7 @@ public class BlueprintArea {
 		return save;
 	}
 
-	private void consumeBuilderMaterialAllocation(
-			int builderUniqueID,
-			String itemID,
-			int amount
-	) {
+	private void consumeBuilderMaterialAllocation(int builderUniqueID, String itemID, int amount) {
 		Map<String, Integer> allocation = builderMaterialAllocations.get(builderUniqueID);
 
 		if (allocation == null) {
@@ -420,7 +389,6 @@ public class BlueprintArea {
 			builderMaterialAllocations.remove(builderUniqueID);
 		}
 	}
-
 
 	public BuilderHumanMob consumeBuilderMaterial(Level level, String itemID) {
 		for (BuilderHumanMob builder : getAssignedBuilders(level)) {
@@ -448,18 +416,22 @@ public class BlueprintArea {
 		return null;
 	}
 
-
-	private boolean isObjectComplete(Level level, BlueprintElement element, int worldX, int worldY) {
-		if (element == null || element.getObjectID() == null) {
+	private boolean isObjectComplete(
+			Level level,
+			int layerID,
+			BlueprintLayerObject layerObject,
+			int worldX,
+			int worldY
+	) {
+		if (layerObject == null) {
 			return true;
 		}
 
-		GameObject wantedObject = ObjectRegistry.getObject(element.getObjectID());
+		GameObject wantedObject = ObjectRegistry.getObject(layerObject.getObjectID());
 
 		if (wantedObject == null
-				|| level.getObjectID(worldX, worldY) != wantedObject.getID()
-				|| level.getObjectRotation(worldX, worldY) != element.getRotation()
-		) {
+				|| level.getObjectID(layerID, worldX, worldY) != wantedObject.getID()
+				|| level.getObjectRotation(layerID, worldX, worldY) != layerObject.getRotation()) {
 			return false;
 		}
 
@@ -467,12 +439,11 @@ public class BlueprintArea {
 			return true;
 		}
 
-		for (Object valueObject : wantedObject.getMultiTile(element.getRotation()).getIDs(worldX, worldY)) {
+		for (Object valueObject : wantedObject.getMultiTile(layerObject.getRotation()).getIDs(worldX, worldY)) {
 			MultiTile.CoordinateValue value = (MultiTile.CoordinateValue)valueObject;
 
-			if (level.getObjectID(value.tileX, value.tileY) != (Integer)value.value
-					|| level.getObjectRotation(value.tileX, value.tileY) != element.getRotation()
-			) {
+			if (level.getObjectID(layerID, value.tileX, value.tileY) != (Integer)value.value
+					|| level.getObjectRotation(layerID, value.tileX, value.tileY) != layerObject.getRotation()) {
 				return false;
 			}
 		}
@@ -480,13 +451,21 @@ public class BlueprintArea {
 		return true;
 	}
 
-	private boolean isObjectPlacementElement(BlueprintElement element) {
-		if (element == null || element.getObjectID() == null) {
+	private boolean isObjectPlacementObject(BlueprintLayerObject layerObject) {
+		if (layerObject == null) {
 			return false;
 		}
 
-		GameObject object = ObjectRegistry.getObject(element.getObjectID());
+		GameObject object = ObjectRegistry.getObject(layerObject.getObjectID());
 		return object != null && object.isMultiTileMaster();
+	}
+
+	private int resolveLayerID(String layerStringID) {
+		try {
+			return ObjectLayerRegistry.getLayerID(layerStringID);
+		} catch (Exception e) {
+			return -1;
+		}
 	}
 
 	public Map<String, Integer> getRequiredMaterials(Level level) {
@@ -502,7 +481,6 @@ public class BlueprintArea {
 
 				int worldX = originX + x;
 				int worldY = originY + y;
-
 				String wantedTileID = element.getTileID();
 
 				if (wantedTileID != null) {
@@ -514,16 +492,15 @@ public class BlueprintArea {
 					}
 				}
 
-				String wantedObjectID = element.getObjectID();
+				for (BlueprintLayerObject layerObject : element.getObjectsInPlacementOrder()) {
+					int layerID = resolveLayerID(layerObject.getLayerID());
 
-				if (wantedObjectID != null) {
-					GameObject wantedObject = ObjectRegistry.getObject(wantedObjectID);
+					if (layerID < 0 || !isObjectPlacementObject(layerObject)) {
+						continue;
+					}
 
-					if (wantedObject != null
-							&& wantedObject.isMultiTileMaster()
-							&& !isObjectComplete(level, element, worldX, worldY)
-					) {
-						required.merge(wantedObjectID, 1, Integer::sum);
+					if (!isObjectComplete(level, layerID, layerObject, worldX, worldY)) {
+						required.merge(layerObject.getObjectID(), 1, Integer::sum);
 					}
 				}
 			}
@@ -573,7 +550,6 @@ public class BlueprintArea {
 
 				int worldX = originX + x;
 				int worldY = originY + y;
-
 				GameTile currentTile = level.getTile(worldX, worldY);
 				GameTile wantedTile = TileRegistry.getTile(element.getTileID());
 
@@ -587,15 +563,23 @@ public class BlueprintArea {
 			for (int x = 0; x < width; x++) {
 				BlueprintElement element = blueprintData.getElementAt(x, y);
 
-				if (!isObjectPlacementElement(element)) {
+				if (element == null) {
 					continue;
 				}
 
 				int worldX = originX + x;
 				int worldY = originY + y;
 
-				if (!isObjectComplete(level, element, worldX, worldY)) {
-					materials.add(element.getObjectID());
+				for (BlueprintLayerObject layerObject : element.getObjectsInPlacementOrder()) {
+					int layerID = resolveLayerID(layerObject.getLayerID());
+
+					if (layerID < 0 || !isObjectPlacementObject(layerObject)) {
+						continue;
+					}
+
+					if (!isObjectComplete(level, layerID, layerObject, worldX, worldY)) {
+						materials.add(layerObject.getObjectID());
+					}
 				}
 			}
 		}
@@ -617,15 +601,11 @@ public class BlueprintArea {
 
 	public static BlueprintArea fromLoadData(LoadData load) {
 		String uniqueID = load.getUnsafeString("uniqueID");
-		int settlementUniqueID =
-				load.getInt("settlementUniqueID",0,false);
-
+		int settlementUniqueID = load.getInt("settlementUniqueID", 0, false);
 		int originX = load.getInt("originX");
 		int originY = load.getInt("originY");
-
 		int width = load.getInt("width");
 		int height = load.getInt("height");
-
 		String json = load.getSafeString("blueprintData", null, false);
 
 		if (json == null) {
@@ -633,36 +613,19 @@ public class BlueprintArea {
 		}
 
 		BlueprintData blueprintData = BlueprintData.fromJson(json);
-
 		boolean constructionStarted = load.getBoolean("constructionStarted", false, false);
 		boolean constructionComplete = load.getBoolean("constructionComplete", false, false);
-
-		String constructionBlockedReason =
-				load.getUnsafeString("constructionBlockedReason", null, false);
-
-		BlueprintArea area = new BlueprintArea(
-				uniqueID,
-				settlementUniqueID,
-				originX,
-				originY,
-				width,
-				height,
-				blueprintData,
-				constructionStarted,
-				constructionComplete
-		);
-
+		String constructionBlockedReason = load.getUnsafeString("constructionBlockedReason", null, false);
+		BlueprintArea area = new BlueprintArea(uniqueID, settlementUniqueID, originX, originY, width, height,
+				blueprintData, constructionStarted, constructionComplete);
 		area.constructionBlockedReason = constructionBlockedReason;
-
 		LoadData buildersSave = load.getFirstLoadDataByName("BUILDERS");
 
 		if (buildersSave != null) {
 			for (Object builderObject : buildersSave.getLoadDataByName("BUILDER")) {
 				LoadData builderLoad = (LoadData)builderObject;
 				int builderUniqueID = builderLoad.getInt("uniqueID");
-
 				area.assignedBuilderIDs.add(builderUniqueID);
-
 				LoadData allocationSave = builderLoad.getFirstLoadDataByName("ALLOCATION");
 
 				if (allocationSave != null) {
@@ -670,7 +633,6 @@ public class BlueprintArea {
 
 					for (Object itemObject : allocationSave.getLoadDataByName("ITEM")) {
 						LoadData itemLoad = (LoadData)itemObject;
-
 						String itemID = itemLoad.getUnsafeString("itemID");
 						int amount = itemLoad.getInt("amount");
 

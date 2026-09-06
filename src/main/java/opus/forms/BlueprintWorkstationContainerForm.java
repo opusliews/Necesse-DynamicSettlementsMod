@@ -26,6 +26,7 @@ import opus.container.BlueprintWorkstationContainer;
 import opus.item.BlueprintItem;
 import opus.tools.BlueprintData;
 import opus.tools.BlueprintElement;
+import opus.tools.BlueprintLayerObject;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -319,8 +320,8 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 				group.count++;
 			}
 
-			if (element.getObjectID() != null) {
-				String objectID = element.getObjectID();
+			for (BlueprintLayerObject layerObject : element.getObjects()) {
+				String objectID = layerObject.getObjectID();
 				String key = "object:" + objectID;
 				ElementGroup group = groups.get(key);
 

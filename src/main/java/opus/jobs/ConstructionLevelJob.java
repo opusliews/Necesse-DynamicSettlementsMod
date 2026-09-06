@@ -274,7 +274,7 @@ public class ConstructionLevelJob extends TileLevelJob {
 					}
 
 					String placeError = object.canPlace(
-							getLevel(), 0, objectTarget.tileX, objectTarget.tileY,
+							getLevel(), objectTarget.layerID, objectTarget.tileX, objectTarget.tileY,
 							objectTarget.rotation, true, false
 					);
 
@@ -463,7 +463,7 @@ public class ConstructionLevelJob extends TileLevelJob {
 
 	private void performObjectPlaceAction(Level level, BlueprintObjectTarget target) {
 		GameObject object = ObjectRegistry.getObject(target.objectID);
-		int layerID = 0;
+		int layerID = target.layerID;
 
 		object.placeObject(level, layerID, target.tileX, target.tileY, target.rotation, true);
 
@@ -490,9 +490,9 @@ public class ConstructionLevelJob extends TileLevelJob {
 		AbstractDamageResult result;
 
 		if (target.type == BlueprintClearTarget.Type.OBJECT) {
-			GameObject object = level.getObject(target.tileX, target.tileY);
+			GameObject object = level.getObject(target.layerID, target.tileX, target.tileY);
 			result = level.entityManager.doObjectDamage(
-					0, target.tileX, target.tileY, object.objectHealth, Float.MAX_VALUE,
+					target.layerID, target.tileX, target.tileY, object.objectHealth, Float.MAX_VALUE,
 					worker, null, true, target.tileX * 32 + 16, target.tileY * 32 + 16);
 		} else {
 			GameTile tile = level.getTile(target.tileX, target.tileY);

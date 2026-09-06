@@ -7,6 +7,7 @@ import necesse.engine.localization.message.GameMessage;
 import necesse.engine.localization.message.StaticMessage;
 import necesse.engine.network.client.Client;
 import necesse.engine.registries.ItemRegistry;
+import necesse.engine.registries.ObjectLayerRegistry;
 import necesse.engine.registries.ObjectRegistry;
 import necesse.engine.state.MainGame;
 import necesse.engine.window.GameWindow;
@@ -26,6 +27,7 @@ import opus.blueprint.BlueprintInfrastructureSupport;
 import opus.logging.Logging;
 import opus.tools.BlueprintData;
 import opus.tools.BlueprintElement;
+import opus.tools.BlueprintLayerObject;
 import opus.tools.BlueprintSelectionTool;
 
 import java.awt.*;
@@ -137,14 +139,19 @@ public class NewBlueprintForm extends Form {
 				for (int y = selection.y; y < selection.y + selection.height; y++) {
 					int relativeX = x - selection.x;
 					int relativeY = y - selection.y;
-					GameObject object = level.getObject(x, y);
 					GameTile tile = level.getTile(x, y);
 					BlueprintElement be = new BlueprintElement(relativeX, relativeY);
 
-					if (canIncludeBlueprintObject(level, selection, excludedObjectIDs, x, y, object)) {
-						be.setObjectID(object.getStringID());
-						be.setRotation(level.getObjectRotation(x, y));
-						Logging.logMessage("Object found: " + object.getDisplayName());
+					for (int layerID : ObjectLayerRegistry.getLayerIDs()) {
+						GameObject object = level.getObject(layerID, x, y);
+
+						if (canIncludeBlueprintObject(
+								level, selection, excludedObjectIDs, layerID, x, y, object)) {
+							String layerStringID = ObjectLayerRegistry.getLayerStringID(layerID);
+							be.addObject(new BlueprintLayerObject(
+									layerStringID, object.getStringID(), level.getObjectRotation(layerID, x, y)));
+							Logging.logMessage("Object found on layer " + layerStringID + ": " + object.getDisplayName());
+						}
 					}
 
 					if (isBlueprintTile(tile)
@@ -184,6 +191,7 @@ public class NewBlueprintForm extends Form {
 			Level level,
 			Rectangle selection,
 			List<String> excludedObjectIDs,
+			int layerID,
 			int tileX,
 			int tileY,
 			GameObject object
@@ -196,7 +204,7 @@ public class NewBlueprintForm extends Form {
 			return true;
 		}
 
-		int rotation = level.getObjectRotation(tileX, tileY);
+		int rotation = level.getObjectRotation(layerID, tileX, tileY);
 		MultiTile multiTile = object.getMultiTile(rotation);
 
 		for (Object valueObject : multiTile.getIDs(tileX, tileY)) {
@@ -213,8 +221,8 @@ public class NewBlueprintForm extends Form {
 				return false;
 			}
 
-			if (level.getObjectID(value.tileX, value.tileY) != expectedObjectID
-					|| level.getObjectRotation(value.tileX, value.tileY) != rotation) {
+			if (level.getObjectID(layerID, value.tileX, value.tileY) != expectedObjectID
+					|| level.getObjectRotation(layerID, value.tileX, value.tileY) != rotation) {
 				return false;
 			}
 		}

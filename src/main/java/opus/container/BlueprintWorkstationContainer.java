@@ -94,8 +94,7 @@ public class BlueprintWorkstationContainer extends OEInventoryContainer {
 						changed = true;
 					}
 
-					if (removeObject && id.equals(element.getObjectID())) {
-						element.setObjectID(null);
+					if (removeObject && element.removeObjectType(id)) {
 						changed = true;
 					}
 
