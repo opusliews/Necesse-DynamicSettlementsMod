@@ -52,11 +52,10 @@ public class BlueprintData {
 		for (BlueprintElement element : elements) {
 			int newX = height - 1 - element.getY();
 			int newY = element.getX();
-
 			BlueprintElement rotatedElement = copyElement(element, newX, newY);
 
-			if (element.getObjectID() != null) {
-				rotatedElement.setRotation((element.getRotation() + 1) % 4);
+			for (BlueprintLayerObject object : rotatedElement.getObjects()) {
+				object.setRotation(object.getRotation() + 1);
 			}
 
 			if (element.getLogicGateID() != null) {
@@ -75,11 +74,10 @@ public class BlueprintData {
 		for (BlueprintElement element : elements) {
 			int newX = element.getY();
 			int newY = width - 1 - element.getX();
-
 			BlueprintElement rotatedElement = copyElement(element, newX, newY);
 
-			if (element.getObjectID() != null) {
-				rotatedElement.setRotation((element.getRotation() + 3) % 4);
+			for (BlueprintLayerObject object : rotatedElement.getObjects()) {
+				object.setRotation(object.getRotation() + 3);
 			}
 
 			if (element.getLogicGateID() != null) {
@@ -95,8 +93,11 @@ public class BlueprintData {
 	private static BlueprintElement copyElement(BlueprintElement element, int x, int y) {
 		BlueprintElement copy = new BlueprintElement(x, y);
 		copy.setTileID(element.getTileID());
-		copy.setObjectID(element.getObjectID());
-		copy.setRotation(element.getRotation());
+
+		for (BlueprintLayerObject object : element.getObjects()) {
+			copy.addObject(object.copy());
+		}
+
 		copy.setWireMask(element.getWireMask());
 		copy.setLogicGateID(element.getLogicGateID());
 		copy.setLogicGateData(element.getLogicGateData());
@@ -127,9 +128,18 @@ public class BlueprintData {
 				elementJson.addProperty("tileID", element.getTileID());
 			}
 
-			if (element.getObjectID() != null) {
-				elementJson.addProperty("objectID", element.getObjectID());
-				elementJson.addProperty("rotation", element.getRotation());
+			if (!element.getObjects().isEmpty()) {
+				JsonArray objectsJson = new JsonArray();
+
+				for (BlueprintLayerObject object : element.getObjectsInPlacementOrder()) {
+					JsonObject objectJson = new JsonObject();
+					objectJson.addProperty("layerID", object.getLayerID());
+					objectJson.addProperty("objectID", object.getObjectID());
+					objectJson.addProperty("rotation", object.getRotation());
+					objectsJson.add(objectJson);
+				}
+
+				elementJson.add("objects", objectsJson);
 			}
 
 			if (element.getWireMask() != 0) {
@@ -169,11 +179,22 @@ public class BlueprintData {
 				element.setTileID(elementJson.get("tileID").getAsString());
 			}
 
-			if (elementJson.has("objectID")) {
-				element.setObjectID(elementJson.get("objectID").getAsString());
-				if (elementJson.has("rotation")) {
-					element.setRotation(elementJson.get("rotation").getAsInt());
+			if (elementJson.has("objects")) {
+				for (JsonElement objectElement : elementJson.getAsJsonArray("objects")) {
+					JsonObject objectJson = objectElement.getAsJsonObject();
+
+					if (!objectJson.has("layerID") || !objectJson.has("objectID")) {
+						continue;
+					}
+
+					String layerID = objectJson.get("layerID").getAsString();
+					String objectID = objectJson.get("objectID").getAsString();
+					int rotation = objectJson.has("rotation") ? objectJson.get("rotation").getAsInt() : 0;
+					element.setObjectAtLayer(layerID, objectID, rotation);
 				}
+			} else if (elementJson.has("objectID")) {
+				int rotation = elementJson.has("rotation") ? elementJson.get("rotation").getAsInt() : 0;
+				element.setObjectAtLayer("base", elementJson.get("objectID").getAsString(), rotation);
 			}
 
 			if (elementJson.has("wireMask")) {

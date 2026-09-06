@@ -1,24 +1,27 @@
 package opus.tools;
 
+import necesse.engine.registries.ObjectLayerRegistry;
 import necesse.inventory.item.toolItem.ToolType;
 import necesse.level.gameObject.*;
 import necesse.level.gameTile.*;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 public class BlueprintElement {
 	private final int x;
 	private final int y;
 
 	private String tileID;
-	private String objectID;
+	private final List<BlueprintLayerObject> objects = new ArrayList<>();
 	private int wireMask;
 	private String logicGateID;
 	private String logicGateData;
 	private int logicGateRotation;
 
-	private int rotation;
-
 	public boolean isEmpty() {
-		return tileID == null && objectID == null && wireMask == 0 && logicGateID == null;
+		return tileID == null && objects.isEmpty() && wireMask == 0 && logicGateID == null;
 	}
 
 	public int getX() {
@@ -33,8 +36,61 @@ public class BlueprintElement {
 		return tileID;
 	}
 
+	public List<BlueprintLayerObject> getObjects() {
+		return new ArrayList<>(objects);
+	}
+
+	public List<BlueprintLayerObject> getObjectsInPlacementOrder() {
+		List<BlueprintLayerObject> sorted = getObjects();
+		sorted.sort(Comparator.comparingInt(object -> {
+			int layerID = getNumericLayerID(object.getLayerID());
+			return layerID < 0 ? Integer.MAX_VALUE : layerID;
+		}));
+		return sorted;
+	}
+
+	public BlueprintLayerObject getObjectAtLayer(String layerID) {
+		for (BlueprintLayerObject object : objects) {
+			if (object.getLayerID().equals(layerID)) {
+				return object;
+			}
+		}
+
+		return null;
+	}
+
+	public void setObjectAtLayer(String layerID, String objectID, int rotation) {
+		removeObjectAtLayer(layerID);
+
+		if (layerID != null && objectID != null) {
+			objects.add(new BlueprintLayerObject(layerID, objectID, rotation));
+		}
+	}
+
+	public void addObject(BlueprintLayerObject object) {
+		if (object != null) {
+			setObjectAtLayer(object.getLayerID(), object.getObjectID(), object.getRotation());
+		}
+	}
+
+	public boolean removeObjectAtLayer(String layerID) {
+		return objects.removeIf(object -> object.getLayerID().equals(layerID));
+	}
+
+	public boolean removeObjectType(String objectID) {
+		return objects.removeIf(object -> object.getObjectID().equals(objectID));
+	}
+
+	// Convenience accessors for the base layer. These keep older callers and
+	// imported blueprint JSON compatible while layered code uses getObjects().
 	public String getObjectID() {
-		return objectID;
+		BlueprintLayerObject object = getObjectAtLayer("base");
+		return object == null ? null : object.getObjectID();
+	}
+
+	public int getRotation() {
+		BlueprintLayerObject object = getObjectAtLayer("base");
+		return object == null ? 0 : object.getRotation();
 	}
 
 	public int getWireMask() {
@@ -58,7 +114,19 @@ public class BlueprintElement {
 	}
 
 	public void setObjectID(String objectID) {
-		this.objectID = objectID;
+		if (objectID == null) {
+			removeObjectAtLayer("base");
+		} else {
+			setObjectAtLayer("base", objectID, getRotation());
+		}
+	}
+
+	public void setRotation(int rotation) {
+		BlueprintLayerObject object = getObjectAtLayer("base");
+
+		if (object != null) {
+			object.setRotation(rotation);
+		}
 	}
 
 	public void setWireMask(int wireMask) {
@@ -77,17 +145,17 @@ public class BlueprintElement {
 		this.logicGateRotation = Math.floorMod(logicGateRotation, 4);
 	}
 
-	public int getRotation() {
-		return rotation;
-	}
-
-	public void setRotation(int rotation) {
-		this.rotation = rotation;
-	}
-
 	public BlueprintElement(int x, int y) {
 		this.x = x;
 		this.y = y;
+	}
+
+	private static int getNumericLayerID(String layerID) {
+		try {
+			return ObjectLayerRegistry.getLayerID(layerID);
+		} catch (Exception e) {
+			return -1;
+		}
 	}
 
 	public static boolean isBlueprintObject(GameObject gameObject) {
@@ -111,11 +179,9 @@ public class BlueprintElement {
 		if (gameTile instanceof EmptyTile) {
 			return false;
 		}
-		// Water/lava/etc. are not normal tile placement.
 		if (gameTile instanceof LiquidTile) {
 			return false;
 		}
-		// What the fuck even is this
 		if (gameTile instanceof ChromaKeyTile) {
 			return false;
 		}
