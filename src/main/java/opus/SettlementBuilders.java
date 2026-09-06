@@ -39,6 +39,7 @@ import opus.settler.BuilderSettler;
 public class SettlementBuilders {
 	public static final SettlementBuildersSettings settings = new SettlementBuildersSettings();
 	public static int blueprintWorkstationContainerID;
+	public static boolean debugBlueprintMaterialGrant = false;
 
 	public ModSettings initSettings() {
 		return settings;

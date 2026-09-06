@@ -11,6 +11,7 @@ import necesse.engine.state.MainGame;
 import necesse.engine.util.GameBlackboard;
 import necesse.engine.util.GameMath;
 import necesse.engine.window.GameWindow;
+import necesse.engine.window.WindowManager;
 import necesse.entity.mobs.PlayerInventoryItemAttackSlot;
 import necesse.entity.mobs.PlayerMob;
 import necesse.entity.mobs.itemAttacker.ItemAttackSlot;
@@ -29,6 +30,7 @@ import necesse.level.gameObject.GameObject;
 import necesse.level.gameObject.WallObject;
 import necesse.level.gameTile.GameTile;
 import necesse.level.maps.Level;
+import opus.SettlementBuilders;
 import opus.forms.NewBlueprintForm;
 import opus.logging.Logging;
 import opus.network.PacketBlueprintUpdate;
@@ -518,11 +520,25 @@ public class BlueprintItem extends Item implements ItemInteractAction, Placeable
 				return item;
 			}
 
-			PlayerInventoryItemAttackSlot playerSlot =
-					(PlayerInventoryItemAttackSlot)slot;
+			PlayerInventoryItemAttackSlot playerSlot = (PlayerInventoryItemAttackSlot)slot;
+			MainGame mainGame = (MainGame)GlobalData.getCurrentState();
 
-			MainGame mainGame =
-					(MainGame)GlobalData.getCurrentState();
+			boolean ctrlDown =
+					WindowManager.getWindow().getInput().isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL)
+							|| WindowManager.getWindow().getInput().isKeyDown(GLFW.GLFW_KEY_RIGHT_CONTROL);
+
+			if (SettlementBuilders.debugBlueprintMaterialGrant && ctrlDown) {
+				mainGame.getClient().network.sendPacket(
+						new PacketBlueprintUpdate(
+								playerSlot.slot.inventoryID,
+								playerSlot.slot.slot,
+								true
+						)
+				);
+
+				return item;
+			}
+
 
 			mainGame.getClient().network.sendPacket(
 					new PacketBlueprintUpdate(
