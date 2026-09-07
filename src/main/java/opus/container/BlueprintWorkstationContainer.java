@@ -8,10 +8,12 @@ import necesse.inventory.container.customAction.StringCustomAction;
 import necesse.inventory.container.object.OEInventoryContainer;
 import necesse.inventory.container.settlement.events.SettlementDataEvent;
 import necesse.level.maps.Level;
+import opus.blueprint.BlueprintObjectMaterialResolver;
 import opus.item.BlueprintItem;
 import opus.object.BlueprintWorkstationObjectEntity;
 import opus.tools.BlueprintData;
 import opus.tools.BlueprintElement;
+import opus.tools.BlueprintLayerObject;
 
 public class BlueprintWorkstationContainer extends OEInventoryContainer {
 	public final BlueprintWorkstationObjectEntity workstation;
@@ -94,8 +96,21 @@ public class BlueprintWorkstationContainer extends OEInventoryContainer {
 						changed = true;
 					}
 
-					if (removeObject && element.removeObjectType(id)) {
-						changed = true;
+					if (removeObject) {
+						if ("flowerpot".equals(id)) {
+							if (element.removeObjectType("flowerpot")) {
+								changed = true;
+							}
+
+							for (BlueprintLayerObject layerObject : element.getObjects()) {
+								if (BlueprintObjectMaterialResolver.isPottedFlowerObject(layerObject.getObjectID())
+										&& element.removeObjectType(layerObject.getObjectID())) {
+									changed = true;
+								}
+							}
+						} else if (element.removeObjectType(id)) {
+							changed = true;
+						}
 					}
 
 					if (removeWire && element.getWireMask() != 0) {

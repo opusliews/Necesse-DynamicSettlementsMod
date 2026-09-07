@@ -461,6 +461,8 @@ public class BuilderHumanMob extends HumanShop {
 		String rockID = getRecruitRockID(random, tier);
 		ArrayList<InventoryItem> items = new ArrayList<>();
 
+		items.add(new InventoryItem("coin", random.getIntBetween(250, 400)));
+
 		items.add(new InventoryItem(barID, random.getIntBetween(4, 10)));
 		items.add(new InventoryItem(rockID, random.getIntBetween(25, 50)));
 

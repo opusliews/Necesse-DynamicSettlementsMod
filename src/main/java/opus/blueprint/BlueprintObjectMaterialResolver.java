@@ -10,9 +10,13 @@ public final class BlueprintObjectMaterialResolver {
 	private BlueprintObjectMaterialResolver() {
 	}
 
-	public static String getPlacementPrerequisiteItemID(String objectID) {
+	public static boolean isPottedFlowerObject(String objectID) {
 		GameObject object = objectID == null ? null : ObjectRegistry.getObject(objectID);
-		return object instanceof FlowerObject ? "flowerpot" : null;
+		return object instanceof FlowerObject;
+	}
+
+	public static String getPlacementPrerequisiteItemID(String objectID) {
+		return isPottedFlowerObject(objectID) ? "flowerpot" : null;
 	}
 
 	public static boolean isPlacementPrerequisite(String currentObjectID, String wantedObjectID) {

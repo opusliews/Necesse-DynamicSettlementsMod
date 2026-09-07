@@ -34,8 +34,8 @@ public class BuilderRequestLevelData extends LevelData implements
 	public static final String managerKey = "opusbuilderrequests";
 
 	private static final long checkInterval = 1000L;
-	private static final long minSpawnDelay = 5L * 60L * 1000L / 60;
-	private static final long maxSpawnDelay = 10L * 60L * 1000L / 60;
+	private static final long minSpawnDelay = 5L * 60L * 1000L;
+	private static final long maxSpawnDelay = 10L * 60L * 1000L;
 	private static final long failedSpawnRetryDelay = 30000L;
 
 	private final Set<Long> bulletinTiles = new HashSet<>();
