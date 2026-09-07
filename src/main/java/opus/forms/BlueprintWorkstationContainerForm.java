@@ -22,6 +22,7 @@ import necesse.inventory.InventoryItem;
 import necesse.level.gameLogicGate.GameLogicGate;
 import necesse.level.gameObject.GameObject;
 import necesse.level.gameTile.GameTile;
+import opus.blueprint.BlueprintObjectMaterialResolver;
 import opus.container.BlueprintWorkstationContainer;
 import opus.item.BlueprintItem;
 import opus.tools.BlueprintData;
@@ -38,11 +39,13 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 	private final BlueprintWorkstationContainer workstationContainer;
 	private final Form mainForm;
 	private final Form renameForm;
+	private final Form removeFlowerPotForm;
 	private final FormContentBox elementsBox;
 	private final FormTextButton renameButton;
 	private final FormContentIconButton copyButton;
 	private final FormContentIconButton pasteButton;
 	private FormTextInput renameInput;
+	private String pendingRemoveElementKey;
 	private String lastBlueprintSignature;
 
 	public BlueprintWorkstationContainerForm(Client client, BlueprintWorkstationContainer container) {
@@ -51,6 +54,7 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 
 		mainForm = (Form)addComponent(new Form("blueprintWorkstation", 400, 320));
 		renameForm = (Form)addComponent(new Form("renameBlueprint", 400, 120));
+		removeFlowerPotForm = (Form)addComponent(new Form("removeFlowerPot", 400, 120));
 
 		mainForm.addComponent(new FormLabel(
 				"Blueprint Workstation",
@@ -108,6 +112,7 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 		elementsBox.alwaysShowVerticalScrollBar = true;
 
 		setupRenameForm();
+		setupRemoveFlowerPotForm();
 		refreshBlueprint(true);
 		makeCurrent(mainForm);
 	}
@@ -159,6 +164,47 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 				ButtonColor.BASE
 		));
 		cancelButton.onClicked(event -> makeCurrent(mainForm));
+	}
+
+	private void setupRemoveFlowerPotForm() {
+		removeFlowerPotForm.addComponent(new FormLabel(
+				"Warning, This will remove potted plants as well",
+				new FontOptions(16),
+				FormLabel.ALIGN_MID,
+				removeFlowerPotForm.getWidth() / 2,
+				24
+		));
+
+		FormTextButton okButton = (FormTextButton)removeFlowerPotForm.addComponent(new FormTextButton(
+				"Ok",
+				32,
+				68,
+				156,
+				FormInputSize.SIZE_32,
+				ButtonColor.RED
+		));
+		okButton.onClicked(event -> {
+			if (pendingRemoveElementKey != null) {
+				workstationContainer.removeElementType.runAndSend(pendingRemoveElementKey);
+				pendingRemoveElementKey = null;
+			}
+
+			makeCurrent(mainForm);
+			refreshBlueprint(true);
+		});
+
+		FormTextButton cancelButton = (FormTextButton)removeFlowerPotForm.addComponent(new FormTextButton(
+				"Cancel",
+				212,
+				68,
+				156,
+				FormInputSize.SIZE_32,
+				ButtonColor.BASE
+		));
+		cancelButton.onClicked(event -> {
+			pendingRemoveElementKey = null;
+			makeCurrent(mainForm);
+		});
 	}
 
 	private void openRenameForm() {
@@ -259,6 +305,7 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 		}
 
 		List<ElementGroup> groups = getElementGroups(data);
+		boolean hasPottedFlowers = hasPottedFlowers(data);
 		int rowY = 4;
 
 		if (groups.isEmpty()) {
@@ -291,6 +338,12 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 				));
 
 				removeButton.onClicked(event -> {
+					if ("object:flowerpot".equals(group.key) && hasPottedFlowers) {
+						pendingRemoveElementKey = group.key;
+						makeCurrent(removeFlowerPotForm);
+						return;
+					}
+
 					workstationContainer.removeElementType.runAndSend(group.key);
 					refreshBlueprint(true);
 				});
@@ -322,16 +375,13 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 
 			for (BlueprintLayerObject layerObject : element.getObjects()) {
 				String objectID = layerObject.getObjectID();
-				String key = "object:" + objectID;
-				ElementGroup group = groups.get(key);
 
-				if (group == null) {
-					GameObject object = ObjectRegistry.getObject(objectID);
-					String name = object == null ? objectID : object.getDisplayName();
-					group = new ElementGroup(key, name);
-					groups.put(key, group);
+				if (BlueprintObjectMaterialResolver.isPottedFlowerObject(objectID)) {
+					addObjectGroupCount(groups, "flowerpot", null);
+					addObjectGroupCount(groups, objectID, " (Potted)");
+				} else {
+					addObjectGroupCount(groups, objectID, null);
 				}
-				group.count++;
 			}
 
 			if (element.getWireMask() != 0) {
@@ -363,6 +413,37 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 		return new ArrayList<>(groups.values());
 	}
 
+	private void addObjectGroupCount(Map<String, ElementGroup> groups, String objectID, String suffix) {
+		String key = "object:" + objectID;
+		ElementGroup group = groups.get(key);
+
+		if (group == null) {
+			GameObject object = ObjectRegistry.getObject(objectID);
+			String name = object == null ? objectID : object.getDisplayName();
+
+			if (suffix != null) {
+				name += suffix;
+			}
+
+			group = new ElementGroup(key, name);
+			groups.put(key, group);
+		}
+
+		group.count++;
+	}
+
+	private boolean hasPottedFlowers(BlueprintData data) {
+		for (BlueprintElement element : data.getElements()) {
+			for (BlueprintLayerObject layerObject : element.getObjects()) {
+				if (BlueprintObjectMaterialResolver.isPottedFlowerObject(layerObject.getObjectID())) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
 	private static class ElementGroup {
 		private final String key;
 		private final String name;
@@ -385,6 +466,7 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 		super.onWindowResized(window);
 		ContainerComponent.setPosFocus(mainForm);
 		ContainerComponent.setPosFocus(renameForm);
+		ContainerComponent.setPosFocus(removeFlowerPotForm);
 	}
 
 	@Override
