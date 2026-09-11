@@ -376,6 +376,21 @@ any spots where hostile mobs may spawn.
 
 ---
 
+# Zombie Breaching and Animal Attacks
+
+Zombies are now more dangerous to settlements and livestock.
+
+- Zombies can notice and pursue passive animals in addition to players.
+- If a target is protected by a fence or fence gate and there is no normal route to reach it,
+zombies will attempt to break through the barrier.
+- The stronger the material tier of the fence, the longer it resists before breaking.
+- As weather damage, these zombie damaged blocks can be repaired by builders
+- Zombie arrows will not go through fences, but it will damage them.
+- Zombies will not try to get into houses normally, but if a zombie sees
+a player or npc entering a building, they will attack the door and try to get inside.
+
+---
+
 # Design Notes
 
 Settlement Builders is not supposed to be a creative-mode construction system.
