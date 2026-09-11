@@ -16,6 +16,7 @@ import opus.armor.BuilderBootsArmorItem;
 import opus.armor.BuilderHatArmorItem;
 import opus.armor.BuilderShirtArmorItem;
 import opus.blueprint.BlueprintAreaLevelData;
+import opus.buff.MalignanceGogglesBuff;
 import opus.config.SettlementBuildersSettings;
 import opus.container.BlueprintWorkstationContainer;
 import opus.damage.DamageRepairLevelData;
@@ -24,6 +25,7 @@ import opus.damage.WeatheringLevelData;
 import opus.forms.BlueprintWorkstationContainerForm;
 import opus.item.BlueprintItem;
 import opus.item.InspectionGlassItem;
+import opus.item.MalignanceGogglesItem;
 import opus.item.ProjectEraserItem;
 import opus.jobs.ConstructionLevelJob;
 import opus.jobs.RepairLevelJob;
@@ -47,6 +49,7 @@ public class SettlementBuilders {
 
 	public void init() {
 		// Registrations
+		BuffRegistry.registerBuff(MalignanceGogglesItem.buffStringID, new MalignanceGogglesBuff());
 		SettlerRegistry.registerSettler("builder", new BuilderSettler());
 		MobRegistry.registerMob("builderhuman",
 				BuilderHumanMob.class, true);
@@ -62,6 +65,8 @@ public class SettlementBuilders {
 				new ProjectEraserItem(), 30.0F, true);
 		ItemRegistry.registerItem("inspectionglass",
 				new InspectionGlassItem(), 20.0F, true);
+		ItemRegistry.registerItem("malignancegoggles",
+				new MalignanceGogglesItem(), 100.0F, true);
 		ObjectRegistry.registerObject("blueprintworkstation",
 				new BlueprintWorkstationObject(), 100.0F, true);
 		ObjectRegistry.registerObject(
@@ -216,6 +221,16 @@ public class SettlementBuilders {
 				new Ingredient[]{
 						new Ingredient("glass", 2),
 						new Ingredient("ironbar", 1)
+				}
+		));
+
+		Recipes.registerModRecipe(new Recipe(
+				"malignancegoggles",
+				1,
+				RecipeTechRegistry.DEMONIC_WORKSTATION,
+				new Ingredient[]{
+						new Ingredient("inspectionglass", 2),
+						new Ingredient("demonicbar", 1)
 				}
 		));
 
