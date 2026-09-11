@@ -367,6 +367,15 @@ The previews are visible by default and don't require an Inspection Glass to see
 
 ---
 
+# Malignance Glass
+
+The **Malignance Goggles** can be crafted in a Demonic workstation with **two Inspection Glasses** and a **demonic bar**.
+
+It is a trinket that, when worn, will show on a limited distance from the player
+any spots where hostile mobs may spawn.
+
+---
+
 # Design Notes
 
 Settlement Builders is not supposed to be a creative-mode construction system.
