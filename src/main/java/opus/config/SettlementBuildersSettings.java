@@ -5,19 +5,21 @@ import necesse.engine.save.LoadData;
 import necesse.engine.save.SaveData;
 
 public class SettlementBuildersSettings extends ModSettings {
-	public boolean hardcoreDamage = true;
+	public boolean hardcoreFeatures = true;
 
 	@Override
 	public void addSaveData(SaveData save) {
 		save.addBoolean(
-				"hardcoreDamage",
-				hardcoreDamage,
-				"If true, damaged tiles and objects do not recover naturally, Builders repair them, and exposed wooden objects weather in rain"
+				"hardcoreFeatures",
+				hardcoreFeatures,
+				"If true, enables Settlement Builders hardcore features"
 		);
 	}
 
 	@Override
 	public void applyLoadData(LoadData save) {
-		hardcoreDamage = save.getBoolean("hardcoreDamage", true, false);
+		// Keep the old key as a fallback so existing configs continue to work.
+		boolean legacyValue = save.getBoolean("hardcoreDamage", true, false);
+		hardcoreFeatures = save.getBoolean("hardcoreFeatures", legacyValue, false);
 	}
 }

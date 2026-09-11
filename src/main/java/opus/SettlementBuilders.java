@@ -20,7 +20,7 @@ import opus.buff.MalignanceGogglesBuff;
 import opus.config.SettlementBuildersSettings;
 import opus.container.BlueprintWorkstationContainer;
 import opus.damage.DamageRepairLevelData;
-import opus.damage.HardcoreDamage;
+import opus.damage.HardcoreFeatures;
 import opus.damage.WeatheringLevelData;
 import opus.forms.BlueprintWorkstationContainerForm;
 import opus.item.BlueprintItem;
@@ -131,7 +131,7 @@ public class SettlementBuilders {
 		PacketRegistry.registerPacket(PacketRemoveBlueprintArea.class);
 		PacketRegistry.registerPacket(PacketBuilderTilePlaceSound.class);
 		PacketRegistry.registerPacket(PacketBuilderObjectPlaceSound.class);
-		PacketRegistry.registerPacket(PacketHardcoreDamageSetting.class);
+		PacketRegistry.registerPacket(PacketHardcoreFeaturesSetting.class);
 		PacketRegistry.registerPacket(PacketEraseBlueprintProject.class);
 		PacketRegistry.registerPacket(PacketBlueprintBlockedState.class);
 		PacketRegistry.registerPacket(PacketBuilderRoadRepairToggle.class);
@@ -144,8 +144,8 @@ public class SettlementBuilders {
 					@Override
 					public void onEvent(ServerClientConnectedEvent event) {
 						event.client.sendPacket(
-								new PacketHardcoreDamageSetting(
-										HardcoreDamage.isServerEnabled()
+								new PacketHardcoreFeaturesSetting(
+										HardcoreFeatures.isServerEnabled()
 								)
 						);
 					}

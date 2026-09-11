@@ -8,7 +8,7 @@ import necesse.level.gameObject.GameObject;
 import necesse.level.maps.Level;
 import net.bytebuddy.asm.Advice;
 import opus.damage.DamageRepairLevelData;
-import opus.damage.HardcoreDamage;
+import opus.damage.HardcoreFeatures;
 
 @ModMethodPatch(
 		target = Level.class,
@@ -22,7 +22,7 @@ public class LevelObjectDamagedPatch {
 			@Advice.Argument(1) int objectLayerID,
 			@Advice.Argument(6) ObjectDamageResult result
 	) {
-		if (!level.isServer() || !HardcoreDamage.isServerEnabled() || result == null) {
+		if (!level.isServer() || !HardcoreFeatures.isServerEnabled() || result == null) {
 			return;
 		}
 
