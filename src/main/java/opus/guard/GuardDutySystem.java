@@ -51,6 +51,7 @@ public final class GuardDutySystem {
 
 		releasePatrolTarget(guard);
 		GuardNeedsSystem.releaseBreakForDutyChange(guard);
+		GuardFatigueSystem.onDutyChanged(guard);
 		if (guard.isServer()) {
 			guard.cancelJob();
 		}

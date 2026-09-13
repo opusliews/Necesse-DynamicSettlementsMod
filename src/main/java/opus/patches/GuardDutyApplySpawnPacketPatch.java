@@ -7,16 +7,16 @@ import necesse.entity.mobs.friendly.human.HumanMob;
 import net.bytebuddy.asm.Advice;
 import opus.guard.GuardDuty;
 import opus.guard.GuardDutySystem;
+import opus.guard.GuardFatigueSystem;
 
 @ModMethodPatch(target = HumanMob.class, name = "applySpawnPacket", arguments = {PacketReader.class})
 public class GuardDutyApplySpawnPacketPatch {
 	@Advice.OnMethodExit
 	public static void onExit(@Advice.This HumanMob mob, @Advice.Argument(0) PacketReader reader) {
 		if (mob instanceof GuardHumanMob) {
-			GuardDutySystem.setDuty(
-					(GuardHumanMob)mob,
-					reader.getNextBoolean() ? GuardDuty.NIGHT : GuardDuty.DAY
-			);
+			GuardHumanMob guard = (GuardHumanMob)mob;
+			GuardDutySystem.setDuty(guard, reader.getNextBoolean() ? GuardDuty.NIGHT : GuardDuty.DAY);
+			GuardFatigueSystem.applyClientFatigue(guard, reader.getNextInt());
 		}
 	}
 }
