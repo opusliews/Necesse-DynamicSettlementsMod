@@ -19,6 +19,8 @@ import opus.guard.GuardNeedsSystem;
 import opus.guard.NightGuardPatrolAINode;
 import opus.guard.NightGuardTargetFinderAI;
 import opus.guard.RestAwakenedGuardTargetFinderAI;
+import opus.sleep.GuardWakePlayerAINode;
+import opus.sleep.SleepWarningSystem;
 
 @ModConstructorPatch(target = BehaviourTreeAI.class, arguments = {Mob.class, AINode.class, AIMover.class})
 public class WarningBellGuardAIPatch {
@@ -48,6 +50,7 @@ public class WarningBellGuardAIPatch {
 		restAwakenedCombat.addChild(new ItemAttackerChaserAINode());
 		root.addChildBefore(root.humanJobsFollowAINode, restAwakenedCombat);
 
+		root.addChildBefore(root.humanJobsFollowAINode, new GuardWakePlayerAINode());
 		root.addChildBefore(root.humanJobsFollowAINode, new NightGuardPatrolAINode());
 	}
 
@@ -72,7 +75,7 @@ public class WarningBellGuardAIPatch {
 				return AINodeResult.FAILURE;
 			}
 
-			blackboard.put("chaserTarget", target);
+			blackboard.put("currentTarget", target);
 			return AINodeResult.SUCCESS;
 		}
 	}
@@ -89,7 +92,9 @@ public class WarningBellGuardAIPatch {
 		@Override
 		public AINodeResult tick(Mob mob, Blackboard blackboard) {
 			GuardHumanMob guard = (GuardHumanMob)mob;
-			return GuardDutySystem.shouldPatrol(guard) && !GuardNeedsSystem.isOnBreak(guard)
+			return GuardDutySystem.shouldPatrol(guard)
+					&& !GuardNeedsSystem.isOnBreak(guard)
+					&& !SleepWarningSystem.hasWakeAssignment(guard)
 					? AINodeResult.SUCCESS
 					: AINodeResult.FAILURE;
 		}
@@ -106,7 +111,9 @@ public class WarningBellGuardAIPatch {
 
 		@Override
 		public AINodeResult tick(Mob mob, Blackboard blackboard) {
-			return GuardFatigueSystem.isRestAwakenedByCombat((GuardHumanMob)mob)
+			GuardHumanMob guard = (GuardHumanMob)mob;
+			return GuardFatigueSystem.isRestAwakenedByCombat(guard)
+					&& !SleepWarningSystem.hasWakeAssignment(guard)
 					? AINodeResult.SUCCESS
 					: AINodeResult.FAILURE;
 		}

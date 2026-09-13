@@ -453,6 +453,30 @@ Also, sleep is not possible during the day.
 
 ---
 
+## Sleep Settings
+
+In your Settlement Menu, first button "Settings", you will find a new **Sleep Settings** option.
+These settings are all checked by default, and enable guard settlers to wake you up during the night
+in different situations:
+- When a zombie attacks a barrier (doors, fences, gates)
+- When a zombie destroys a barrier
+- When a raid is approaching
+
+If you want to micromanage your defenses, you should leave these alerts enabled.
+When one of these events occurs, a guard will come to wake you and warn you about the danger.
+Also, you must have at least one guard in your employ, otherwise no one will warn you at all.
+
+On the other hand, if you have complete confidence in your guards, you can disable all alerts and
+then check in the morning if they were able to repel an unexpected night raid with no casualties or stolen items.
+
+Important Notes:
+- Zombie barrier attack and breach alerts only happen if your guards notice them,
+either by hearing an alarm bell or by witnessing the attack themselves.
+- Chat will not be visible while sleeping. That means, while sleeping, raid alerts will not be shown on chat.
+Only guards can notice the incoming raid and wake you up.
+
+---
+
 ## Server settings
 
 The **unloadSettlements** server setting is disabled in this mod.

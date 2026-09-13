@@ -31,6 +31,7 @@ import opus.object.BuilderJobRequestBulletinObject;
 import opus.object.WarningBellObject;
 import opus.settler.BuilderRequestLevelData;
 import opus.settler.BuilderSettler;
+import opus.sleep.SettlementSleepSettingsLevelData;
 
 @ModEntry
 public class SettlementBuilders {
@@ -90,6 +91,7 @@ public class SettlementBuilders {
 		LevelDataRegistry.registerLevelData(DamageRepairLevelData.managerKey, DamageRepairLevelData.class);
 		LevelDataRegistry.registerLevelData(WeatheringLevelData.managerKey, WeatheringLevelData.class);
 		LevelDataRegistry.registerLevelData(BuilderRequestLevelData.managerKey, BuilderRequestLevelData.class);
+		LevelDataRegistry.registerLevelData(SettlementSleepSettingsLevelData.managerKey, SettlementSleepSettingsLevelData.class);
 
 		JobTypeRegistry.registerType(
 				"construction",
@@ -131,6 +133,9 @@ public class SettlementBuilders {
 		PacketRegistry.registerPacket(PacketWarningBellRing.class);
 		PacketRegistry.registerPacket(PacketGuardDutyToggle.class);
 		PacketRegistry.registerPacket(PacketGuardFatigueUpdate.class);
+		PacketRegistry.registerPacket(PacketSettlementSleepSettingsRequest.class);
+		PacketRegistry.registerPacket(PacketSettlementSleepSettingsSync.class);
+		PacketRegistry.registerPacket(PacketSettlementSleepSettingsUpdate.class);
 	}
 
 	public void postInit() {

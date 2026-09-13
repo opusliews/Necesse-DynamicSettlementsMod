@@ -6,6 +6,7 @@ import necesse.entity.mobs.friendly.human.GuardHumanMob;
 import necesse.entity.mobs.friendly.human.HumanMob;
 import net.bytebuddy.asm.Advice;
 import opus.guard.GuardDutySystem;
+import opus.sleep.SleepWarningSystem;
 
 @ModMethodPatch(target = HumanSleepAINode.class, name = "shouldSleep", arguments = {HumanMob.class})
 public class GuardDutySleepPatch {
@@ -19,6 +20,11 @@ public class GuardDutySleepPatch {
 		}
 
 		GuardHumanMob guard = (GuardHumanMob)mob;
+		if (SleepWarningSystem.hasWakeAssignment(guard) || SleepWarningSystem.isRaidActiveForGuard(guard)) {
+			result = false;
+			return;
+		}
+
 		if (GuardDutySystem.usesNightSchedule(guard)) {
 			result = guard.isHiding || !guard.getWorldEntity().isNight();
 		}

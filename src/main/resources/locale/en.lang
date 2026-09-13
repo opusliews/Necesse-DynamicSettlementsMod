@@ -55,6 +55,11 @@ fatiguedmgin=Damage taken: +<penalty>%
 fatigueincapacitated=Incapacitated
 fatiguehelp=\n\nFatigue decreases with each sleep cycle uninterrupted by combat.
 staringattheceiling=Staring at the ceiling
+sleepsettingsbutton=Sleep Settings
+sleepwakewhen=Have guards wake me up when:
+sleepwakeraid=Raids detected
+sleepwakebarrierattack=Zombies attack barriers
+sleepwakebarrierbreach=Zombies breach barriers
 
 [itemtooltip]
 blueprintemptytip=Click [input=mouse2] to create a new blueprint
@@ -77,3 +82,6 @@ blueprintplaceunbreakable=This blueprint overlaps an object that cannot be remov
 blueprintplacefluid=Some objects in this blueprint do not have a solid tile underneath them.\nThe tile was probably excluded when the blueprint was created or edited.\n\nThese objects cannot be placed over fluids.\n\nFill the affected fluid tiles with solid tiles, or place the blueprint somewhere else.
 projecteraseothersettlement=You can only cancel projects in a settlement you belong to.
 projecterased=Blueprint project cancelled.
+sleepwarningraid=We have a raid incoming!
+sleepwarningbarrierattack=We have zombies attacking our defences!
+sleepwarningbarrierbreach=We have zombies breaching our defences!
