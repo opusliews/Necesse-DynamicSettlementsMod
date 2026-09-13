@@ -13,7 +13,10 @@ import necesse.entity.mobs.ai.behaviourTree.util.AIMover;
 import necesse.entity.mobs.friendly.human.GuardHumanMob;
 import net.bytebuddy.asm.Advice;
 import opus.breaching.WarningBellSystem;
+import opus.guard.GuardDutySystem;
+import opus.guard.GuardNeedsSystem;
 import opus.guard.NightGuardPatrolAINode;
+import opus.guard.NightGuardTargetFinderAI;
 
 @ModConstructorPatch(target = BehaviourTreeAI.class, arguments = {Mob.class, AINode.class, AIMover.class})
 public class WarningBellGuardAIPatch {
@@ -28,6 +31,14 @@ public class WarningBellGuardAIPatch {
 		warningBellCombat.addChild(new WarningBellTargetAINode());
 		warningBellCombat.addChild(new ItemAttackerChaserAINode());
 		root.addChildBefore(root.humanJobsFollowAINode, warningBellCombat);
+
+		SequenceAINode patrolCombat = new SequenceAINode();
+		patrolCombat.addChild(new PatrolCombatConditionAINode());
+		patrolCombat.addChild(new NightGuardTargetFinderAI(640));
+		patrolCombat.addChild(new PatrolTargetActivityAINode());
+		patrolCombat.addChild(new ItemAttackerChaserAINode());
+		root.addChildBefore(root.humanJobsFollowAINode, patrolCombat);
+
 		root.addChildBefore(root.humanJobsFollowAINode, new NightGuardPatrolAINode());
 	}
 
@@ -56,4 +67,47 @@ public class WarningBellGuardAIPatch {
 			return AINodeResult.SUCCESS;
 		}
 	}
+	public static class PatrolCombatConditionAINode extends AINode {
+		@Override
+		protected void onRootSet(AINode root, Mob mob, Blackboard blackboard) {
+		}
+
+		@Override
+		public void init(Mob mob, Blackboard blackboard) {
+		}
+
+		@Override
+		public AINodeResult tick(Mob mob, Blackboard blackboard) {
+			GuardHumanMob guard = (GuardHumanMob)mob;
+			return GuardDutySystem.shouldPatrol(guard) && !GuardNeedsSystem.isOnBreak(guard)
+					? AINodeResult.SUCCESS
+					: AINodeResult.FAILURE;
+		}
+	}
+
+	public static class PatrolTargetActivityAINode extends AINode {
+		@Override
+		protected void onRootSet(AINode root, Mob mob, Blackboard blackboard) {
+		}
+
+		@Override
+		public void init(Mob mob, Blackboard blackboard) {
+		}
+
+		@Override
+		public AINodeResult tick(Mob mob, Blackboard blackboard) {
+			Mob target = (Mob)blackboard.getObject(Mob.class, "chaserTarget");
+			if (target != null) {
+				((GuardHumanMob)mob).setActivity(
+						"chaser",
+						20000,
+						new necesse.engine.localization.message.LocalMessage(
+								"activities", "attacking", "target", target.getLocalization()
+						)
+				);
+			}
+			return AINodeResult.SUCCESS;
+		}
+	}
+
 }

@@ -42,6 +42,14 @@ public class NightGuardPatrolAINode extends MoveTaskAINode {
 	@Override
 	public AINodeResult tickNode(Mob mob, Blackboard blackboard) {
 		GuardHumanMob guard = (GuardHumanMob)mob;
+		if (GuardNeedsSystem.shouldYieldPatrolForBreak(guard)) {
+			clearTarget(guard);
+			if (blackboard.mover.isCurrentlyMovingFor(this)) {
+				blackboard.mover.stopMoving(guard);
+			}
+			return AINodeResult.FAILURE;
+		}
+
 		if (!GuardDutySystem.shouldPatrol(guard)) {
 			clearTarget(guard);
 			if (blackboard.mover.isCurrentlyMovingFor(this)) {

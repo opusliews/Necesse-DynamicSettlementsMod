@@ -21,6 +21,7 @@ import necesse.level.gameObject.DoorObject;
 import necesse.level.gameObject.GameObject;
 import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
+import opus.guard.GuardNeedsSystem;
 import opus.logging.Logging;
 import opus.network.PacketWarningBellRing;
 import opus.object.WarningBellObject;
@@ -196,6 +197,44 @@ public final class WarningBellSystem {
 				.forEach(guards::add);
 		guards.sort(Comparator.comparingInt(Mob::getUniqueID));
 
+		List<GuardHumanMob> nonBreakGuards = new ArrayList<>();
+		List<GuardHumanMob> breakGuards = new ArrayList<>();
+		for (GuardHumanMob guard : guards) {
+			if (GuardNeedsSystem.isOnBreak(guard)) {
+				breakGuards.add(guard);
+			}
+			else {
+				nonBreakGuards.add(guard);
+			}
+		}
+
+		boolean allNonBreakGuardsInCombat = nonBreakGuards.isEmpty();
+		if (!nonBreakGuards.isEmpty()) {
+			allNonBreakGuardsInCombat = true;
+			for (GuardHumanMob guard : nonBreakGuards) {
+				if (!GuardNeedsSystem.isInCombat(guard)) {
+					allNonBreakGuardsInCombat = false;
+					break;
+				}
+			}
+		}
+
+		List<GuardHumanMob> respondingGuards = new ArrayList<>(nonBreakGuards);
+		if (allNonBreakGuardsInCombat && !breakGuards.isEmpty()) {
+			breakGuards.sort((a, b) -> {
+				int aPriority = GuardNeedsSystem.getBreakType(a) == GuardNeedsSystem.BreakType.RECREATION ? 0 : 1;
+				int bPriority = GuardNeedsSystem.getBreakType(b) == GuardNeedsSystem.BreakType.RECREATION ? 0 : 1;
+				int priorityCompare = Integer.compare(aPriority, bPriority);
+				return priorityCompare != 0 ? priorityCompare : Integer.compare(a.getUniqueID(), b.getUniqueID());
+			});
+
+			GuardHumanMob interruptedGuard = breakGuards.get(0);
+			GuardNeedsSystem.interruptBreak(interruptedGuard);
+			respondingGuards.add(interruptedGuard);
+			Logging.logMessage("WarningBell: interrupted guard " + interruptedGuard.getUniqueID()
+					+ " break because all other available guards are already in combat");
+		}
+
 		List<ThreatCandidate> threats = new ArrayList<>();
 		for (Map.Entry<Point, AlertState> entry : state.alerts.entrySet()) {
 			for (int attackerUniqueID : entry.getValue().attackers) {
@@ -206,7 +245,7 @@ public final class WarningBellSystem {
 			}
 		}
 
-		if (threats.isEmpty()) {
+		if (threats.isEmpty() || respondingGuards.isEmpty()) {
 			state.guardAssignments.clear();
 			return;
 		}
@@ -219,7 +258,7 @@ public final class WarningBellSystem {
 		}
 
 		Map<Integer, GuardAssignment> assignments = new HashMap<>();
-		for (GuardHumanMob guard : guards) {
+		for (GuardHumanMob guard : respondingGuards) {
 			List<ThreatCandidate> candidates = new ArrayList<>(threats);
 			candidates.sort((a, b) -> {
 				int alertCompare = Integer.compare(alertLoad.get(a.alertTile), alertLoad.get(b.alertTile));
@@ -248,7 +287,7 @@ public final class WarningBellSystem {
 		state.guardAssignments.clear();
 		state.guardAssignments.putAll(assignments);
 
-		for (GuardHumanMob guard : guards) {
+		for (GuardHumanMob guard : respondingGuards) {
 			GuardAssignment assignment = assignments.get(guard.getUniqueID());
 			if (assignment == null || guard.ai == null) continue;
 
