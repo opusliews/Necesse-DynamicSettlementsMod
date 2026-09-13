@@ -28,7 +28,6 @@ import necesse.entity.mobs.ai.behaviourTree.util.TargetFinderDistance;
 import necesse.entity.mobs.friendly.FriendlyMob;
 import necesse.entity.mobs.friendly.PolarBearMob;
 import necesse.level.maps.levelData.settlementData.ZoneTester;
-import opus.damage.HardcoreFeatures;
 import net.bytebuddy.asm.Advice;
 
 @ModConstructorPatch(
@@ -58,19 +57,11 @@ public class ZombiePassiveAggroPatch {
 			@Advice.Argument(0) Mob mob,
 			@Advice.Argument(value = 1, readOnly = false) AINode tree
 	) {
-		if (!HardcoreFeatures.isServerEnabled()) {
-			return;
-		}
-
 		tree = wrapWithZombiePanicAI(mob, tree);
 	}
 
 	@Advice.OnMethodExit
 	public static void onExit(@Advice.Argument(0) Mob mob, @Advice.Argument(1) AINode tree) {
-		if (!HardcoreFeatures.isServerEnabled()) {
-			return;
-		}
-
 		installZombieAggro(mob, tree);
 	}
 

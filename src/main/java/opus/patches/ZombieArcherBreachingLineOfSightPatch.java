@@ -14,7 +14,6 @@ import necesse.level.maps.CollisionFilter;
 import necesse.level.maps.LevelObjectHit;
 import net.bytebuddy.asm.Advice;
 import opus.breaching.ZombieBreaching;
-import opus.damage.HardcoreFeatures;
 
 @ModMethodPatch(
 		target = ChaserAINode.class,
@@ -32,7 +31,7 @@ public class ZombieArcherBreachingLineOfSightPatch {
 			@Advice.Argument(5) float hitBoxWidth,
 			@Advice.Return(readOnly = false) boolean result
 	) {
-		if (result || !HardcoreFeatures.isServerEnabled() || !(mob instanceof HostileArcherMob)
+		if (result || !(mob instanceof HostileArcherMob)
 				|| !ZombieBreaching.isZombie(mob) || target == null) {
 			return;
 		}

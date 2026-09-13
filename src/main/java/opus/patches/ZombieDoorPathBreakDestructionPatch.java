@@ -9,7 +9,6 @@ import necesse.level.gameObject.DoorObject;
 import necesse.level.maps.Level;
 import net.bytebuddy.asm.Advice;
 import opus.breaching.ZombieBreaching;
-import opus.damage.HardcoreFeatures;
 
 @ModMethodPatch(
 		target = DoorObject.class,
@@ -29,7 +28,7 @@ public class ZombieDoorPathBreakDestructionPatch {
 			@Advice.Argument(6) int hitY,
 			@Advice.Local("destroyed") boolean destroyed
 	) {
-		if (!HardcoreFeatures.isServerEnabled() || attacker == null) {
+		if (attacker == null) {
 			return false;
 		}
 

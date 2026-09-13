@@ -1,10 +1,6 @@
 package opus;
 
-import necesse.engine.GameEventListener;
-import necesse.engine.GameEvents;
-import necesse.engine.events.ServerClientConnectedEvent;
 import necesse.engine.localization.message.LocalMessage;
-import necesse.engine.modLoader.ModSettings;
 import necesse.engine.modLoader.annotations.ModEntry;
 import necesse.engine.network.PacketReader;
 import necesse.engine.registries.*;
@@ -17,10 +13,8 @@ import opus.armor.BuilderHatArmorItem;
 import opus.armor.BuilderShirtArmorItem;
 import opus.blueprint.BlueprintAreaLevelData;
 import opus.buff.MalignanceGogglesBuff;
-import opus.config.SettlementBuildersSettings;
 import opus.container.BlueprintWorkstationContainer;
 import opus.damage.DamageRepairLevelData;
-import opus.damage.HardcoreFeatures;
 import opus.damage.WeatheringLevelData;
 import opus.forms.BlueprintWorkstationContainerForm;
 import opus.item.BlueprintItem;
@@ -40,13 +34,8 @@ import opus.settler.BuilderSettler;
 
 @ModEntry
 public class SettlementBuilders {
-	public static final SettlementBuildersSettings settings = new SettlementBuildersSettings();
 	public static int blueprintWorkstationContainerID;
 	public static boolean debugBlueprintMaterialGrant = false;
-
-	public ModSettings initSettings() {
-		return settings;
-	}
 
 	public void init() {
 		// Registrations
@@ -134,7 +123,6 @@ public class SettlementBuilders {
 		PacketRegistry.registerPacket(PacketRemoveBlueprintArea.class);
 		PacketRegistry.registerPacket(PacketBuilderTilePlaceSound.class);
 		PacketRegistry.registerPacket(PacketBuilderObjectPlaceSound.class);
-		PacketRegistry.registerPacket(PacketHardcoreFeaturesSetting.class);
 		PacketRegistry.registerPacket(PacketEraseBlueprintProject.class);
 		PacketRegistry.registerPacket(PacketBlueprintBlockedState.class);
 		PacketRegistry.registerPacket(PacketBuilderRoadRepairToggle.class);
@@ -142,20 +130,6 @@ public class SettlementBuilders {
 		PacketRegistry.registerPacket(PacketInspectionGlassData.class);
 		PacketRegistry.registerPacket(PacketWarningBellRing.class);
 		PacketRegistry.registerPacket(PacketGuardDutyToggle.class);
-
-		GameEvents.addListener(
-				ServerClientConnectedEvent.class,
-				new GameEventListener<ServerClientConnectedEvent>() {
-					@Override
-					public void onEvent(ServerClientConnectedEvent event) {
-						event.client.sendPacket(
-								new PacketHardcoreFeaturesSetting(
-										HardcoreFeatures.isServerEnabled()
-								)
-						);
-					}
-				}
-		);
 	}
 
 	public void postInit() {

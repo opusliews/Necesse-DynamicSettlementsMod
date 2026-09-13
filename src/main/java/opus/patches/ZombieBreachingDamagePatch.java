@@ -6,13 +6,12 @@ import necesse.level.gameObject.DoorObject;
 import necesse.level.maps.LevelObject;
 import net.bytebuddy.asm.Advice;
 import opus.breaching.ZombieBreaching;
-import opus.damage.HardcoreFeatures;
 
 @ModMethodPatch(target = Mob.class, name = "getPathBreakDownDamage", arguments = {LevelObject.class})
 public class ZombieBreachingDamagePatch {
 	@Advice.OnMethodExit
 	static void onExit(@Advice.This Mob mob, @Advice.Argument(0) LevelObject lo, @Advice.Return(readOnly = false) int result) {
-		if (!HardcoreFeatures.isServerEnabled() || !ZombieBreaching.isZombie(mob) || lo == null || lo.object == null) {
+		if (!ZombieBreaching.isZombie(mob) || lo == null || lo.object == null) {
 			return;
 		}
 

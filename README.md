@@ -1,6 +1,6 @@
 # Settlement Builders
 
-Settlement Builders is a Necesse mod that adds a dedicated **Builder settler**, reusable **construction blueprints**, persistent construction projects, and optional hardcore building damage/weathering rules.
+Settlement Builders is a Necesse mod that adds a dedicated **Builder settler**, reusable **construction blueprints**, persistent construction projects, and persistent building damage/weathering rules.
 
 The goal is to make large-scale settlement construction practical without turning it into instant automation: the player still plans buildings, supplies materials, keeps Builders happy, and deals with damaged or neglected structures, while Builders handle the repetitive physical work.
 
@@ -14,7 +14,7 @@ The goal is to make large-scale settlement construction practical without turnin
 - Missing materials and other blocked states are shown directly on the blueprint project.
 - **Blueprint Workstation** for renaming, editing, copying, and sharing blueprints.
 - **Project Eraser** for cancelling placed blueprint projects.
-- Optional (enabled by default) **Hardcore Damage** mode where normal passive damage recovery is disabled,\
+- **Persistent Damage** system where normal passive damage recovery is disabled,\
 Builders must perform repairs, and rain causes weathering damage over time to placed objects.
 - This mod is required on both the client and server.
 
@@ -205,15 +205,9 @@ The requested items are always rocks and metal bars, with the specific materials
 
 ---
 
-# Hardcore Damage
+# Persistent Damage and Repairs
 
-The **Settlement Builders Mod™** includes an optional setting called **Hardcore Damage**.
-
-This setting is enabled by default. To disable it, run the game with the mod installed once,
-and the configuration file will be automatically created in the directory: **%APPDATA%\Necesse\cfg\mods**
-(or wherever the game is saving its configuration settings in your particular machine)
-
-**Hardcore Damage** features:
+Damage and repair rules:
 
 - Damaged tiles and objects (by the player, explosions, etc) no longer recover naturally over time.
 - Damage remains until repaired, and players cannot do repairs, save for breaking it and replacing it.
@@ -235,7 +229,7 @@ The time to repair a single block is the same as the blueprint block placing tim
 
 # Object weathering
 
-With Hardcore Damage enabled, many player-placed (or Builder-placed)
+Many player-placed (or Builder-placed)
 objects will slowly deteriorate when exposed to rain.
 
 Naturally generated world structures will not deteriorate.
@@ -388,6 +382,24 @@ zombies will attempt to break through the barrier.
 - Zombie arrows will not go through fences, but it will damage them.
 - Zombies will not try to get into houses normally, but if a zombie sees
 a player or npc entering a building, they will attack the door and try to get inside.
+
+---
+
+## Guard updates
+
+With the need for the settlement to be secure at night, guard type settlers have been changed.
+
+Guards can now be assigned to night duty, via the right click dialogue options.
+Those guards will sleep during the day and patrol the settlement at night.
+Guards will kill zombies that they encounter in their patrols.
+
+Guards that work at night will take shifts for food and recreation activities.
+Only one guard at a time will be allowed recreational activities. This means that a settlement with a single
+night guard will have their recreation needs never be fulfilled, leading to ever decreasing happiness and strikes.
+
+Exception: a sole night guard will however still be allowed to eat.
+
+If a **Warning Bell** is rung (details below) a night guard will be called to defend that area.
 
 ---
 

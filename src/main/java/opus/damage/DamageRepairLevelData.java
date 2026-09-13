@@ -24,8 +24,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class DamageRepairLevelData extends LevelData implements RegionLoadedListenerEntityComponent {
-	// Persistent save key. Do not rename, or existing worlds can lose access to saved repair data.
-	public static final String managerKey = "opushardcoredamage";
+	public static final String managerKey = "opusdamagerepair";
 	public static final long repairDebounceTime = 10000L;
 	private static final long pendingCheckInterval = 1000L;
 	private static final int fenceRepairBatchSize = 20;
@@ -54,7 +53,7 @@ public class DamageRepairLevelData extends LevelData implements RegionLoadedList
 	}
 
 	public void recordDamage(AbstractDamageResult result, int objectLayerID) {
-		if (!isServer() || !HardcoreFeatures.isEnabled(level) || result == null || result.destroyed) {
+		if (!isServer() || result == null || result.destroyed) {
 			return;
 		}
 
@@ -75,7 +74,7 @@ public class DamageRepairLevelData extends LevelData implements RegionLoadedList
 
 	@Override
 	public void onLoadingComplete() {
-		if (!isServer() || !HardcoreFeatures.isEnabled(level)) {
+		if (!isServer()) {
 			return;
 		}
 
@@ -84,7 +83,7 @@ public class DamageRepairLevelData extends LevelData implements RegionLoadedList
 
 	@Override
 	public void onRegionLoaded(Region region) {
-		if (!isServer() || !HardcoreFeatures.isEnabled(level)) {
+		if (!isServer()) {
 			return;
 		}
 
@@ -95,7 +94,7 @@ public class DamageRepairLevelData extends LevelData implements RegionLoadedList
 
 	@Override
 	public void tick() {
-		if (!isServer() || !HardcoreFeatures.isEnabled(level) || pendingRepairs.isEmpty()) {
+		if (!isServer() || pendingRepairs.isEmpty()) {
 			return;
 		}
 

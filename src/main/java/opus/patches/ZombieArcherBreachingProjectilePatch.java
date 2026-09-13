@@ -15,7 +15,6 @@ import necesse.level.maps.LevelObjectHit;
 import net.bytebuddy.asm.Advice;
 import opus.breaching.WarningBellSystem;
 import opus.breaching.ZombieBreaching;
-import opus.damage.HardcoreFeatures;
 import opus.damage.WeatheringMaterialTier;
 import opus.logging.Logging;
 
@@ -53,7 +52,7 @@ public class ZombieArcherBreachingProjectilePatch {
 			return;
 		}
 
-		if (!projectile.isServer() || !HardcoreFeatures.isServerEnabled() || !ZombieBreaching.isBreachingObject(owner, lo)) {
+		if (!projectile.isServer() || !ZombieBreaching.isBreachingObject(owner, lo)) {
 			return;
 		}
 

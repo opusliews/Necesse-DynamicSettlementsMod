@@ -13,7 +13,6 @@ import necesse.entity.mobs.ai.behaviourTree.util.AIMover;
 import necesse.entity.mobs.ai.behaviourTree.util.MoveToTileAITask;
 import net.bytebuddy.asm.Advice;
 import opus.breaching.ZombieBreaching;
-import opus.damage.HardcoreFeatures;
 
 import java.awt.*;
 
@@ -21,7 +20,7 @@ import java.awt.*;
 public class ZombieBreachingAIPatch {
 	@Advice.OnMethodExit
 	public static void onExit(@Advice.Argument(0) Mob mob, @Advice.Argument(1) AINode tree) {
-		if (!HardcoreFeatures.isServerEnabled() || !ZombieBreaching.isZombie(mob)) {
+		if (!ZombieBreaching.isZombie(mob)) {
 			return;
 		}
 

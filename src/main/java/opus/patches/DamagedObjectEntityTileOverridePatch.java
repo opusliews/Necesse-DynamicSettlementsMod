@@ -5,7 +5,6 @@ import necesse.entity.DamagedObjectEntity;
 import necesse.entity.TileDamageResult;
 import net.bytebuddy.asm.Advice;
 import opus.damage.DamageRepairLevelData;
-import opus.damage.HardcoreFeatures;
 
 @ModMethodPatch(target = DamagedObjectEntity.class, name = "doTileDamageOverride", arguments = {int.class})
 public class DamagedObjectEntityTileOverridePatch {
@@ -14,7 +13,7 @@ public class DamagedObjectEntityTileOverridePatch {
 			@Advice.This DamagedObjectEntity entity,
 			@Advice.Return TileDamageResult result
 	) {
-		if (!entity.isServer() || !HardcoreFeatures.isServerEnabled() || result == null) {
+		if (!entity.isServer() || result == null) {
 			return;
 		}
 
