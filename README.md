@@ -441,6 +441,16 @@ settlement if zombies breach any doors, fences or gates.
 
 ---
 
+## Sleep changes
+
+On this mod, sleep is not a simple time skip as it is in Vanilla Necesse.
+
+When you sleep, the world will still be simulated. Everything that would happen if you play normally
+through the night will still happen as you sleep. That means, for example, if you don't have
+any night guards, you may wake up and see a broken fence and all of your livestock dead.
+
+---
+
 # Design Notes
 
 Settlement Builders is not supposed to be a creative-mode construction system.
