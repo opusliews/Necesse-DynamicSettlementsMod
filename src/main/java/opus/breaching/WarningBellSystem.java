@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.WeakHashMap;
 
 import necesse.engine.registries.ObjectLayerRegistry;
+import necesse.engine.world.worldData.SettlementsWorldData;
 import necesse.engine.util.GameUtils;
 import necesse.entity.mobs.Mob;
 import necesse.entity.mobs.ai.behaviourTree.event.AIEvent;
@@ -21,6 +22,7 @@ import necesse.level.gameObject.DoorObject;
 import necesse.level.gameObject.GameObject;
 import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
+import opus.guard.GuardFatigueSystem;
 import opus.guard.GuardNeedsSystem;
 import opus.logging.Logging;
 import opus.network.PacketWarningBellRing;
@@ -71,7 +73,7 @@ public final class WarningBellSystem {
 			AlertState alert = state.alerts.get(alertTile);
 			boolean newAlert = alert == null;
 			if (alert == null) {
-				alert = new AlertState(now + alertLifetimeMs);
+				alert = new AlertState(now + alertLifetimeMs, getSettlementUniqueID(level, lo.tileX, lo.tileY));
 				state.alerts.put(alertTile, alert);
 			}
 			alert.expiresAt = now + alertLifetimeMs;
@@ -97,6 +99,33 @@ public final class WarningBellSystem {
 			if (newAlert || newAttacker || state.guardAssignments.isEmpty() || now - state.lastRebalance >= rebalanceCooldownMs) {
 				rebalanceGuards(level, state, now);
 			}
+		}
+	}
+
+	public static void onZombieBarrierBroken(Mob zombie, GameObject object, int tileX, int tileY) {
+		if (zombie == null || object == null || zombie.getLevel() == null || !zombie.getLevel().isServer()) {
+			return;
+		}
+
+		Level level = zombie.getLevel();
+		long now = level.getTime();
+		LevelState state = getState(level);
+		synchronized (state) {
+			pruneFinishedAlerts(level, state, now);
+			Point alertTile = new Point(tileX, tileY);
+			AlertState alert = state.alerts.get(alertTile);
+			if (alert == null) {
+				alert = new AlertState(now + alertLifetimeMs, getSettlementUniqueID(level, tileX, tileY));
+				state.alerts.put(alertTile, alert);
+			}
+
+			alert.expiresAt = now + alertLifetimeMs;
+			alert.safeSince = -1L;
+			alert.emergency = true;
+			alert.attackers.add(zombie.getUniqueID());
+			Logging.logMessage("WarningBell: zombie destroyed " + object.getStringID() + " at "
+					+ tileX + "," + tileY + ", escalating to all available guards");
+			rebalanceGuards(level, state, now);
 		}
 	}
 
@@ -194,14 +223,44 @@ public final class WarningBellSystem {
 				.filter(mob -> mob instanceof GuardHumanMob)
 				.map(mob -> (GuardHumanMob)mob)
 				.filter(guard -> guard.isSettlerOnCurrentLevel() && !guard.hasCommandOrders())
-				.forEach(guards::add);
+				.forEach(guard -> {
+					int settlementUniqueID = guard.getSettlementUniqueID();
+					boolean hasAlert = state.alerts.values().stream()
+							.anyMatch(alert -> alert.settlementUniqueID == settlementUniqueID);
+					if (!hasAlert) {
+						return;
+					}
+
+					boolean emergency = state.alerts.values().stream()
+							.anyMatch(alert -> alert.settlementUniqueID == settlementUniqueID && alert.emergency);
+					if (emergency) {
+						if (!GuardFatigueSystem.canRespondToEmergency(guard)) {
+							return;
+						}
+						GuardFatigueSystem.markRestCombat(guard, "breach emergency");
+					}
+					else if (GuardFatigueSystem.isScheduledRestPeriod(guard)) {
+						return;
+					}
+
+					guards.add(guard);
+				});
 		guards.sort(Comparator.comparingInt(Mob::getUniqueID));
 
 		List<GuardHumanMob> nonBreakGuards = new ArrayList<>();
 		List<GuardHumanMob> breakGuards = new ArrayList<>();
 		for (GuardHumanMob guard : guards) {
+			boolean emergencyForGuard = state.alerts.values().stream().anyMatch(
+					alert -> alert.settlementUniqueID == guard.getSettlementUniqueID() && alert.emergency
+			);
 			if (GuardNeedsSystem.isOnBreak(guard)) {
-				breakGuards.add(guard);
+				if (emergencyForGuard) {
+					GuardNeedsSystem.interruptBreak(guard);
+					nonBreakGuards.add(guard);
+				}
+				else {
+					breakGuards.add(guard);
+				}
 			}
 			else {
 				nonBreakGuards.add(guard);
@@ -240,7 +299,7 @@ public final class WarningBellSystem {
 			for (int attackerUniqueID : entry.getValue().attackers) {
 				Mob attacker = GameUtils.getLevelMob(attackerUniqueID, level);
 				if (attacker != null && !attacker.removed() && attacker.getHealth() > 0) {
-					threats.add(new ThreatCandidate(entry.getKey(), attacker));
+					threats.add(new ThreatCandidate(entry.getKey(), entry.getValue().settlementUniqueID, attacker));
 				}
 			}
 		}
@@ -259,7 +318,15 @@ public final class WarningBellSystem {
 
 		Map<Integer, GuardAssignment> assignments = new HashMap<>();
 		for (GuardHumanMob guard : respondingGuards) {
-			List<ThreatCandidate> candidates = new ArrayList<>(threats);
+			List<ThreatCandidate> candidates = new ArrayList<>();
+			for (ThreatCandidate threat : threats) {
+				if (threat.settlementUniqueID == guard.getSettlementUniqueID()) {
+					candidates.add(threat);
+				}
+			}
+			if (candidates.isEmpty()) {
+				continue;
+			}
 			candidates.sort((a, b) -> {
 				int alertCompare = Integer.compare(alertLoad.get(a.alertTile), alertLoad.get(b.alertTile));
 				if (alertCompare != 0) return alertCompare;
@@ -299,6 +366,15 @@ public final class WarningBellSystem {
 			Logging.logMessage("WarningBell: forced guard " + guard.getUniqueID()
 					+ " currentTarget to breach attacker " + attacker.getStringID() + "#" + attacker.getUniqueID());
 		}
+	}
+
+	private static int getSettlementUniqueID(Level level, int tileX, int tileY) {
+		if (level == null || !level.isServer() || level.getServer() == null) {
+			return 0;
+		}
+
+		return SettlementsWorldData.getSettlementsData(level.getServer())
+				.getSettlementUniqueIDAtTile(level.getIdentifier(), tileX, tileY);
 	}
 
 	private static long distanceSquared(int x1, int y1, int x2, int y2) {
@@ -381,10 +457,13 @@ public final class WarningBellSystem {
 	private static final class AlertState {
 		private long expiresAt;
 		private long safeSince = -1L;
+		private boolean emergency;
+		private final int settlementUniqueID;
 		private final Set<Integer> attackers = new HashSet<>();
 
-		private AlertState(long expiresAt) {
+		private AlertState(long expiresAt, int settlementUniqueID) {
 			this.expiresAt = expiresAt;
+			this.settlementUniqueID = settlementUniqueID;
 		}
 	}
 
@@ -400,10 +479,12 @@ public final class WarningBellSystem {
 
 	private static final class ThreatCandidate {
 		private final Point alertTile;
+		private final int settlementUniqueID;
 		private final Mob attacker;
 
-		private ThreatCandidate(Point alertTile, Mob attacker) {
+		private ThreatCandidate(Point alertTile, int settlementUniqueID, Mob attacker) {
 			this.alertTile = new Point(alertTile);
+			this.settlementUniqueID = settlementUniqueID;
 			this.attacker = attacker;
 		}
 	}

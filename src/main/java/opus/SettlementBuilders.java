@@ -130,6 +130,7 @@ public class SettlementBuilders {
 		PacketRegistry.registerPacket(PacketInspectionGlassData.class);
 		PacketRegistry.registerPacket(PacketWarningBellRing.class);
 		PacketRegistry.registerPacket(PacketGuardDutyToggle.class);
+		PacketRegistry.registerPacket(PacketGuardFatigueUpdate.class);
 	}
 
 	public void postInit() {

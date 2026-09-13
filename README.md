@@ -414,6 +414,25 @@ If a **Warning Bell** is rung (details below) a night guard will be called to de
 
 ---
 
+## Fatigue
+
+Guards now have a fatigue level. If a guard does not have a full night (or day) sleep,
+and they have to enter combat at their resting period, they will gain a fatigue point.
+
+Fatigue points accumulate up to ten, and get reduced by one
+every time they get a full peaceful sleep.
+
+Every fatigue point will decrease the damage they deal, decrease their
+movement speed and increase their damage taken.
+
+At level 10, fatigued guards will refuse to get out of bed, and if attacked
+will be unable to do any damage in retaliation.
+
+All sleeping guards at night will be woken up to defend the
+settlement if zombies breach any doors, fences or gates.
+
+---
+
 # Design Notes
 
 Settlement Builders is not supposed to be a creative-mode construction system.
