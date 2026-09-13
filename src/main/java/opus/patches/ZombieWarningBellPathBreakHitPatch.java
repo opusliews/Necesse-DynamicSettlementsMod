@@ -7,7 +7,6 @@ import necesse.level.maps.LevelObject;
 import net.bytebuddy.asm.Advice;
 import opus.breaching.WarningBellSystem;
 import opus.breaching.ZombieBreaching;
-import opus.damage.HardcoreFeatures;
 import opus.logging.Logging;
 
 @ModMethodPatch(
@@ -22,11 +21,10 @@ public class ZombieWarningBellPathBreakHitPatch {
 				+ (mob == null ? "null mob" : mob.getStringID())
 				+ " object=" + (lo == null || lo.object == null ? "null" : lo.object.getStringID()));
 		if (!mob.isServer()
-				|| !HardcoreFeatures.isServerEnabled()
 				|| !ZombieBreaching.isZombie(mob)
 				|| lo == null
 				|| lo.object == null) {
-			Logging.logMessage("WarningBell: path-break callback rejected by server/hardcore/zombie/null checks");
+			Logging.logMessage("WarningBell: path-break callback rejected by server/zombie/null checks");
 			return;
 		}
 

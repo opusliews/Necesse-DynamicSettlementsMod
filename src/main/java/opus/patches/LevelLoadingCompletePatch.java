@@ -4,7 +4,6 @@ import necesse.engine.modLoader.annotations.ModMethodPatch;
 import necesse.level.maps.Level;
 import net.bytebuddy.asm.Advice;
 import opus.damage.DamageRepairLevelData;
-import opus.damage.HardcoreFeatures;
 import opus.damage.WeatheringLevelData;
 import opus.settler.BuilderRequestLevelData;
 
@@ -18,9 +17,7 @@ public class LevelLoadingCompletePatch {
 
 		BuilderRequestLevelData.get(level, true);
 
-		if (HardcoreFeatures.isServerEnabled()) {
-			DamageRepairLevelData.get(level, true);
-			WeatheringLevelData.get(level, true);
-		}
+		DamageRepairLevelData.get(level, true);
+		WeatheringLevelData.get(level, true);
 	}
 }

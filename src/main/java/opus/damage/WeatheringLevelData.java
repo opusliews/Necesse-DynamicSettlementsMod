@@ -68,7 +68,7 @@ public class WeatheringLevelData extends LevelData implements
 
 	@Override
 	public void onLoadingComplete() {
-		if (!isServer() || !HardcoreFeatures.isEnabled(level)) {
+		if (!isServer()) {
 			return;
 		}
 
@@ -78,7 +78,7 @@ public class WeatheringLevelData extends LevelData implements
 
 	@Override
 	public void onRegionLoaded(Region region) {
-		if (!isServer() || !HardcoreFeatures.isEnabled(level)) {
+		if (!isServer()) {
 			return;
 		}
 
@@ -89,7 +89,7 @@ public class WeatheringLevelData extends LevelData implements
 
 	@Override
 	public void onObjectPlaced(GameObject object, int objectLayerID, int tileX, int tileY, ServerClient client) {
-		if (!isServer() || !HardcoreFeatures.isEnabled(level)) {
+		if (!isServer()) {
 			return;
 		}
 
@@ -101,7 +101,7 @@ public class WeatheringLevelData extends LevelData implements
 
 	@Override
 	public void onTilePlaced(GameTile tile, int tileX, int tileY, ServerClient client) {
-		if (!isServer() || !HardcoreFeatures.isEnabled(level)) {
+		if (!isServer()) {
 			return;
 		}
 
@@ -111,7 +111,7 @@ public class WeatheringLevelData extends LevelData implements
 
 	@Override
 	public void tick() {
-		if (!isServer() || !HardcoreFeatures.isEnabled(level)) {
+		if (!isServer()) {
 			return;
 		}
 

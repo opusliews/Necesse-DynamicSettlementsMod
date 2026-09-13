@@ -8,7 +8,6 @@ import necesse.level.maps.LevelObject;
 import net.bytebuddy.asm.Advice;
 import opus.breaching.ZombieBreaching;
 import opus.breaching.ZombieBreachingDamageLimiter;
-import opus.damage.HardcoreFeatures;
 
 @ModMethodPatch(
 		target = Mob.class,
@@ -19,7 +18,6 @@ public class ZombieBreachingPathBreakDownPatch {
 	@Advice.OnMethodEnter
 	static boolean onEnter(@Advice.This Mob mob, @Advice.Argument(0) LevelObject lo) {
 		boolean bypass = mob.isServer()
-				&& HardcoreFeatures.isServerEnabled()
 				&& ZombieBreaching.isBreachingObject(mob, lo);
 
 		if (bypass) {

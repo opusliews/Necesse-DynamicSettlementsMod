@@ -5,7 +5,6 @@ import necesse.entity.DamagedObjectEntity;
 import necesse.entity.ObjectDamageResult;
 import net.bytebuddy.asm.Advice;
 import opus.damage.DamageRepairLevelData;
-import opus.damage.HardcoreFeatures;
 
 @ModMethodPatch(
 		target = DamagedObjectEntity.class,
@@ -19,7 +18,7 @@ public class DamagedObjectEntityObjectOverridePatch {
 			@Advice.Argument(0) int objectLayerID,
 			@Advice.Return ObjectDamageResult result
 	) {
-		if (!entity.isServer() || !HardcoreFeatures.isServerEnabled() || result == null) {
+		if (!entity.isServer() || result == null) {
 			return;
 		}
 

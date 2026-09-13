@@ -14,7 +14,6 @@ import necesse.entity.mobs.job.activeJob.TileActiveJob;
 import necesse.level.maps.levelData.jobs.JobMoveToTile;
 import necesse.level.maps.levelData.jobs.TileLevelJob;
 import opus.damage.DamageRepairLevelData;
-import opus.damage.HardcoreFeatures;
 import opus.logging.Logging;
 import opus.mobs.BuilderHumanMob;
 import opus.network.PacketBuilderObjectPlaceSound;
@@ -43,7 +42,6 @@ public class RepairLevelJob extends TileLevelJob {
 	@Override
 	public boolean isValid() {
 		return super.isValid()
-				&& HardcoreFeatures.isEnabled(getLevel())
 				&& DamageRepairLevelData.isRepairReady(getLevel(), tileX, tileY);
 	}
 

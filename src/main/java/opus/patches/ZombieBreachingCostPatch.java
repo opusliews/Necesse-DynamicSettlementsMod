@@ -6,7 +6,6 @@ import necesse.level.gameObject.GameObject;
 import necesse.level.maps.Level;
 import net.bytebuddy.asm.Advice;
 import opus.breaching.ZombieBreaching;
-import opus.damage.HardcoreFeatures;
 
 @ModMethodPatch(target = Mob.class, name = "getPathBreakDownCost", arguments = {Level.class, int.class, int.class, GameObject.class})
 public class ZombieBreachingCostPatch {
@@ -19,7 +18,7 @@ public class ZombieBreachingCostPatch {
 			@Advice.Argument(3) GameObject object,
 			@Advice.Return(readOnly = false) double result
 	) {
-		if (!HardcoreFeatures.isServerEnabled() || !ZombieBreaching.isZombie(mob)) {
+		if (!ZombieBreaching.isZombie(mob)) {
 			return;
 		}
 
