@@ -54,6 +54,7 @@ fatiguemovespeed=Movement speed: -<penalty>%
 fatiguedmgin=Damage taken: +<penalty>%
 fatigueincapacitated=Incapacitated
 fatiguehelp=\n\nFatigue decreases with each sleep cycle uninterrupted by combat.
+staringattheceiling=Staring at the ceiling
 
 [itemtooltip]
 blueprintemptytip=Click [input=mouse2] to create a new blueprint
