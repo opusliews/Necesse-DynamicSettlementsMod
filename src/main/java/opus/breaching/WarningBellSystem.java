@@ -108,6 +108,24 @@ public final class WarningBellSystem {
 		}
 
 		Level level = zombie.getLevel();
+		Set<Point> bells = new HashSet<>();
+		if (object.isFence) {
+			Logging.logMessage("WarningBell: checking destroyed fence/gate network from "
+					+ tileX + "," + tileY + " before emergency wake-up");
+			collectFenceNetworkBells(level, tileX, tileY, bells);
+		}
+		else if (object instanceof DoorObject) {
+			Logging.logMessage("WarningBell: checking destroyed door at "
+					+ tileX + "," + tileY + " for adjacent warning bell before emergency wake-up");
+			collectDoorSideBells(level, tileX, tileY, bells);
+		}
+
+		if (bells.isEmpty()) {
+			Logging.logMessage("WarningBell: destroyed barrier at " + tileX + "," + tileY
+					+ " has no associated warning bell, emergency wake-up cancelled");
+			return;
+		}
+
 		long now = level.getTime();
 		LevelState state = getState(level);
 		synchronized (state) {
