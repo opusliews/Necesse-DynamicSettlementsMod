@@ -391,6 +391,17 @@ a player or npc entering a building, they will attack the door and try to get in
 
 ---
 
+## Warning Bells
+
+**Warning Bells** can be placed on the sides of walls and fences to alert guards when zombies attack nearby defenses.
+
+- A bell attached to a wall adjacent to a door will alert guards if that door is attacked by zombies.
+- A bell attached to a fence will ring when a zombie attacks any fence or fence gate connected to it, up to 50 connected blocks away.
+- When a bell rings, available guards will prioritize the zombie attacking the protected structure over unrelated wandering zombies.
+- Multiple guards and simultaneous alerts are distributed so guards do not all respond to the same breach when several areas need defending.
+
+---
+
 # Design Notes
 
 Settlement Builders is not supposed to be a creative-mode construction system.

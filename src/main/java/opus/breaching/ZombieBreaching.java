@@ -81,11 +81,6 @@ public final class ZombieBreaching {
 			return;
 		}
 
-		// Decide normal-route-vs-breach on the server thread, never from the
-		// tile pathfinder. Keep checking while normal movement is still possible;
-		// PathDoorOption caches region paths and invalidates them when topology changes.
-		// Once breaching is required, keep that decision latched until the chosen
-		// barrier is gone or the target changes.
 		if (!state.breachRequired && state.activeBreachTile == null) {
 			Point targetTile = new Point(target.getTileX(), target.getTileY());
 			boolean normalRoute = state.normalPathDoorOption.canMoveToTile(
@@ -178,9 +173,6 @@ public final class ZombieBreaching {
 			return -1.0;
 		}
 
-		// Keep path selection proportional to actual breach time. A normal route is
-		// still preferred by canBreakDown(), so this mostly chooses the cheapest
-		// barrier when several breach points are possible.
 		return object.getBreakDownPathCost(level, tileX) * (double)(tier.getTier() + 1);
 	}
 
@@ -286,9 +278,6 @@ public final class ZombieBreaching {
 		public boolean canPathThroughCheckTile(SubRegion subregion, int tileX, int tileY) {
 			GameObject object = level.getObject(tileX, tileY);
 
-			// Region-level reachability must stay stable and cacheable. Treat every
-			// breakable fence/gate as potentially traversable here. Actual damage
-			// permission is handled separately by isBreachingObject().
 			if (object.isFence && isBreakableTier(object)) {
 				return true;
 			}
@@ -318,9 +307,6 @@ public final class ZombieBreaching {
 				return object instanceof DoorObject && !object.isFence;
 			}
 
-			// Pathfinding must always be allowed to plan through eligible fences/gates.
-			// Whether the zombie may actually damage the barrier is decided separately
-			// by isBreachingObject(), after the normal-route check has completed.
 			return object.isFence;
 		}
 

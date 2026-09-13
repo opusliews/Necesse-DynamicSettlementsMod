@@ -37,6 +37,7 @@ malignancegoggles=Malignance Goggles
 [object]
 blueprintworkstation=Blueprint Workstation
 builderjobrequestbulletin=Builder Job Request Bulletin
+warningbell=Warning Bell
 
 [controls]
 openbuilderform=Open Builder Form
