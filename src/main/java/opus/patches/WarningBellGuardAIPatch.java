@@ -14,9 +14,11 @@ import necesse.entity.mobs.friendly.human.GuardHumanMob;
 import net.bytebuddy.asm.Advice;
 import opus.breaching.WarningBellSystem;
 import opus.guard.GuardDutySystem;
+import opus.guard.GuardFatigueSystem;
 import opus.guard.GuardNeedsSystem;
 import opus.guard.NightGuardPatrolAINode;
 import opus.guard.NightGuardTargetFinderAI;
+import opus.guard.RestAwakenedGuardTargetFinderAI;
 
 @ModConstructorPatch(target = BehaviourTreeAI.class, arguments = {Mob.class, AINode.class, AIMover.class})
 public class WarningBellGuardAIPatch {
@@ -38,6 +40,13 @@ public class WarningBellGuardAIPatch {
 		patrolCombat.addChild(new PatrolTargetActivityAINode());
 		patrolCombat.addChild(new ItemAttackerChaserAINode());
 		root.addChildBefore(root.humanJobsFollowAINode, patrolCombat);
+
+		SequenceAINode restAwakenedCombat = new SequenceAINode();
+		restAwakenedCombat.addChild(new RestAwakenedCombatConditionAINode());
+		restAwakenedCombat.addChild(new RestAwakenedGuardTargetFinderAI(640));
+		restAwakenedCombat.addChild(new PatrolTargetActivityAINode());
+		restAwakenedCombat.addChild(new ItemAttackerChaserAINode());
+		root.addChildBefore(root.humanJobsFollowAINode, restAwakenedCombat);
 
 		root.addChildBefore(root.humanJobsFollowAINode, new NightGuardPatrolAINode());
 	}
@@ -67,6 +76,7 @@ public class WarningBellGuardAIPatch {
 			return AINodeResult.SUCCESS;
 		}
 	}
+
 	public static class PatrolCombatConditionAINode extends AINode {
 		@Override
 		protected void onRootSet(AINode root, Mob mob, Blackboard blackboard) {
@@ -80,6 +90,23 @@ public class WarningBellGuardAIPatch {
 		public AINodeResult tick(Mob mob, Blackboard blackboard) {
 			GuardHumanMob guard = (GuardHumanMob)mob;
 			return GuardDutySystem.shouldPatrol(guard) && !GuardNeedsSystem.isOnBreak(guard)
+					? AINodeResult.SUCCESS
+					: AINodeResult.FAILURE;
+		}
+	}
+
+	public static class RestAwakenedCombatConditionAINode extends AINode {
+		@Override
+		protected void onRootSet(AINode root, Mob mob, Blackboard blackboard) {
+		}
+
+		@Override
+		public void init(Mob mob, Blackboard blackboard) {
+		}
+
+		@Override
+		public AINodeResult tick(Mob mob, Blackboard blackboard) {
+			return GuardFatigueSystem.isRestAwakenedByCombat((GuardHumanMob)mob)
 					? AINodeResult.SUCCESS
 					: AINodeResult.FAILURE;
 		}
@@ -109,5 +136,4 @@ public class WarningBellGuardAIPatch {
 			return AINodeResult.SUCCESS;
 		}
 	}
-
 }
