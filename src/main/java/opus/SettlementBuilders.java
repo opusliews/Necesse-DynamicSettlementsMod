@@ -34,6 +34,7 @@ import opus.network.*;
 import opus.object.BlueprintWorkstationObject;
 import opus.object.BlueprintWorkstationObjectEntity;
 import opus.object.BuilderJobRequestBulletinObject;
+import opus.object.WarningBellObject;
 import opus.settler.BuilderRequestLevelData;
 import opus.settler.BuilderSettler;
 
@@ -72,7 +73,9 @@ public class SettlementBuilders {
 		ObjectRegistry.registerObject(
 				BuilderJobRequestBulletinObject.stringID,
 				new BuilderJobRequestBulletinObject(), 25.0F, true);
-
+		ObjectRegistry.registerObject(
+				WarningBellObject.stringID,
+				new WarningBellObject(), 60.0F, true);
 
 		blueprintWorkstationContainerID = ContainerRegistry.registerSettlementDependantOEContainer(
 				(client, uniqueSeed, settlement, oe, content) -> new BlueprintWorkstationContainerForm(
@@ -137,6 +140,7 @@ public class SettlementBuilders {
 		PacketRegistry.registerPacket(PacketBuilderRoadRepairToggle.class);
 		PacketRegistry.registerPacket(PacketRequestInspectionGlassData.class);
 		PacketRegistry.registerPacket(PacketInspectionGlassData.class);
+		PacketRegistry.registerPacket(PacketWarningBellRing.class);
 
 		GameEvents.addListener(
 				ServerClientConnectedEvent.class,
@@ -241,6 +245,16 @@ public class SettlementBuilders {
 				new Ingredient[]{
 						new Ingredient("stackofpaper", 1),
 						new Ingredient("quillandparchment", 1)
+				}
+		));
+
+		Recipes.registerModRecipe(new Recipe(
+				WarningBellObject.stringID,
+				1,
+				RecipeTechRegistry.WORKSTATION,
+				new Ingredient[]{
+						new Ingredient("goldbar", 3),
+						new Ingredient("ironbar", 1)
 				}
 		));
 	}

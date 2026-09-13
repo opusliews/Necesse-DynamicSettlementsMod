@@ -13,9 +13,11 @@ import necesse.level.gameObject.DoorObject;
 import necesse.level.maps.LevelObject;
 import necesse.level.maps.LevelObjectHit;
 import net.bytebuddy.asm.Advice;
+import opus.breaching.WarningBellSystem;
 import opus.breaching.ZombieBreaching;
 import opus.damage.HardcoreFeatures;
 import opus.damage.WeatheringMaterialTier;
+import opus.logging.Logging;
 
 @ModMethodPatch(
 		target = Projectile.class,
@@ -57,6 +59,9 @@ public class ZombieArcherBreachingProjectilePatch {
 
 		int damage = ZombieBreaching.getProjectileBreakDamage(owner, lo);
 		if (damage > 0) {
+			Logging.logMessage("WarningBell: zombie projectile hit eligible barrier at "
+					+ lo.tileX + "," + lo.tileY + ", forwarding alert");
+			WarningBellSystem.onZombieBarrierAttacked(owner, lo);
 			lo.object.onPathBreakDown(lo.level, lo.tileX, lo.tileY, damage, owner, (int)hitX, (int)hitY);
 		}
 	}
