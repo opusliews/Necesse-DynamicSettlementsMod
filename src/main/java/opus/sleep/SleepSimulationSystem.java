@@ -7,7 +7,6 @@ import necesse.engine.network.server.Server;
 import necesse.engine.world.WorldEntity;
 import necesse.inventory.container.BedContainer;
 import necesse.inventory.container.Container;
-import opus.logging.Logging;
 
 public final class SleepSimulationSystem {
 	private static final int startSpeed = 2;
@@ -66,7 +65,6 @@ public final class SleepSimulationSystem {
 		int targetSpeed = getRampSpeed(serverStartNanos);
 		if (targetSpeed != serverSpeed) {
 			serverSpeed = targetSpeed;
-			Logging.logMessage("SleepSimulation: real simulation speed increased to " + serverSpeed + "x");
 		}
 
 		applyTimeMod(serverSpeed);
@@ -104,6 +102,25 @@ public final class SleepSimulationSystem {
 		}
 	}
 
+	public static void prepareBedTick(BedContainer container) {
+		if (container == null || container.getClient() == null || container.getClient().playerMob == null) {
+			return;
+		}
+
+		WorldEntity worldEntity = container.getClient().playerMob.getWorldEntity();
+
+		if (worldEntity.isNight() || worldEntity.isSleeping()) {
+			return;
+		}
+
+		container.sleepTimer = 0;
+		container.nextWakeUpTime = 0L;
+
+		if (container.getClient().isClient()) {
+			container.sleepingPlayers = 0;
+		}
+	}
+
 	public static void stopServer(Server server) {
 		if (!serverActive) {
 			return;
@@ -115,8 +132,6 @@ public final class SleepSimulationSystem {
 
 		TickManager.globalTimeMod = serverPreviousTimeMod;
 		TickManager.skipDrawIfBehind = serverPreviousSkipDraw;
-		Logging.logMessage("SleepSimulation: ended, restored simulation speed to "
-				+ serverPreviousTimeMod + "x");
 
 		serverActive = false;
 		activeServer = null;
@@ -153,8 +168,6 @@ public final class SleepSimulationSystem {
 		serverPreviousSkipDraw = TickManager.skipDrawIfBehind;
 
 		applyTimeMod(serverSpeed);
-		Logging.logMessage("SleepSimulation: all players asleep, starting real simulation at "
-				+ serverSpeed + "x");
 	}
 
 	private static void startClientSleep(Client client) {
@@ -170,8 +183,6 @@ public final class SleepSimulationSystem {
 		clientSpeed = startSpeed;
 		beginAudioFade(AudioFadeState.FADING_OUT);
 
-		// A listen/singleplayer server shares TickManager statics with its local client.
-		// In that case the server side owns the time modifier and the client only fades audio.
 		clientControlsTimeMod = client.getLocalServer() == null;
 		if (clientControlsTimeMod) {
 			clientPreviousTimeMod = TickManager.globalTimeMod;
@@ -251,6 +262,11 @@ public final class SleepSimulationSystem {
 
 	private static boolean areAllPlayersSleeping(Server server) {
 		if (server.getPlayersOnline() <= 0) {
+			return false;
+		}
+
+		boolean continuingSleep = serverActive && activeServer == server;
+		if (!continuingSleep && !server.world.worldEntity.isNight()) {
 			return false;
 		}
 

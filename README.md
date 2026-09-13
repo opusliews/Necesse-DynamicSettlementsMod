@@ -449,6 +449,15 @@ When you sleep, the world will still be simulated. Everything that would happen 
 through the night will still happen as you sleep. That means, for example, if you don't have
 any night guards, you may wake up and see a broken fence and all of your livestock dead.
 
+Also, sleep is not possible during the day.
+
+---
+
+## Server settings
+
+The **unloadSettlements** server setting is disabled in this mod.
+All player-owned settlements are by design always loaded.
+
 ---
 
 # Design Notes
