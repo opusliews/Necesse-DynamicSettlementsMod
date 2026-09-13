@@ -16,19 +16,31 @@ import necesse.engine.registries.ObjectLayerRegistry;
 import necesse.engine.world.worldData.SettlementsWorldData;
 import necesse.engine.util.GameUtils;
 import necesse.entity.mobs.Mob;
-import necesse.entity.mobs.ai.behaviourTree.event.AIEvent;
 import necesse.entity.mobs.friendly.human.GuardHumanMob;
 import necesse.level.gameObject.DoorObject;
 import necesse.level.gameObject.GameObject;
 import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
+import opus.guard.GuardEmergencySystem;
 import opus.guard.GuardFatigueSystem;
 import opus.guard.GuardNeedsSystem;
 import opus.logging.Logging;
 import opus.network.PacketWarningBellRing;
 import opus.object.WarningBellObject;
+import opus.sleep.SleepWarningSystem;
 
 public final class WarningBellSystem {
+	private enum AlertPriority {
+		BARRIER_ATTACK(10),
+		BARRIER_BREACH(20);
+
+		private final int value;
+
+		AlertPriority(int value) {
+			this.value = value;
+		}
+	}
+
 	private static final int fenceAlertRange = 50;
 	private static final long bellCooldownMs = 10000L;
 	private static final long alertLifetimeMs = 20000L;
@@ -60,6 +72,11 @@ public final class WarningBellSystem {
 		}
 
 		Logging.logMessage("WarningBell: search found " + bells.size() + " bell(s): " + bells);
+		int settlementUniqueID = getSettlementUniqueID(level, lo.tileX, lo.tileY);
+		boolean witnessed = SleepWarningSystem.isBarrierWitnessed(level, settlementUniqueID, zombie);
+		if (!bells.isEmpty() || witnessed) {
+			SleepWarningSystem.onBarrierAttacked(level, settlementUniqueID);
+		}
 		if (bells.isEmpty()) {
 			Logging.logMessage("WarningBell: no matching bell found, alert stops here");
 			return;
@@ -73,7 +90,7 @@ public final class WarningBellSystem {
 			AlertState alert = state.alerts.get(alertTile);
 			boolean newAlert = alert == null;
 			if (alert == null) {
-				alert = new AlertState(now + alertLifetimeMs, getSettlementUniqueID(level, lo.tileX, lo.tileY));
+				alert = new AlertState(now + alertLifetimeMs, settlementUniqueID, AlertPriority.BARRIER_ATTACK);
 				state.alerts.put(alertTile, alert);
 			}
 			alert.expiresAt = now + alertLifetimeMs;
@@ -120,6 +137,11 @@ public final class WarningBellSystem {
 			collectDoorSideBells(level, tileX, tileY, bells);
 		}
 
+		int settlementUniqueID = getSettlementUniqueID(level, tileX, tileY);
+		boolean witnessed = SleepWarningSystem.isBarrierWitnessed(level, settlementUniqueID, zombie);
+		if (!bells.isEmpty() || witnessed) {
+			SleepWarningSystem.onBarrierBreached(level, settlementUniqueID);
+		}
 		if (bells.isEmpty()) {
 			Logging.logMessage("WarningBell: destroyed barrier at " + tileX + "," + tileY
 					+ " has no associated warning bell, emergency wake-up cancelled");
@@ -133,8 +155,11 @@ public final class WarningBellSystem {
 			Point alertTile = new Point(tileX, tileY);
 			AlertState alert = state.alerts.get(alertTile);
 			if (alert == null) {
-				alert = new AlertState(now + alertLifetimeMs, getSettlementUniqueID(level, tileX, tileY));
+				alert = new AlertState(now + alertLifetimeMs, settlementUniqueID, AlertPriority.BARRIER_BREACH);
 				state.alerts.put(alertTile, alert);
+			}
+			else {
+				alert.raisePriority(AlertPriority.BARRIER_BREACH);
 			}
 
 			alert.expiresAt = now + alertLifetimeMs;
@@ -149,6 +174,10 @@ public final class WarningBellSystem {
 
 	public static Mob getGuardTargetMob(GuardHumanMob guard) {
 		if (guard == null || guard.getLevel() == null || !guard.getLevel().isServer()) {
+			return null;
+		}
+
+		if (SleepWarningSystem.hasWakeAssignment(guard)) {
 			return null;
 		}
 
@@ -241,6 +270,7 @@ public final class WarningBellSystem {
 				.filter(mob -> mob instanceof GuardHumanMob)
 				.map(mob -> (GuardHumanMob)mob)
 				.filter(guard -> guard.isSettlerOnCurrentLevel() && !guard.hasCommandOrders())
+				.filter(guard -> !SleepWarningSystem.hasWakeAssignment(guard))
 				.forEach(guard -> {
 					int settlementUniqueID = guard.getSettlementUniqueID();
 					boolean hasAlert = state.alerts.values().stream()
@@ -317,7 +347,12 @@ public final class WarningBellSystem {
 			for (int attackerUniqueID : entry.getValue().attackers) {
 				Mob attacker = GameUtils.getLevelMob(attackerUniqueID, level);
 				if (attacker != null && !attacker.removed() && attacker.getHealth() > 0) {
-					threats.add(new ThreatCandidate(entry.getKey(), entry.getValue().settlementUniqueID, attacker));
+					threats.add(new ThreatCandidate(
+							entry.getKey(),
+							entry.getValue().settlementUniqueID,
+							entry.getValue().priority,
+							attacker
+					));
 				}
 			}
 		}
@@ -334,6 +369,7 @@ public final class WarningBellSystem {
 			alertLoad.putIfAbsent(threat.alertTile, 0);
 		}
 
+		Map<Integer, GuardAssignment> previousAssignments = new HashMap<>(state.guardAssignments);
 		Map<Integer, GuardAssignment> assignments = new HashMap<>();
 		for (GuardHumanMob guard : respondingGuards) {
 			List<ThreatCandidate> candidates = new ArrayList<>();
@@ -346,6 +382,9 @@ public final class WarningBellSystem {
 				continue;
 			}
 			candidates.sort((a, b) -> {
+				int priorityCompare = Integer.compare(b.priority.value, a.priority.value);
+				if (priorityCompare != 0) return priorityCompare;
+
 				int alertCompare = Integer.compare(alertLoad.get(a.alertTile), alertLoad.get(b.alertTile));
 				if (alertCompare != 0) return alertCompare;
 
@@ -360,13 +399,18 @@ public final class WarningBellSystem {
 			});
 
 			ThreatCandidate chosen = candidates.get(0);
-			assignments.put(guard.getUniqueID(), new GuardAssignment(chosen.alertTile, chosen.attacker.getUniqueID()));
+			assignments.put(guard.getUniqueID(), new GuardAssignment(
+					chosen.alertTile,
+					chosen.attacker.getUniqueID(),
+					chosen.priority
+			));
 			alertLoad.put(chosen.alertTile, alertLoad.get(chosen.alertTile) + 1);
 			attackerLoad.put(chosen.attacker.getUniqueID(), attackerLoad.get(chosen.attacker.getUniqueID()) + 1);
 			Logging.logMessage("WarningBell: assigned guard " + guard.getUniqueID()
 					+ " to attacker " + chosen.attacker.getStringID() + "#" + chosen.attacker.getUniqueID()
 					+ " at " + chosen.attacker.getTileX() + "," + chosen.attacker.getTileY()
-					+ " for alert " + chosen.alertTile.x + "," + chosen.alertTile.y);
+					+ " for alert " + chosen.alertTile.x + "," + chosen.alertTile.y
+					+ " priority=" + chosen.priority);
 		}
 
 		state.guardAssignments.clear();
@@ -379,10 +423,16 @@ public final class WarningBellSystem {
 			Mob attacker = GameUtils.getLevelMob(assignment.attackerUniqueID, level);
 			if (attacker == null || attacker.removed() || attacker.getHealth() <= 0) continue;
 
-			guard.ai.blackboard.put("currentTarget", attacker);
-			guard.ai.blackboard.submitEvent("resetPathTime", new AIEvent());
-			Logging.logMessage("WarningBell: forced guard " + guard.getUniqueID()
-					+ " currentTarget to breach attacker " + attacker.getStringID() + "#" + attacker.getUniqueID());
+			GuardAssignment previous = previousAssignments.get(guard.getUniqueID());
+			if (!assignment.matches(previous)) {
+				GuardEmergencySystem.preemptForTarget(guard, attacker);
+				Logging.logMessage("WarningBell: preempted guard " + guard.getUniqueID()
+						+ " for " + assignment.priority + " attacker "
+						+ attacker.getStringID() + "#" + attacker.getUniqueID());
+			}
+			else {
+				guard.ai.blackboard.put("currentTarget", attacker);
+			}
 		}
 	}
 
@@ -477,32 +527,51 @@ public final class WarningBellSystem {
 		private long safeSince = -1L;
 		private boolean emergency;
 		private final int settlementUniqueID;
+		private AlertPriority priority;
 		private final Set<Integer> attackers = new HashSet<>();
 
-		private AlertState(long expiresAt, int settlementUniqueID) {
+		private AlertState(long expiresAt, int settlementUniqueID, AlertPriority priority) {
 			this.expiresAt = expiresAt;
 			this.settlementUniqueID = settlementUniqueID;
+			this.priority = priority;
+		}
+
+		private void raisePriority(AlertPriority priority) {
+			if (priority.value > this.priority.value) {
+				this.priority = priority;
+			}
 		}
 	}
 
 	private static final class GuardAssignment {
 		private final Point alertTile;
 		private final int attackerUniqueID;
+		private final AlertPriority priority;
 
-		private GuardAssignment(Point alertTile, int attackerUniqueID) {
+		private GuardAssignment(Point alertTile, int attackerUniqueID, AlertPriority priority) {
 			this.alertTile = new Point(alertTile);
 			this.attackerUniqueID = attackerUniqueID;
+			this.priority = priority;
+		}
+
+		private boolean matches(GuardAssignment other) {
+			return other != null
+					&& alertTile.equals(other.alertTile)
+					&& attackerUniqueID == other.attackerUniqueID
+					&& priority == other.priority;
 		}
 	}
 
 	private static final class ThreatCandidate {
 		private final Point alertTile;
 		private final int settlementUniqueID;
+		private final AlertPriority priority;
 		private final Mob attacker;
 
-		private ThreatCandidate(Point alertTile, int settlementUniqueID, Mob attacker) {
+		private ThreatCandidate(Point alertTile, int settlementUniqueID, AlertPriority priority, Mob attacker) {
 			this.alertTile = new Point(alertTile);
 			this.settlementUniqueID = settlementUniqueID;
+			this.priority = priority;
 			this.attacker = attacker;
 		}
 	}
