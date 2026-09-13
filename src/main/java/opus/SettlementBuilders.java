@@ -141,6 +141,7 @@ public class SettlementBuilders {
 		PacketRegistry.registerPacket(PacketRequestInspectionGlassData.class);
 		PacketRegistry.registerPacket(PacketInspectionGlassData.class);
 		PacketRegistry.registerPacket(PacketWarningBellRing.class);
+		PacketRegistry.registerPacket(PacketGuardDutyToggle.class);
 
 		GameEvents.addListener(
 				ServerClientConnectedEvent.class,
