@@ -1,14 +1,21 @@
 package opus.guard;
 
 import java.awt.Point;
+import java.util.function.BiPredicate;
+import java.util.function.Supplier;
 
+import necesse.engine.gameLoop.tickManager.Performance;
 import necesse.engine.util.ComputedValue;
+import necesse.engine.util.GameMath;
 import necesse.engine.util.gameAreaSearch.GameAreaStream;
+import necesse.engine.util.pathfinding.PathResult;
 import necesse.entity.mobs.Mob;
 import necesse.entity.mobs.ai.behaviourTree.trees.HumanTargetFinderAI;
 import necesse.entity.mobs.ai.behaviourTree.util.TargetFinderDistance;
+import necesse.entity.mobs.ai.path.TilePathfinding;
 import necesse.entity.mobs.friendly.human.GuardHumanMob;
 import necesse.entity.mobs.friendly.human.HumanMob;
+import necesse.level.maps.levelData.settlementData.ZoneTester;
 
 public class NightGuardTargetFinderAI extends HumanTargetFinderAI {
 	public NightGuardTargetFinderAI(int searchDistance) {
@@ -33,7 +40,48 @@ public class NightGuardTargetFinderAI extends HumanTargetFinderAI {
 			return false;
 		}
 
-		return super.isValidTarget(mob, target, true, false, zoneTester, isNewTarget);
+		if (humanAngerTargetAINode.enemies.contains(target)) {
+			return true;
+		}
+
+		int maxDistance = isNewTarget ? 20 : 30;
+		Point baseTile = new Point(mob.getTileX(), mob.getTileY());
+		if (GameMath.squareDistance(
+				(float)baseTile.x,
+				(float)baseTile.y,
+				(float)target.getTileX(),
+				(float)target.getTileY()
+		) > (float)maxDistance) {
+			return false;
+		}
+
+		ZoneTester zone = (ZoneTester)zoneTester.get();
+		if (zone != null && !zone.containsTile(target.getTileX(), target.getTileY())) {
+			return false;
+		}
+
+		if (!isNewTarget) {
+			return true;
+		}
+
+		return (Boolean)Performance.record(mob.getLevel().tickManager(), "nightGuardTarget", (Supplier)(() -> {
+			BiPredicate isAtTarget = mob.canBeTargetedFromAdjacentTiles()
+					? TilePathfinding.isAtOrAdjacentObject(target.getLevel(), target.getTileX(), target.getTileY())
+					: null;
+			TilePathfinding pathfinding = new TilePathfinding(
+					mob.getLevel().tickManager(),
+					mob.getLevel(),
+					mob,
+					isAtTarget,
+					getBlackboard().mover.getPathOptions(this)
+			);
+			PathResult result = pathfinding.findPath(
+					baseTile,
+					new Point(target.getTileX(), target.getTileY()),
+					maxDistance + 5
+			);
+			return result.foundTarget;
+		}));
 	}
 
 	@Override
