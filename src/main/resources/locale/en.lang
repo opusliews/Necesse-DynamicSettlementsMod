@@ -46,6 +46,8 @@ openbuilderform=Open Builder Form
 blueprintselectarea=Create blueprint zone
 builderstartroadrepairs=Please do repairs and upgrades on the road
 builderstoproadrepairs=Please stop doing repairs and upgrades on the road
+guardswitchnightduty=Switch to Night Guard Duty
+guardswitchdayduty=Switch to Day Guard Duty
 
 [itemtooltip]
 blueprintemptytip=Click [input=mouse2] to create a new blueprint

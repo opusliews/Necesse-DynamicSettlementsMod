@@ -13,6 +13,7 @@ import necesse.entity.mobs.ai.behaviourTree.util.AIMover;
 import necesse.entity.mobs.friendly.human.GuardHumanMob;
 import net.bytebuddy.asm.Advice;
 import opus.breaching.WarningBellSystem;
+import opus.guard.NightGuardPatrolAINode;
 
 @ModConstructorPatch(target = BehaviourTreeAI.class, arguments = {Mob.class, AINode.class, AIMover.class})
 public class WarningBellGuardAIPatch {
@@ -27,6 +28,7 @@ public class WarningBellGuardAIPatch {
 		warningBellCombat.addChild(new WarningBellTargetAINode());
 		warningBellCombat.addChild(new ItemAttackerChaserAINode());
 		root.addChildBefore(root.humanJobsFollowAINode, warningBellCombat);
+		root.addChildBefore(root.humanJobsFollowAINode, new NightGuardPatrolAINode());
 	}
 
 	public static class WarningBellTargetAINode extends AINode {

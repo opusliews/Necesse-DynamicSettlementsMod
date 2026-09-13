@@ -2,11 +2,14 @@ package opus.patches;
 
 import necesse.engine.localization.message.LocalMessage;
 import necesse.engine.modLoader.annotations.ModMethodPatch;
+import necesse.entity.mobs.friendly.human.GuardHumanMob;
 import necesse.gfx.forms.presets.containerComponent.mob.ShopContainerForm;
 import necesse.inventory.container.mob.ShopContainer;
 import net.bytebuddy.asm.Advice;
+import opus.guard.GuardDutySystem;
 import opus.mobs.BuilderHumanMob;
 import opus.network.PacketBuilderRoadRepairToggle;
+import opus.network.PacketGuardDutyToggle;
 
 @ModMethodPatch(
 		target = ShopContainerForm.class,
@@ -16,7 +19,36 @@ import opus.network.PacketBuilderRoadRepairToggle;
 public class ShopContainerFormAdventurePartyPatch {
 	@Advice.OnMethodEnter(skipOn = Advice.OnNonDefaultValue.class)
 	static boolean onEnter(@Advice.This ShopContainerForm form) {
+		addGuardDutyOption(form);
 		return handleBuilderAdventurePartyOptions(form);
+	}
+
+	public static void addGuardDutyOption(ShopContainerForm form) {
+		ShopContainer container = (ShopContainer)form.getContainer();
+		if (!(container.humanShop instanceof GuardHumanMob)) {
+			return;
+		}
+
+		GuardHumanMob guard = (GuardHumanMob)container.humanShop;
+		if (!container.hasSettlerAccess
+				|| container.isInYourAdventureParty
+				|| container.isSettlerOutsideSettlement
+				|| !guard.isSettlerOnCurrentLevel()) {
+			return;
+		}
+
+		form.dialogueForm.addDialogueOption(
+				new LocalMessage(
+						"ui",
+						GuardDutySystem.isNightDuty(guard)
+								? "guardswitchdayduty"
+								: "guardswitchnightduty"
+				),
+				() -> {
+					boolean nightDuty = !GuardDutySystem.isNightDuty(guard);
+					form.getClient().network.sendPacket(new PacketGuardDutyToggle(guard.getUniqueID(), nightDuty));
+				}
+		);
 	}
 
 	public static boolean handleBuilderAdventurePartyOptions(ShopContainerForm form) {
