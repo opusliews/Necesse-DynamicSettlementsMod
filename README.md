@@ -385,6 +385,14 @@ a player or npc entering a building, they will attack the door and try to get in
 
 ---
 
+# Farmland changes
+
+Farmland tiles now have a chance to be trampled over by hostile mobs, or
+passive mobs as large or larger than a pig/sheep, destroying the farmland tile
+and any crops currently planted on it.
+
+---
+
 ## Guard updates
 
 With the need for the settlement to be secure at night, guard type settlers have been changed.
