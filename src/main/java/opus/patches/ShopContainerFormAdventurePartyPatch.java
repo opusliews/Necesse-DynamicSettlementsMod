@@ -6,6 +6,7 @@ import necesse.entity.mobs.friendly.human.GuardHumanMob;
 import necesse.gfx.forms.presets.containerComponent.mob.ShopContainerForm;
 import necesse.inventory.container.mob.ShopContainer;
 import net.bytebuddy.asm.Advice;
+import opus.guard.GuardDutyDialogueRefresh;
 import opus.guard.GuardDutySystem;
 import opus.mobs.BuilderHumanMob;
 import opus.network.PacketBuilderRoadRepairToggle;
@@ -37,6 +38,7 @@ public class ShopContainerFormAdventurePartyPatch {
 			return;
 		}
 
+		GuardDutyDialogueRefresh.track(guard, form);
 		form.dialogueForm.addDialogueOption(
 				new LocalMessage(
 						"ui",

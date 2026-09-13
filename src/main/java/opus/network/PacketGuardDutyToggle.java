@@ -14,6 +14,7 @@ import necesse.entity.mobs.friendly.human.GuardHumanMob;
 import necesse.level.maps.Level;
 import necesse.level.maps.levelData.settlementData.CachedSettlementData;
 import opus.guard.GuardDuty;
+import opus.guard.GuardDutyDialogueRefresh;
 import opus.guard.GuardDutySystem;
 
 public class PacketGuardDutyToggle extends Packet {
@@ -77,6 +78,7 @@ public class PacketGuardDutyToggle extends Packet {
 					(GuardHumanMob)mob,
 					nightDuty ? GuardDuty.NIGHT : GuardDuty.DAY
 			);
+			GuardDutyDialogueRefresh.refresh(guardUniqueID);
 		}
 	}
 }

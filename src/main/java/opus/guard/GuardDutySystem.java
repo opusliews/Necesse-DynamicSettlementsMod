@@ -50,6 +50,7 @@ public final class GuardDutySystem {
 		}
 
 		releasePatrolTarget(guard);
+		GuardNeedsSystem.releaseBreakForDutyChange(guard);
 		if (guard.isServer()) {
 			guard.cancelJob();
 		}

@@ -12,9 +12,10 @@ constructionalreadycomplete=Blueprint is already complete.
 
 [activities]
 construction=Constructing
+guardpatrolling=Patrolling
 
 [mobmsg]
-buildertalk1=I want to build something beatiful
+buildertalk1=I want to build something beautiful
 buildertalk2=Give me a hammer and a plan, and I'll handle the rest
 buildertalk3=Measure twice, build once
 buildertalk4=Someone has to keep these walls standing
