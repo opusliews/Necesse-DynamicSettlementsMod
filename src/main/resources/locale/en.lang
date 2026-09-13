@@ -49,6 +49,11 @@ builderstartroadrepairs=Please do repairs and upgrades on the road
 builderstoproadrepairs=Please stop doing repairs and upgrades on the road
 guardswitchnightduty=Switch to Night Guard Duty
 guardswitchdayduty=Switch to Day Guard Duty
+fatiguedmgout=Damage dealt: -<penalty>%
+fatiguemovespeed=Movement speed: -<penalty>%
+fatiguedmgin=Damage taken: +<penalty>%
+fatigueincapacitated=Incapacitated
+fatiguehelp=\n\nFatigue decreases with each sleep cycle uninterrupted by combat.
 
 [itemtooltip]
 blueprintemptytip=Click [input=mouse2] to create a new blueprint

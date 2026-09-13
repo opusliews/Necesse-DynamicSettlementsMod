@@ -9,6 +9,7 @@ import necesse.engine.util.GameUtils;
 import necesse.entity.mobs.Mob;
 import necesse.entity.mobs.friendly.human.GuardHumanMob;
 import necesse.level.maps.Level;
+import opus.guard.GuardDutyDialogueRefresh;
 import opus.guard.GuardFatigueSystem;
 
 public class PacketGuardFatigueUpdate extends Packet {
@@ -40,6 +41,7 @@ public class PacketGuardFatigueUpdate extends Packet {
 		Mob mob = GameUtils.getLevelMob(guardUniqueID, level);
 		if (mob instanceof GuardHumanMob) {
 			GuardFatigueSystem.applyClientFatigue((GuardHumanMob)mob, fatigue);
+			GuardDutyDialogueRefresh.refresh(guardUniqueID);
 		}
 	}
 }
