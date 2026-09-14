@@ -1,0 +1,242 @@
+package opusliews;
+
+import necesse.engine.localization.message.LocalMessage;
+import necesse.engine.modLoader.annotations.ModEntry;
+import necesse.engine.network.PacketReader;
+import necesse.engine.registries.*;
+import necesse.entity.mobs.job.JobType;
+import necesse.inventory.recipe.Ingredient;
+import necesse.inventory.recipe.Recipe;
+import necesse.inventory.recipe.Recipes;
+import opusliews.armor.BuilderBootsArmorItem;
+import opusliews.armor.BuilderHatArmorItem;
+import opusliews.armor.BuilderShirtArmorItem;
+import opusliews.blueprint.BlueprintAreaLevelData;
+import opusliews.buff.MalignanceGogglesBuff;
+import opusliews.container.BlueprintWorkstationContainer;
+import opusliews.damage.DamageRepairLevelData;
+import opusliews.damage.WeatheringLevelData;
+import opusliews.forms.BlueprintWorkstationContainerForm;
+import opusliews.item.BlueprintItem;
+import opusliews.item.InspectionGlassItem;
+import opusliews.item.MalignanceGogglesItem;
+import opusliews.item.ProjectEraserItem;
+import opusliews.jobs.ConstructionLevelJob;
+import opusliews.jobs.RepairLevelJob;
+import opusliews.mobs.BuilderHumanMob;
+import opusliews.network.*;
+import opusliews.object.BlueprintWorkstationObject;
+import opusliews.object.BlueprintWorkstationObjectEntity;
+import opusliews.object.BuilderJobRequestBulletinObject;
+import opusliews.object.WarningBellObject;
+import opusliews.settler.BuilderRequestLevelData;
+import opusliews.settler.BuilderSettler;
+import opusliews.sleep.SettlementSleepSettingsLevelData;
+
+@ModEntry
+public class DynamicSettlements {
+	public static int blueprintWorkstationContainerID;
+	public static boolean debugBlueprintMaterialGrant = false;
+
+	public void init() {
+		// Registrations
+		BuffRegistry.registerBuff(MalignanceGogglesItem.buffStringID, new MalignanceGogglesBuff());
+		SettlerRegistry.registerSettler("builder", new BuilderSettler());
+		MobRegistry.registerMob("builderhuman",
+				BuilderHumanMob.class, true);
+		ItemRegistry.registerItem("builderhat",
+				new BuilderHatArmorItem(), 50.0F, true);
+		ItemRegistry.registerItem("buildershirt",
+				new BuilderShirtArmorItem(), 50.0F, true);
+		ItemRegistry.registerItem("builderboots",
+				new BuilderBootsArmorItem(), 50.0F, true);
+		ItemRegistry.registerItem("blueprintItem",
+				new BlueprintItem(), 25.0F, true);
+		ItemRegistry.registerItem("projecteraser",
+				new ProjectEraserItem(), 30.0F, true);
+		ItemRegistry.registerItem("inspectionglass",
+				new InspectionGlassItem(), 20.0F, true);
+		ItemRegistry.registerItem("malignancegoggles",
+				new MalignanceGogglesItem(), 100.0F, true);
+		ObjectRegistry.registerObject("blueprintworkstation",
+				new BlueprintWorkstationObject(), 100.0F, true);
+		ObjectRegistry.registerObject(
+				BuilderJobRequestBulletinObject.stringID,
+				new BuilderJobRequestBulletinObject(), 25.0F, true);
+		ObjectRegistry.registerObject(
+				WarningBellObject.stringID,
+				new WarningBellObject(), 60.0F, true);
+
+		blueprintWorkstationContainerID = ContainerRegistry.registerSettlementDependantOEContainer(
+				(client, uniqueSeed, settlement, oe, content) -> new BlueprintWorkstationContainerForm(
+						client,
+						new BlueprintWorkstationContainer(
+								client.getClient(),
+								uniqueSeed,
+								settlement,
+								(BlueprintWorkstationObjectEntity)oe,
+								new PacketReader(content)
+						)
+				),
+				(client, uniqueSeed, settlement, oe, content, serverObject) -> new BlueprintWorkstationContainer(
+						client,
+						uniqueSeed,
+						settlement,
+						(BlueprintWorkstationObjectEntity)oe,
+						new PacketReader(content)
+				)
+		);
+
+		LevelDataRegistry.registerLevelData(BlueprintAreaLevelData.managerKey, BlueprintAreaLevelData.class);
+		LevelDataRegistry.registerLevelData(DamageRepairLevelData.managerKey, DamageRepairLevelData.class);
+		LevelDataRegistry.registerLevelData(WeatheringLevelData.managerKey, WeatheringLevelData.class);
+		LevelDataRegistry.registerLevelData(BuilderRequestLevelData.managerKey, BuilderRequestLevelData.class);
+		LevelDataRegistry.registerLevelData(SettlementSleepSettingsLevelData.managerKey, SettlementSleepSettingsLevelData.class);
+
+		JobTypeRegistry.registerType(
+				"construction",
+				new JobType(
+						true,
+						true,
+						new LocalMessage("jobs", "constructionname"),
+						new LocalMessage("jobs", "constructiontip")
+				)
+		);
+
+		LevelJobRegistry.registerJob(
+				"construction",
+				ConstructionLevelJob.class,
+				ConstructionLevelJob::handler,
+				"construction"
+		);
+
+		LevelJobRegistry.registerJob(
+				"repair",
+				RepairLevelJob.class,
+				RepairLevelJob::handler,
+				"construction"
+		);
+
+		PacketRegistry.registerPacket(PacketBlueprintUpdate.class);
+		PacketRegistry.registerPacket(PacketPlaceBlueprintArea.class);
+		PacketRegistry.registerPacket(PacketRequestBlueprintAreas.class);
+		PacketRegistry.registerPacket(PacketSyncBlueprintAreas.class);
+		PacketRegistry.registerPacket(PacketAddBlueprintArea.class);
+		PacketRegistry.registerPacket(PacketRemoveBlueprintArea.class);
+		PacketRegistry.registerPacket(PacketBuilderTilePlaceSound.class);
+		PacketRegistry.registerPacket(PacketBuilderObjectPlaceSound.class);
+		PacketRegistry.registerPacket(PacketEraseBlueprintProject.class);
+		PacketRegistry.registerPacket(PacketBlueprintBlockedState.class);
+		PacketRegistry.registerPacket(PacketBuilderRoadRepairToggle.class);
+		PacketRegistry.registerPacket(PacketRequestInspectionGlassData.class);
+		PacketRegistry.registerPacket(PacketInspectionGlassData.class);
+		PacketRegistry.registerPacket(PacketWarningBellRing.class);
+		PacketRegistry.registerPacket(PacketGuardDutyToggle.class);
+		PacketRegistry.registerPacket(PacketGuardFatigueUpdate.class);
+		PacketRegistry.registerPacket(PacketSettlementSleepSettingsRequest.class);
+		PacketRegistry.registerPacket(PacketSettlementSleepSettingsSync.class);
+		PacketRegistry.registerPacket(PacketSettlementSleepSettingsUpdate.class);
+	}
+
+	public void postInit() {
+		Recipes.registerModRecipe(new Recipe(
+				"blueprintItem",
+				1,
+				RecipeTechRegistry.WORKSTATION,
+				new Ingredient[]{
+						new Ingredient("stackofpaper", 1),
+						new Ingredient("quillandparchment", 1)
+				}
+		));
+
+		Recipes.registerModRecipe(new Recipe(
+				"blueprintworkstation",
+				1,
+				RecipeTechRegistry.WORKSTATION,
+				new Ingredient[]{
+						new Ingredient("anylog", 15),
+						new Ingredient("tungstenbar", 3),
+						new Ingredient("stackofpaper", 1)
+				}
+		));
+
+		Recipes.registerModRecipe(new Recipe(
+				"builderhat",
+				1,
+				RecipeTechRegistry.WORKSTATION,
+				new Ingredient[]{
+						new Ingredient("wool", 12),
+						new Ingredient("ironbar", 1)
+				}
+		));
+
+		Recipes.registerModRecipe(new Recipe(
+				"buildershirt",
+				1,
+				RecipeTechRegistry.WORKSTATION,
+				new Ingredient[]{
+						new Ingredient("wool", 16)
+				}
+		));
+
+		Recipes.registerModRecipe(new Recipe(
+				"builderboots",
+				1,
+				RecipeTechRegistry.WORKSTATION,
+				new Ingredient[]{
+						new Ingredient("wool", 8),
+						new Ingredient("leather", 1)
+				}
+		));
+
+		Recipes.registerModRecipe(new Recipe(
+				"projecteraser",
+				1,
+				RecipeTechRegistry.WORKSTATION,
+				new Ingredient[]{
+						new Ingredient("quillandparchment", 1),
+						new Ingredient("ironbar", 1)
+				}
+		));
+
+		Recipes.registerModRecipe(new Recipe(
+				"inspectionglass",
+				1,
+				RecipeTechRegistry.WORKSTATION,
+				new Ingredient[]{
+						new Ingredient("glass", 2),
+						new Ingredient("ironbar", 1)
+				}
+		));
+
+		Recipes.registerModRecipe(new Recipe(
+				"malignancegoggles",
+				1,
+				RecipeTechRegistry.DEMONIC_WORKSTATION,
+				new Ingredient[]{
+						new Ingredient("inspectionglass", 2),
+						new Ingredient("demonicbar", 1)
+				}
+		));
+
+		Recipes.registerModRecipe(new Recipe(
+				BuilderJobRequestBulletinObject.stringID,
+				1,
+				RecipeTechRegistry.WORKSTATION,
+				new Ingredient[]{
+						new Ingredient("stackofpaper", 1),
+						new Ingredient("quillandparchment", 1)
+				}
+		));
+
+		Recipes.registerModRecipe(new Recipe(
+				WarningBellObject.stringID,
+				1,
+				RecipeTechRegistry.WORKSTATION,
+				new Ingredient[]{
+						new Ingredient("goldbar", 3),
+						new Ingredient("ironbar", 1)
+				}
+		));
+	}
+}

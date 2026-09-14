@@ -1,0 +1,14 @@
+package opusliews.blueprint;
+
+import necesse.inventory.InventoryItem;
+import opusliews.mobs.BuilderHumanMob;
+
+public class BuilderMaterialSource {
+	public final BuilderHumanMob builder;
+	public final InventoryItem item;
+
+	public BuilderMaterialSource(BuilderHumanMob builder, InventoryItem item) {
+		this.builder = builder;
+		this.item = item;
+	}
+}
