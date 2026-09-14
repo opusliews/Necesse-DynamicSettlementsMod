@@ -1,0 +1,310 @@
+package opusliews.forms;
+
+import necesse.engine.gameLoop.tickManager.TickManager;
+import necesse.engine.gameTool.GameToolManager;
+import necesse.engine.localization.Localization;
+import necesse.engine.localization.message.GameMessage;
+import necesse.engine.localization.message.StaticMessage;
+import necesse.engine.network.client.Client;
+import necesse.engine.registries.ItemRegistry;
+import necesse.engine.registries.ObjectLayerRegistry;
+import necesse.engine.registries.ObjectRegistry;
+import necesse.engine.state.MainGame;
+import necesse.engine.window.GameWindow;
+import necesse.gfx.forms.Form;
+import necesse.gfx.forms.components.FormContentIconButton;
+import necesse.gfx.forms.components.FormInputSize;
+import necesse.gfx.forms.components.FormTextInput;
+import necesse.gfx.forms.components.localComponents.FormLocalLabel;
+import necesse.gfx.forms.components.localComponents.FormLocalTextButton;
+import necesse.gfx.gameFont.FontOptions;
+import necesse.gfx.ui.ButtonColor;
+import necesse.level.gameObject.GameObject;
+import necesse.level.gameTile.GameTile;
+import necesse.level.maps.Level;
+import necesse.level.maps.multiTile.MultiTile;
+import opusliews.blueprint.BlueprintInfrastructureSupport;
+import opusliews.logging.Logging;
+import opusliews.tools.BlueprintData;
+import opusliews.tools.BlueprintElement;
+import opusliews.tools.BlueprintLayerObject;
+import opusliews.tools.BlueprintSelectionTool;
+
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.BiConsumer;
+
+import static opusliews.tools.BlueprintElement.isBlueprintObject;
+import static opusliews.tools.BlueprintElement.isBlueprintTile;
+
+public class NewBlueprintForm extends Form {
+	private static NewBlueprintForm builderForm;
+	private static BlueprintSelectionTool blueprintTool;
+	private final FormTextInput blueprintNameInput;
+
+	private final BiConsumer<String, BlueprintData> onBlueprintCreated;
+
+	private final MainGame mainGame;
+
+	public NewBlueprintForm(MainGame mainGame, BiConsumer<String, BlueprintData> onBlueprintCreated) {
+		super("newBlueprintForm", 380, 110);
+
+		this.onBlueprintCreated = onBlueprintCreated;
+		this.mainGame = mainGame;
+
+		this.addComponent(
+				new FormLocalLabel(
+						new StaticMessage("Blueprint Name"),
+						new FontOptions(16),
+						0,
+						72,
+						18
+				)
+		);
+
+		this.blueprintNameInput = this.addComponent(
+				new FormTextInput(
+						145,
+						7,
+						FormInputSize.SIZE_32,
+						180,
+						50
+				)
+		);
+
+		this.addComponent(
+				new FormContentIconButton(
+						350,
+						7,
+						FormInputSize.SIZE_24,
+						ButtonColor.BASE,
+						this.getInterfaceStyle().button_help_20,
+						new GameMessage[]{
+								new StaticMessage(
+										Localization.translate(
+												"itemtooltip",
+												"blueprinttoolhelp"
+										)
+								)
+						}
+				)
+		);
+
+		FormLocalTextButton createButton = this.addComponent(
+				new FormLocalTextButton(
+						new StaticMessage("Create Blueprint"),
+						30,
+						60,
+						155,
+						FormInputSize.SIZE_32,
+						ButtonColor.BASE
+				)
+		);
+
+		FormLocalTextButton cancelButton = this.addComponent(
+				new FormLocalTextButton(
+						new StaticMessage("Cancel"),
+						195,
+						60,
+						155,
+						FormInputSize.SIZE_32,
+						ButtonColor.BASE
+				)
+		);
+
+		createButton.onClicked(event -> {
+			Rectangle selection = blueprintTool.getSelection();
+
+			if (selection == null || selection.isEmpty()) {
+				Client client = mainGame.getClient();
+				client.setMessage(Localization.translate("misc", "blueprintcreatedempty"), Color.RED);
+				return;
+			}
+
+			String blueprintName = blueprintNameInput.getText().trim();
+
+			if (blueprintName.isEmpty()) {
+				Client client = mainGame.getClient();
+				client.setMessage(Localization.translate("misc", "blueprintcreatednameless"), Color.RED);
+				return;
+			}
+
+			Level level = blueprintTool.getLevel();
+			List<String> excludedObjectIDs = blueprintTool.getExcludedObjectIDs();
+			List<String> excludedTileIDs = blueprintTool.getExcludedTileIDs();
+			List<BlueprintElement> blueprintElements = new ArrayList<>();
+
+			for (int x = selection.x; x < selection.x + selection.width; x++) {
+				for (int y = selection.y; y < selection.y + selection.height; y++) {
+					int relativeX = x - selection.x;
+					int relativeY = y - selection.y;
+					GameTile tile = level.getTile(x, y);
+					BlueprintElement be = new BlueprintElement(relativeX, relativeY);
+
+					for (int layerID : ObjectLayerRegistry.getLayerIDs()) {
+						GameObject object = level.getObject(layerID, x, y);
+
+						if (canIncludeBlueprintObject(
+								level, selection, excludedObjectIDs, layerID, x, y, object)) {
+							String layerStringID = ObjectLayerRegistry.getLayerStringID(layerID);
+							be.addObject(new BlueprintLayerObject(
+									layerStringID, object.getStringID(), level.getObjectRotation(layerID, x, y)));
+							Logging.logMessage("Object found on layer " + layerStringID + ": " + object.getDisplayName());
+						}
+					}
+
+					if (isBlueprintTile(tile)
+							&& isObtainableBlueprintTile(tile)
+							&& !excludedTileIDs.contains(tile.getStringID())) {
+						be.setTileID(tile.getStringID());
+						Logging.logMessage("Tile found: " + tile.getDisplayName());
+					}
+
+					BlueprintInfrastructureSupport.captureElement(level, x, y, be);
+
+					if (!be.isEmpty()) {
+						blueprintElements.add(be);
+					}
+				}
+			}
+
+			if (blueprintElements.isEmpty()) {
+				Client client = mainGame.getClient();
+				client.setMessage(Localization.translate("misc", "blueprintcreatedempty2"), Color.RED);
+			} else {
+				BlueprintData blueprintData = new BlueprintData(selection.width, selection.height, blueprintElements);
+
+				if (onBlueprintCreated != null) {
+					onBlueprintCreated.accept(blueprintName, blueprintData);
+				}
+
+				this.onCancel();
+			}
+		});
+
+		cancelButton.onClicked(event -> this.onCancel());
+		this.setPosition(10, 30);
+	}
+
+	private boolean canIncludeBlueprintObject(
+			Level level,
+			Rectangle selection,
+			List<String> excludedObjectIDs,
+			int layerID,
+			int tileX,
+			int tileY,
+			GameObject object
+	) {
+		if (!isBlueprintObject(object) || excludedObjectIDs.contains(object.getStringID())) {
+			return false;
+		}
+
+		if (!object.isMultiTile()) {
+			return true;
+		}
+
+		int rotation = level.getObjectRotation(layerID, tileX, tileY);
+		MultiTile multiTile = object.getMultiTile(rotation);
+
+		for (Object valueObject : multiTile.getIDs(tileX, tileY)) {
+			MultiTile.CoordinateValue value = (MultiTile.CoordinateValue)valueObject;
+			int expectedObjectID = (Integer)value.value;
+
+			if (!selection.contains(value.tileX, value.tileY)) {
+				return false;
+			}
+
+			GameObject expectedObject = ObjectRegistry.getObject(expectedObjectID);
+
+			if (expectedObject == null || excludedObjectIDs.contains(expectedObject.getStringID())) {
+				return false;
+			}
+
+			if (level.getObjectID(layerID, value.tileX, value.tileY) != expectedObjectID
+					|| level.getObjectRotation(layerID, value.tileX, value.tileY) != rotation) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	private boolean isObtainableBlueprintTile(GameTile tile) {
+		int itemID = ItemRegistry.getItemID(tile.getStringID());
+		return ItemRegistry.isObtainable(itemID);
+	}
+
+	private void hideInventoryUI() {
+		mainGame.formManager.toolbar.setHidden(true);
+		mainGame.formManager.inventory.setHidden(true);
+		mainGame.formManager.crafting.setHidden(true);
+		mainGame.formManager.creative.setHidden(true);
+	}
+
+	public static void openBlueprintCreation(MainGame mainGame, BiConsumer<String, BlueprintData> onBlueprintCreated) {
+		if (builderForm != null) {
+			return;
+		}
+
+		builderForm = new NewBlueprintForm(mainGame, onBlueprintCreated);
+
+		if (blueprintTool != null) {
+			GameToolManager.clearGameTool(blueprintTool);
+		}
+
+		mainGame.formManager.addComponent(builderForm);
+
+		blueprintTool = new BlueprintSelectionTool(
+				mainGame.getClient().getLevel(),
+				() -> {
+					if (builderForm != null) {
+						builderForm.onToolCancelled();
+					}
+				}
+		);
+
+		GameToolManager.setGameTool(blueprintTool, BlueprintSelectionTool.class);
+	}
+
+	public static void frameTick(MainGame mainGame, TickManager tickManager, GameWindow gameWindow) {
+		if (mainGame.getClient() == null || mainGame.getClient().getPlayer() == null) {
+			if (builderForm != null) {
+				builderForm.onCancel();
+			}
+			return;
+		}
+
+		if (!mainGame.formManager.pauseMenu.isHidden()) {
+			if (builderForm != null) {
+				builderForm.onCancel();
+			}
+			return;
+		}
+
+		if (builderForm != null) {
+			builderForm.hideInventoryUI();
+		}
+	}
+
+	private void onToolCancelled() {
+		builderForm = null;
+		blueprintTool = null;
+		this.mainGame.formManager.removeComponent(this);
+		this.dispose();
+		this.mainGame.formManager.updateActive(true);
+	}
+
+	protected void onCancel() {
+		builderForm = null;
+		this.mainGame.formManager.removeComponent(this);
+
+		if (blueprintTool != null) {
+			GameToolManager.clearGameTool(blueprintTool);
+			blueprintTool = null;
+		}
+
+		this.dispose();
+		this.mainGame.formManager.updateActive(true);
+	}
+}
