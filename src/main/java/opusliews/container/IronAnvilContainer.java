@@ -1,5 +1,6 @@
 package opusliews.container;
 
+import java.awt.Point;
 import java.util.Collection;
 import java.util.Iterator;
 import necesse.engine.GameLog;
@@ -11,12 +12,15 @@ import necesse.engine.network.server.ServerClient;
 import necesse.engine.registries.JournalChallengeRegistry;
 import necesse.entity.mobs.friendly.human.HumanMob;
 import necesse.entity.objectEntity.ObjectEntity;
+import necesse.entity.objectEntity.interfaces.OEInventory;
 import necesse.inventory.InventoryItem;
+import necesse.inventory.container.customAction.PointCustomAction;
 import necesse.inventory.container.object.CraftingStationContainer;
 import necesse.inventory.container.settlement.events.SettlementDataEvent;
 import necesse.inventory.container.slots.ExtractOnlyContainerSlot;
 import necesse.inventory.recipe.ContainerRecipeCraftedEvent;
 import necesse.inventory.recipe.Recipe;
+import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
 import necesse.level.maps.levelData.settlementData.settler.romancePersonalities.PlayerRomanceManager;
 import opusliews.object.IronAnvilObjectEntity;
@@ -26,11 +30,15 @@ public class IronAnvilContainer extends CraftingStationContainer {
 
 	public final IronAnvilObjectEntity anvilEntity;
 	public final int OUTPUT_SLOT;
+	public final PointCustomAction setInputStorage;
+	public final PointCustomAction setOutputStorage;
 
 	private boolean crafting;
 	private int craftingRecipeID = -1;
 	private int craftingRecipeHash;
 	private long craftingStartTime;
+
+	private boolean selectingStorage;
 
 	public IronAnvilContainer(
 			NetworkClient client,
@@ -63,6 +71,24 @@ public class IronAnvilContainer extends CraftingStationContainer {
 				CLIENT_INVENTORY_START,
 				CLIENT_INVENTORY_END
 		);
+
+		setInputStorage = registerAction(new PointCustomAction() {
+			@Override
+			protected void run(int x, int y) {
+				if (client.isServer()) {
+					applyStorageLink(true, x, y);
+				}
+			}
+		});
+
+		setOutputStorage = registerAction(new PointCustomAction() {
+			@Override
+			protected void run(int x, int y) {
+				if (client.isServer()) {
+					applyStorageLink(false, x, y);
+				}
+			}
+		});
 	}
 
 	@Override
@@ -113,6 +139,29 @@ public class IronAnvilContainer extends CraftingStationContainer {
 		if (client.isClient()) {
 			GlobalData.updateCraftable();
 		}
+	}
+
+	public void setSelectingStorage(boolean selectingStorage) {
+		this.selectingStorage = selectingStorage;
+	}
+
+	public boolean isSelectingStorage() {
+		return selectingStorage;
+	}
+
+	@Override
+	public boolean isValid(ServerClient client) {
+		if (!selectingStorage) {
+			return super.isValid(client);
+		}
+
+		if (client.getLevel() != anvilEntity.getLevel()) {
+			return false;
+		}
+
+		Level level = client.getLevel();
+
+		return level.getObjectID(objectX, objectY) == craftingStationObject.getID();
 	}
 
 	private void completeCraftServer() {
@@ -167,6 +216,61 @@ public class IronAnvilContainer extends CraftingStationContainer {
 				}
 			}
 		}
+	}
+
+	private void applyStorageLink(boolean input, int x, int y) {
+		Point current = input ? anvilEntity.getInputStorage() : anvilEntity.getOutputStorage();
+		Point other = input ? anvilEntity.getOutputStorage() : anvilEntity.getInputStorage();
+
+		// Clicking the currently selected storage toggles the link off, even if
+		// that storage has since been removed or changed.
+		if (current != null && current.x == x && current.y == y) {
+			if (input) {
+				anvilEntity.setInputStorage(null);
+			} else {
+				anvilEntity.setOutputStorage(null);
+			}
+			return;
+		}
+
+		LevelObject master = getStorageMaster(x, y);
+		if (master == null) {
+			return;
+		}
+
+		Point target = new Point(master.tileX, master.tileY);
+		if (!anvilEntity.isWithinStorageLinkRange(target.x, target.y)) {
+			return;
+		}
+
+		if (other != null && other.equals(target)) {
+			return;
+		}
+
+		ObjectEntity targetEntity = master.getObjectEntity();
+		if (!(targetEntity instanceof OEInventory) || targetEntity == anvilEntity) {
+			return;
+		}
+
+		OEInventory inventory = (OEInventory)targetEntity;
+		if (inventory.getInventory() == null || inventory.getSettlementStorage() == null) {
+			return;
+		}
+
+		if (input) {
+			anvilEntity.setInputStorage(target);
+		} else {
+			anvilEntity.setOutputStorage(target);
+		}
+	}
+
+	public LevelObject getStorageMaster(int x, int y) {
+		LevelObject object = client.playerMob.getLevel().getLevelObject(x, y);
+		if (object == null) {
+			return null;
+		}
+
+		return (LevelObject)object.getMasterLevelObject().orElse(null);
 	}
 
 	public boolean isCrafting() {
