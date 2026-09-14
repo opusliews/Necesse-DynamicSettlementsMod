@@ -1,8 +1,8 @@
-# Settlement Builders
+# Dynamic Settlements
 
-Settlement Builders is a Necesse mod that adds a dedicated **Builder settler**, reusable **construction blueprints**, persistent construction projects, and persistent building damage/weathering rules.
+Dynamic Settlements is a Necesse mod that expands settlements into more active, persistent systems: dedicated **Builder settlers** and reusable **construction blueprints**, persistent damage and weathering, repairs and reinforcement, added complexity to settlement defenses, guard schedules and fatigue, zombie breaching, and simulated sleep where the world keeps simulating while you rest.
 
-The goal is to make large-scale settlement construction practical without turning it into instant automation: the player still plans buildings, supplies materials, keeps Builders happy, and deals with damaged or neglected structures, while Builders handle the repetitive physical work.
+The goal is to make settlement management more challenging overall by adding new problems to solve and tools to help dealing you and your settlers to deal with them.
 
 ## Main Features
 
@@ -16,7 +16,13 @@ The goal is to make large-scale settlement construction practical without turnin
 - **Project Eraser** for cancelling placed blueprint projects.
 - **Persistent Damage** system where normal passive damage recovery is disabled,\
 Builders must perform repairs, and rain causes weathering damage over time to placed objects.
-- This mod is required on both the client and server.
+- **Zombie Breaching** makes settlement barriers and livestock defense matter.
+- Expanded **Guard** behavior with night duty, fatigue, intrusion alarms, and emergency responses.
+- **Sleep Simulation** keeps the world running while players sleep, so night hazards
+can't be avoided by artificially skipping the night.
+- Farmland can be trampled by animals and hostile mobs.
+
+This mod is required on both the client and server.
 
 ---
 
@@ -481,16 +487,3 @@ Only guards can notice the incoming raid and wake you up.
 
 The **unloadSettlements** server setting is disabled in this mod.
 All player-owned settlements are by design always loaded.
-
----
-
-# Design Notes
-
-Settlement Builders is not supposed to be a creative-mode construction system.
-It intentionally tries to preserve Necesse's resource and settlement gameplay features.
-
-- Blueprints do not create free materials.
-- Builders physically retrieve resources from settlement storage.
-- Builder happiness has a large effect on throughput.
-- Damage and weathering create ongoing maintenance work, but settlements of any size can be properly managed given
-enough builders, and their work quality can be vastly improved by managing their happiness levels.

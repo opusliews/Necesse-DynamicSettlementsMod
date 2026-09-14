@@ -14,10 +14,10 @@ public class GuardDutySavePatch {
 	public static void onExit(@Advice.This HumanMob mob, @Advice.Argument(0) SaveData save) {
 		if (mob instanceof GuardHumanMob) {
 			GuardHumanMob guard = (GuardHumanMob)mob;
-			save.addBoolean("settlementBuildersNightGuardDuty", GuardDutySystem.isNightDuty(guard));
-			save.addInt("settlementBuildersGuardFatigue", GuardFatigueSystem.getFatigue(guard));
-			save.addBoolean("settlementBuildersGuardRestActive", GuardFatigueSystem.isRestPeriodActive(guard));
-			save.addBoolean("settlementBuildersGuardRestInterrupted", GuardFatigueSystem.wasRestInterrupted(guard));
+			save.addBoolean("dynamicSettlementsNightGuardDuty", GuardDutySystem.isNightDuty(guard));
+			save.addInt("dynamicSettlementsGuardFatigue", GuardFatigueSystem.getFatigue(guard));
+			save.addBoolean("dynamicSettlementsGuardRestActive", GuardFatigueSystem.isRestPeriodActive(guard));
+			save.addBoolean("dynamicSettlementsGuardRestInterrupted", GuardFatigueSystem.wasRestInterrupted(guard));
 		}
 	}
 }

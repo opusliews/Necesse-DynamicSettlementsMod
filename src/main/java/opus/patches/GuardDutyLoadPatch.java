@@ -15,13 +15,13 @@ public class GuardDutyLoadPatch {
 	public static void onExit(@Advice.This HumanMob mob, @Advice.Argument(0) LoadData save) {
 		if (mob instanceof GuardHumanMob) {
 			GuardHumanMob guard = (GuardHumanMob)mob;
-			boolean nightDuty = save.getBoolean("settlementBuildersNightGuardDuty", false, false);
+			boolean nightDuty = save.getBoolean("dynamicSettlementsNightGuardDuty", false, false);
 			GuardDutySystem.setDuty(guard, nightDuty ? GuardDuty.NIGHT : GuardDuty.DAY);
 			GuardFatigueSystem.applyLoadedState(
 					guard,
-					save.getInt("settlementBuildersGuardFatigue", 0, false),
-					save.getBoolean("settlementBuildersGuardRestActive", false, false),
-					save.getBoolean("settlementBuildersGuardRestInterrupted", false, false)
+					save.getInt("dynamicSettlementsGuardFatigue", 0, false),
+					save.getBoolean("dynamicSettlementsGuardRestActive", false, false),
+					save.getBoolean("dynamicSettlementsGuardRestInterrupted", false, false)
 			);
 		}
 	}

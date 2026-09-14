@@ -6,7 +6,7 @@ import necesse.entity.objectEntity.ObjectEntity;
 import necesse.inventory.item.toolItem.ToolType;
 import necesse.level.gameObject.container.InventoryObject;
 import necesse.level.maps.Level;
-import opus.SettlementBuilders;
+import opus.DynamicSettlements;
 import opus.container.BlueprintWorkstationContainer;
 
 import java.awt.*;
@@ -38,7 +38,7 @@ public class BlueprintWorkstationObject extends InventoryObject {
 
 		if (level.isServer()) {
 			BlueprintWorkstationContainer.openAndSendContainer(
-					SettlementBuilders.blueprintWorkstationContainerID,
+					DynamicSettlements.blueprintWorkstationContainerID,
 					player.getServerClient(),
 					level,
 					x,

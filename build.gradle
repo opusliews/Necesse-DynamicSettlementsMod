@@ -2,11 +2,11 @@ plugins {
     id 'java'
 }
 
-project.ext.modID = "opusliews.settlementbuilders"
-project.ext.modName = "Settlement Builders"
-project.ext.modVersion = "1.0.5"
+project.ext.modID = "opusliews.dynamicsettlements"
+project.ext.modName = "Dynamic Settlements"
+project.ext.modVersion = "1.0.0"
 project.ext.gameVersion = "1.3.3"
-project.ext.modDescription = "Settler building jobs"
+project.ext.modDescription = "Adds greater depth, complexity, and challenge to settlement management"
 project.ext.author = "OpusLiews"
 
 /**
