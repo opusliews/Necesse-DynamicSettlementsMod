@@ -21,7 +21,7 @@ import opus.damage.MaterialWeatheringClassifier;
 import opus.damage.WeatheringMaterialTier;
 
 public final class ZombieBreaching {
-	public static final String passiveTargetKey = "settlementBuildersZombiePassiveTarget";
+	public static final String passiveTargetKey = "dynamicSettlementsZombiePassiveTarget";
 	private static final int breachCooldownMs = 1000;
 	private static final Map<Mob, State> states = Collections.synchronizedMap(new WeakHashMap<>());
 

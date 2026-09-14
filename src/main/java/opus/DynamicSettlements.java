@@ -34,7 +34,7 @@ import opus.settler.BuilderSettler;
 import opus.sleep.SettlementSleepSettingsLevelData;
 
 @ModEntry
-public class SettlementBuilders {
+public class DynamicSettlements {
 	public static int blueprintWorkstationContainerID;
 	public static boolean debugBlueprintMaterialGrant = false;
 

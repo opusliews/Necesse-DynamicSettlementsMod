@@ -30,7 +30,7 @@ import necesse.level.gameObject.GameObject;
 import necesse.level.gameObject.WallObject;
 import necesse.level.gameTile.GameTile;
 import necesse.level.maps.Level;
-import opus.SettlementBuilders;
+import opus.DynamicSettlements;
 import opus.forms.NewBlueprintForm;
 import opus.logging.Logging;
 import opus.network.PacketBlueprintUpdate;
@@ -527,7 +527,7 @@ public class BlueprintItem extends Item implements ItemInteractAction, Placeable
 					WindowManager.getWindow().getInput().isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL)
 							|| WindowManager.getWindow().getInput().isKeyDown(GLFW.GLFW_KEY_RIGHT_CONTROL);
 
-			if (SettlementBuilders.debugBlueprintMaterialGrant && ctrlDown) {
+			if (DynamicSettlements.debugBlueprintMaterialGrant && ctrlDown) {
 				mainGame.getClient().network.sendPacket(
 						new PacketBlueprintUpdate(
 								playerSlot.slot.inventoryID,

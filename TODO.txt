@@ -1,3 +1,0 @@
-Add builder talk lines and recruitment tip
-Setup builder spawning logic
-Change builder's job

@@ -12,7 +12,7 @@ import necesse.inventory.InventoryItem;
 import necesse.inventory.PlayerInventorySlot;
 import necesse.inventory.item.Item;
 import necesse.level.gameObject.GameObject;
-import opus.SettlementBuilders;
+import opus.DynamicSettlements;
 import opus.blueprint.BlueprintObjectMaterialResolver;
 import opus.item.BlueprintItem;
 import opus.logging.Logging;
@@ -134,7 +134,7 @@ public class PacketBlueprintUpdate extends Packet {
 		BlueprintItem blueprintItem = (BlueprintItem)item.item;
 
 		if (giveDebugMaterials) {
-			if (!SettlementBuilders.debugBlueprintMaterialGrant || !blueprintItem.hasBlueprint(item)) {
+			if (!DynamicSettlements.debugBlueprintMaterialGrant || !blueprintItem.hasBlueprint(item)) {
 				return;
 			}
 

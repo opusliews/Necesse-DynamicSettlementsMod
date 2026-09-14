@@ -35,10 +35,10 @@ import net.bytebuddy.asm.Advice;
 		arguments = {Mob.class, AINode.class, AIMover.class}
 )
 public class ZombiePassiveAggroPatch {
-	private static final String passiveTargetKey = "settlementBuildersZombiePassiveTarget";
-	private static final String passiveFocusTargetKey = "settlementBuildersZombiePassiveFocusTarget";
-	private static final String passiveChaserTargetKey = "settlementBuildersZombiePassiveChaserTarget";
-	private static final String panicEventType = "settlementBuildersZombiePanic";
+	private static final String passiveTargetKey = "dynamicSettlementsZombiePassiveTarget";
+	private static final String passiveFocusTargetKey = "dynamicSettlementsZombiePassiveFocusTarget";
+	private static final String passiveChaserTargetKey = "dynamicSettlementsZombiePassiveChaserTarget";
+	private static final String panicEventType = "dynamicSettlementsZombiePanic";
 
 	// Passive mobs inside this radius are warned when one of them takes real zombie damage.
 	private static final int panicAlertRangeTiles = 10;
@@ -171,8 +171,8 @@ public class ZombiePassiveAggroPatch {
 		passiveChaser.looseTargetTimerAINode.currentTargetKey = passiveTargetKey;
 		passiveChaser.targetFinderAINode.currentTargetKey = passiveTargetKey;
 		passiveChaser.targetFinderAINode.focusTargetKey = passiveFocusTargetKey;
-		passiveChaser.targetFinderAINode.newTargetFoundEventType = "settlementBuildersZombiePassiveTargetFound";
-		passiveChaser.targetFinderAINode.lastTargetInvalidEventType = "settlementBuildersZombiePassiveTargetInvalid";
+		passiveChaser.targetFinderAINode.newTargetFoundEventType = "dynamicSettlementsZombiePassiveTargetFound";
+		passiveChaser.targetFinderAINode.lastTargetInvalidEventType = "dynamicSettlementsZombiePassiveTargetInvalid";
 		passiveChaser.targetFinderAINode.moveToAttacker = false;
 		passiveChaser.collisionChaserAINode.targetKey = passiveTargetKey;
 		passiveChaser.collisionChaserAINode.chaserTargetKey = passiveChaserTargetKey;
@@ -181,8 +181,8 @@ public class ZombiePassiveAggroPatch {
 	private static void configurePassiveChaser(ChaserAI passiveChaser) {
 		passiveChaser.targetFinderAINode.currentTargetKey = passiveTargetKey;
 		passiveChaser.targetFinderAINode.focusTargetKey = passiveFocusTargetKey;
-		passiveChaser.targetFinderAINode.newTargetFoundEventType = "settlementBuildersZombiePassiveTargetFound";
-		passiveChaser.targetFinderAINode.lastTargetInvalidEventType = "settlementBuildersZombiePassiveTargetInvalid";
+		passiveChaser.targetFinderAINode.newTargetFoundEventType = "dynamicSettlementsZombiePassiveTargetFound";
+		passiveChaser.targetFinderAINode.lastTargetInvalidEventType = "dynamicSettlementsZombiePassiveTargetInvalid";
 		passiveChaser.targetFinderAINode.moveToAttacker = false;
 		passiveChaser.chaserAINode.targetKey = passiveTargetKey;
 		passiveChaser.chaserAINode.chaserTargetKey = passiveChaserTargetKey;
