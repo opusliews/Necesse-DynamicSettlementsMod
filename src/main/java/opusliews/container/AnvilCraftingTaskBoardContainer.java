@@ -29,6 +29,7 @@ public class AnvilCraftingTaskBoardContainer extends Container {
 	public final IntCustomAction deleteTaskAction;
 	public final ContentCustomAction moveTaskAction;
 	public final ContentCustomAction updateTaskAction;
+	public final ContentCustomAction setTaskPausedAction;
 
 	public AnvilCraftingTaskBoardContainer(NetworkClient client, int uniqueSeed, AnvilCraftingTaskBoardObjectEntity boardEntity) {
 		super(client, uniqueSeed);
@@ -65,6 +66,14 @@ public class AnvilCraftingTaskBoardContainer extends Container {
 				boardEntity.updateTask(reader.getNextInt(), reader.getNextByteUnsigned(), reader.getNextInt());
 			}
 		});
+
+		setTaskPausedAction = (ContentCustomAction)registerAction(new ContentCustomAction() {
+			@Override
+			protected void run(Packet content) {
+				PacketReader reader = new PacketReader(content);
+				boardEntity.setTaskPaused(reader.getNextInt(), reader.getNextBoolean());
+			}
+		});
 	}
 
 	public void moveTask(int from, int to) {
@@ -82,6 +91,14 @@ public class AnvilCraftingTaskBoardContainer extends Container {
 		writer.putNextByteUnsigned(conditionType);
 		writer.putNextInt(amount);
 		updateTaskAction.runAndSend(packet);
+	}
+
+	public void setTaskPaused(int index, boolean paused) {
+		Packet packet = new Packet();
+		PacketWriter writer = new PacketWriter(packet);
+		writer.putNextInt(index);
+		writer.putNextBoolean(paused);
+		setTaskPausedAction.runAndSend(packet);
 	}
 
 	public necesse.level.maps.LevelObject getLinkedAnvil() {
@@ -106,8 +123,17 @@ public class AnvilCraftingTaskBoardContainer extends Container {
 	}
 
 	public List<Integer> getCraftableItemIDs() {
+		necesse.level.maps.LevelObject anvil = getLinkedAnvil();
+		if (anvil == null || !(anvil.object instanceof CraftingStationObject)) {
+			return new ArrayList<>();
+		}
+
+		CraftingStationObject station = (CraftingStationObject)anvil.object;
+		Tech[] techs = station.getCraftingTechs();
 		HashSet<Integer> seen = new HashSet<>();
-		return getCraftableRecipes().stream()
+
+		return Recipes.streamRecipes()
+				.filter(recipe -> Arrays.stream(techs).anyMatch(recipe::matchTech))
 				.map(recipe -> recipe.resultItem.item.getID())
 				.filter(id -> id >= 0 && ItemRegistry.getItem(id) != null)
 				.filter(seen::add)
