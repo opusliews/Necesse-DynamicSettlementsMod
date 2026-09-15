@@ -108,6 +108,21 @@ public class IronAnvilStorageSelectTool extends SelectTileGameTool {
 	}
 
 	@Override
+	public boolean inputEvent(InputEvent event) {
+		boolean handled = super.inputEvent(event);
+
+		if (handled) {
+			return true;
+		}
+
+		if (event.getID() == -100 && event.state) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
 	public boolean onSelected(InputEvent event, TilePosition pos) {
 		if (pos == null) {
 			finished.run();
