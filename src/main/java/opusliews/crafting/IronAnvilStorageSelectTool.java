@@ -26,7 +26,6 @@ import necesse.level.maps.LevelObject;
 import necesse.level.maps.TilePosition;
 import necesse.level.maps.hudManager.HudDrawElement;
 import opusliews.container.IronAnvilContainer;
-import opusliews.object.IronAnvilObjectEntity;
 
 import static opusliews.object.IronAnvilObjectEntity.STORAGE_LINK_RADIUS;
 
@@ -97,25 +96,11 @@ public class IronAnvilStorageSelectTool extends SelectTileGameTool {
 
 		if (tooltip != null) {
 			if (Input.lastInputIsController) {
-				tooltips.add(new InputTooltip(
-						ControllerInput.MENU_SELECT,
-						tooltip.translate()
-				));
-
-				tooltips.add(new InputTooltip(
-						ControllerInput.MENU_BACK,
-						"Done"
-				));
+				tooltips.add(new InputTooltip(ControllerInput.MENU_SELECT, tooltip.translate()));
+				tooltips.add(new InputTooltip(ControllerInput.MENU_BACK, "Done"));
 			} else {
-				tooltips.add(new InputTooltip(
-						-100,
-						tooltip.translate()
-				));
-
-				tooltips.add(new InputTooltip(
-						-99,
-						"Done"
-				));
+				tooltips.add(new InputTooltip(-100, tooltip.translate()));
+				tooltips.add(new InputTooltip(-99, "Done"));
 			}
 		}
 
@@ -148,8 +133,7 @@ public class IronAnvilStorageSelectTool extends SelectTileGameTool {
 		lastHoverBounds = null;
 
 		if (!container.anvilEntity.isWithinStorageLinkRange(pos.tileX, pos.tileY)) {
-			return new StaticMessage(
-					"Storage must be within "+STORAGE_LINK_RADIUS+" tiles of the anvil");
+			return new StaticMessage("Storage must be within " + STORAGE_LINK_RADIUS + " tiles of the anvil");
 		}
 
 		LevelObject master = getMaster(pos);
@@ -167,8 +151,7 @@ public class IronAnvilStorageSelectTool extends SelectTileGameTool {
 		lastHoverBounds = master.getMultiTile().getTileRectangle(master.tileX, master.tileY);
 
 		if (!container.anvilEntity.isWithinStorageLinkRange(target.x, target.y)) {
-			return new StaticMessage(
-					"Storage must be within "+STORAGE_LINK_RADIUS+" tiles of the anvil");
+			return new StaticMessage("Storage must be within " + STORAGE_LINK_RADIUS + " tiles of the anvil");
 		}
 
 		if (current != null && current.equals(target)) {
@@ -179,6 +162,10 @@ public class IronAnvilStorageSelectTool extends SelectTileGameTool {
 			return new StaticMessage(input
 					? "This container is already the output storage"
 					: "This container is already the input storage");
+		}
+
+		if (container.anvilEntity.isStorageUsedByOtherAnvil(target)) {
+			return new StaticMessage("This container is already linked to another anvil");
 		}
 
 		ObjectEntity objectEntity = master.getObjectEntity();
@@ -199,8 +186,7 @@ public class IronAnvilStorageSelectTool extends SelectTileGameTool {
 		if (object == null) {
 			return null;
 		}
-
-		return object.getMasterLevelObject().orElse(null);
+		return (LevelObject)object.getMasterLevelObject().orElse(null);
 	}
 
 	@Override
