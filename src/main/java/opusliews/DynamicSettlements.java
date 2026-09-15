@@ -26,6 +26,8 @@ import opusliews.armor.BuilderShirtArmorItem;
 import opusliews.blueprint.BlueprintAreaLevelData;
 import opusliews.buff.MalignanceGogglesBuff;
 import opusliews.container.BlueprintWorkstationContainer;
+import opusliews.crafting.AnvilCraftingFeature;
+import opusliews.crafting.AnvilCraftingTasksFeature;
 import opusliews.damage.DamageRepairLevelData;
 import opusliews.damage.WeatheringLevelData;
 import opusliews.forms.BlueprintWorkstationContainerForm;
@@ -252,6 +254,9 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketSettlementSleepSettingsRequest.class);
 		PacketRegistry.registerPacket(PacketSettlementSleepSettingsSync.class);
 		PacketRegistry.registerPacket(PacketSettlementSleepSettingsUpdate.class);
+
+		AnvilCraftingFeature.register();
+		AnvilCraftingTasksFeature.register();
 	}
 
 	public void postInit() {

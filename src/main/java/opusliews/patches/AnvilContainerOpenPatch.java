@@ -6,14 +6,14 @@ import necesse.inventory.container.object.CraftingStationContainer;
 import necesse.level.gameObject.container.IronAnvilObject;
 import necesse.level.maps.Level;
 import net.bytebuddy.asm.Advice;
-import opusliews.crafting.IronAnvilFeature;
+import opusliews.crafting.AnvilCraftingFeature;
 
 @ModMethodPatch(
 		target = CraftingStationContainer.class,
 		name = "openAndSendContainer",
 		arguments = {int.class, ServerClient.class, Level.class, int.class, int.class}
 )
-public class IronAnvilContainerOpenPatch {
+public class AnvilContainerOpenPatch {
 	@Advice.OnMethodEnter
 	public static void onEnter(
 			@Advice.Argument(value = 0, readOnly = false) int containerID,
@@ -22,7 +22,7 @@ public class IronAnvilContainerOpenPatch {
 			@Advice.Argument(4) int tileY
 	) {
 		if (level.getObject(tileX, tileY) instanceof IronAnvilObject) {
-			containerID = IronAnvilFeature.ironAnvilContainerID;
+			containerID = AnvilCraftingFeature.anvilContainerID;
 		}
 	}
 }

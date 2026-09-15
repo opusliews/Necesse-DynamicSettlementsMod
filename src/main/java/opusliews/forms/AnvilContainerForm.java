@@ -11,15 +11,15 @@ import necesse.gfx.forms.components.containerSlot.FormContainerSlot;
 import necesse.gfx.forms.position.FormFixedPosition;
 import necesse.gfx.forms.position.FormPositionContainer;
 import necesse.gfx.forms.presets.containerComponent.object.CraftingStationContainerForm;
-import opusliews.container.IronAnvilContainer;
-import opusliews.crafting.IronAnvilStorageSelectTool;
-import opusliews.crafting.IronAnvilTaskBoardSelectTool;
-import opusliews.hud.IronAnvilLinkHud;
+import opusliews.container.AnvilContainer;
+import opusliews.crafting.AnvilStorageSelectTool;
+import opusliews.crafting.AnvilTaskBoardSelectTool;
+import opusliews.hud.AnvilLinkHud;
 
 import java.util.ArrayList;
 import java.util.Collection;
 
-public class IronAnvilContainerForm extends CraftingStationContainerForm {
+public class AnvilContainerForm extends CraftingStationContainerForm {
 	private static final int LEFT_PANEL_WIDTH = 118;
 	private static final int LEFT_PANEL_GAP = 8;
 	private static final int OUTPUT_PANEL_WIDTH = 62;
@@ -27,12 +27,12 @@ public class IronAnvilContainerForm extends CraftingStationContainerForm {
 	private static final int OUTPUT_PANEL_GAP = 12;
 
 	private final Client client;
-	private final IronAnvilContainer ironAnvilContainer;
+	private final AnvilContainer anvilContainer;
 
-	public IronAnvilContainerForm(Client client, IronAnvilContainer container) {
+	public AnvilContainerForm(Client client, AnvilContainer container) {
 		super(client, container);
 		this.client = client;
-		this.ironAnvilContainer = container;
+		this.anvilContainer = container;
 
 		int vanillaWidth = craftingForm.getWidth();
 		int leftOffset = LEFT_PANEL_WIDTH + LEFT_PANEL_GAP;
@@ -77,7 +77,7 @@ public class IronAnvilContainerForm extends CraftingStationContainerForm {
 		taskBoardButton.onClicked(event -> startTaskBoardSelection());
 
 		int outputPanelX = leftOffset + vanillaWidth + OUTPUT_PANEL_GAP;
-		Form outputPanel = craftingForm.addComponent(new Form("ironAnvilOutput", OUTPUT_PANEL_WIDTH, OUTPUT_PANEL_HEIGHT));
+		Form outputPanel = craftingForm.addComponent(new Form("anvilOutput", OUTPUT_PANEL_WIDTH, OUTPUT_PANEL_HEIGHT));
 		outputPanel.setPosition(new FormFixedPosition(outputPanelX, 92));
 		outputPanel.addComponent(new FormContainerSlot(client, container, container.OUTPUT_SLOT, 11, 8));
 		outputPanel.addComponent(new FormProgressBar(9, 54, 44, false) {
@@ -91,14 +91,14 @@ public class IronAnvilContainerForm extends CraftingStationContainerForm {
 	@Override
 	protected void init() {
 		super.init();
-		IronAnvilLinkHud.setOpenAnvil(client.getLevel(), ironAnvilContainer.anvilEntity.tileX, ironAnvilContainer.anvilEntity.tileY);
+		AnvilLinkHud.setOpenAnvil(client.getLevel(), anvilContainer.anvilEntity.tileX, anvilContainer.anvilEntity.tileY);
 	}
 
 	private void startStorageSelection(boolean input) {
 		startSelection();
 		GameToolManager.setGameTool(
-				new IronAnvilStorageSelectTool(
-						ironAnvilContainer,
+				new AnvilStorageSelectTool(
+						anvilContainer,
 						client.getLevel(),
 						input,
 						this::finishSelection
@@ -110,8 +110,8 @@ public class IronAnvilContainerForm extends CraftingStationContainerForm {
 	private void startTaskBoardSelection() {
 		startSelection();
 		GameToolManager.setGameTool(
-				new IronAnvilTaskBoardSelectTool(
-						ironAnvilContainer,
+				new AnvilTaskBoardSelectTool(
+						anvilContainer,
 						client.getLevel(),
 						this::finishSelection
 				),
@@ -121,7 +121,7 @@ public class IronAnvilContainerForm extends CraftingStationContainerForm {
 
 	private void startSelection() {
 		GameToolManager.clearGameTools(this);
-		ironAnvilContainer.setSelectingLinkedElement.runAndSend(true);
+		anvilContainer.setSelectingLinkedElement.runAndSend(true);
 		craftingForm.setHidden(true);
 
 		MainGameFormManager formManager = (MainGameFormManager)GlobalData.getCurrentState().getFormManager();
@@ -130,7 +130,7 @@ public class IronAnvilContainerForm extends CraftingStationContainerForm {
 	}
 
 	private void finishSelection() {
-		ironAnvilContainer.setSelectingLinkedElement.runAndSend(false);
+		anvilContainer.setSelectingLinkedElement.runAndSend(false);
 		craftingForm.setHidden(false);
 
 		MainGameFormManager formManager = (MainGameFormManager)GlobalData.getCurrentState().getFormManager();
@@ -140,15 +140,15 @@ public class IronAnvilContainerForm extends CraftingStationContainerForm {
 
 	@Override
 	public void dispose() {
-		if (ironAnvilContainer.isSelectingStorage()) {
+		if (anvilContainer.isSelectingStorage()) {
 			finishSelection();
 		}
 
 		GameToolManager.clearGameTools(this);
-		IronAnvilLinkHud.clearOpenAnvil(
+		AnvilLinkHud.clearOpenAnvil(
 				client.getLevel(),
-				ironAnvilContainer.anvilEntity.tileX,
-				ironAnvilContainer.anvilEntity.tileY
+				anvilContainer.anvilEntity.tileX,
+				anvilContainer.anvilEntity.tileY
 		);
 		super.dispose();
 	}

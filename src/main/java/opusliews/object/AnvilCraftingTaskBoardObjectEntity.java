@@ -105,8 +105,8 @@ public class AnvilCraftingTaskBoardObjectEntity extends ObjectEntity {
 		}
 
 		ObjectEntity objectEntity = getLevel().entityManager.getObjectEntity(linkedAnvil.x, linkedAnvil.y);
-		if (objectEntity instanceof IronAnvilObjectEntity) {
-			Point taskBoard = ((IronAnvilObjectEntity)objectEntity).getTaskBoard();
+		if (objectEntity instanceof AnvilObjectEntity) {
+			Point taskBoard = ((AnvilObjectEntity)objectEntity).getTaskBoard();
 			if (taskBoard == null || taskBoard.x != tileX || taskBoard.y != tileY) {
 				setLinkedAnvilInternal(null, true);
 			}
@@ -129,8 +129,8 @@ public class AnvilCraftingTaskBoardObjectEntity extends ObjectEntity {
 
 		int claimCount = 0;
 		for (Object object : getLevel().entityManager.objectEntities) {
-			if (object instanceof IronAnvilObjectEntity) {
-				Point board = ((IronAnvilObjectEntity)object).getTaskBoard();
+			if (object instanceof AnvilObjectEntity) {
+				Point board = ((AnvilObjectEntity)object).getTaskBoard();
 				if (board != null && board.x == tileX && board.y == tileY) {
 					claimCount++;
 				}
@@ -138,8 +138,8 @@ public class AnvilCraftingTaskBoardObjectEntity extends ObjectEntity {
 		}
 
 		ObjectEntity ownerEntity = getLevel().entityManager.getObjectEntity(linkedAnvil.x, linkedAnvil.y);
-		if (ownerEntity instanceof IronAnvilObjectEntity) {
-			Point board = ((IronAnvilObjectEntity)ownerEntity).getTaskBoard();
+		if (ownerEntity instanceof AnvilObjectEntity) {
+			Point board = ((AnvilObjectEntity)ownerEntity).getTaskBoard();
 			if (board == null || board.x != tileX || board.y != tileY) {
 				return null;
 			}

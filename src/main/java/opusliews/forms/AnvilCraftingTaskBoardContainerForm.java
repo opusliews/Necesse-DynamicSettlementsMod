@@ -33,7 +33,7 @@ import necesse.level.gameObject.container.CraftingStationObject;
 import necesse.level.maps.LevelObject;
 import opusliews.container.AnvilCraftingTaskBoardContainer;
 import opusliews.crafting.AnvilCraftingTask;
-import opusliews.hud.IronAnvilLinkHud;
+import opusliews.hud.AnvilLinkHud;
 
 import java.awt.*;
 import java.util.List;
@@ -441,7 +441,7 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 	@Override
 	protected void init() {
 		super.init();
-		IronAnvilLinkHud.setOpenTaskBoard(
+		AnvilLinkHud.setOpenTaskBoard(
 				client.getLevel(),
 				taskContainer.boardEntity.tileX,
 				taskContainer.boardEntity.tileY
@@ -476,7 +476,7 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 
 	@Override
 	public void dispose() {
-		IronAnvilLinkHud.clearOpenTaskBoard(
+		AnvilLinkHud.clearOpenTaskBoard(
 				client.getLevel(),
 				taskContainer.boardEntity.tileX,
 				taskContainer.boardEntity.tileY

@@ -6,14 +6,14 @@ import necesse.level.gameObject.GameObject;
 import necesse.level.gameObject.container.IronAnvilObject;
 import necesse.level.maps.Level;
 import net.bytebuddy.asm.Advice;
-import opusliews.object.IronAnvilObjectEntity;
+import opusliews.object.AnvilObjectEntity;
 
 @ModMethodPatch(
 		target = GameObject.class,
 		name = "getNewObjectEntity",
 		arguments = {Level.class, int.class, int.class}
 )
-public class IronAnvilObjectEntityPatch {
+public class AnvilObjectEntityPatch {
 	@Advice.OnMethodExit
 	public static void onExit(
 			@Advice.This GameObject object,
@@ -23,7 +23,7 @@ public class IronAnvilObjectEntityPatch {
 			@Advice.Return(readOnly = false) ObjectEntity result
 	) {
 		if (result == null && object instanceof IronAnvilObject) {
-			result = new IronAnvilObjectEntity(level, tileX, tileY);
+			result = new AnvilObjectEntity(level, tileX, tileY);
 		}
 	}
 }

@@ -16,15 +16,15 @@ import necesse.gfx.gameTooltips.ListGameTooltips;
 import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
 import necesse.level.maps.TilePosition;
-import opusliews.container.IronAnvilContainer;
+import opusliews.container.AnvilContainer;
 import opusliews.object.AnvilCraftingTaskBoardObjectEntity;
 
-public class IronAnvilTaskBoardSelectTool extends SelectTileGameTool {
-	private final IronAnvilContainer container;
+public class AnvilTaskBoardSelectTool extends SelectTileGameTool {
+	private final AnvilContainer container;
 	private final Runnable finished;
 
-	public IronAnvilTaskBoardSelectTool(
-			IronAnvilContainer container,
+	public AnvilTaskBoardSelectTool(
+			AnvilContainer container,
 			Level level,
 			Runnable finished
 	) {
