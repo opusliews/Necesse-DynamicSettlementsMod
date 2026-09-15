@@ -9,6 +9,7 @@ import necesse.engine.journal.listeners.CraftedRecipeJournalChallengeListener;
 import necesse.engine.network.NetworkClient;
 import necesse.engine.network.PacketReader;
 import necesse.engine.network.server.ServerClient;
+import necesse.inventory.container.customAction.BooleanCustomAction;
 import necesse.engine.registries.JournalChallengeRegistry;
 import necesse.entity.mobs.friendly.human.HumanMob;
 import necesse.entity.objectEntity.ObjectEntity;
@@ -23,6 +24,7 @@ import necesse.inventory.recipe.Recipe;
 import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
 import necesse.level.maps.levelData.settlementData.settler.romancePersonalities.PlayerRomanceManager;
+import opusliews.object.AnvilCraftingTaskBoardObjectEntity;
 import opusliews.object.IronAnvilObjectEntity;
 
 public class IronAnvilContainer extends CraftingStationContainer {
@@ -32,6 +34,8 @@ public class IronAnvilContainer extends CraftingStationContainer {
 	public final int OUTPUT_SLOT;
 	public final PointCustomAction setInputStorage;
 	public final PointCustomAction setOutputStorage;
+	public final PointCustomAction setTaskBoard;
+	public final BooleanCustomAction setSelectingLinkedElement;
 
 	private boolean crafting;
 	private int craftingRecipeID = -1;
@@ -87,6 +91,22 @@ public class IronAnvilContainer extends CraftingStationContainer {
 				if (client.isServer()) {
 					applyStorageLink(false, x, y);
 				}
+			}
+		});
+
+		setTaskBoard = registerAction(new PointCustomAction() {
+			@Override
+			protected void run(int x, int y) {
+				if (client.isServer()) {
+					applyTaskBoardLink(x, y);
+				}
+			}
+		});
+
+		setSelectingLinkedElement = registerAction(new BooleanCustomAction() {
+			@Override
+			protected void run(boolean value) {
+				selectingStorage = value;
 			}
 		});
 	}
@@ -160,7 +180,6 @@ public class IronAnvilContainer extends CraftingStationContainer {
 		}
 
 		Level level = client.getLevel();
-
 		return level.getObjectID(objectX, objectY) == craftingStationObject.getID();
 	}
 
@@ -187,8 +206,7 @@ public class IronAnvilContainer extends CraftingStationContainer {
 
 		InventoryItem resultItem = event.resultItem;
 		if (resultItem == null) {
-			// If another mod cancels/changes the crafted
-			// result to null after ingredients were consumed, restore them.
+			// If another mod cancels/changes the crafted result to null after ingredients were consumed, restore them.
 			event.itemsUsed.forEach(removed -> removed.revert());
 			return;
 		}
@@ -247,6 +265,10 @@ public class IronAnvilContainer extends CraftingStationContainer {
 			return;
 		}
 
+		if (anvilEntity.isStorageUsedByOtherAnvil(target)) {
+			return;
+		}
+
 		ObjectEntity targetEntity = master.getObjectEntity();
 		if (!(targetEntity instanceof OEInventory) || targetEntity == anvilEntity) {
 			return;
@@ -262,6 +284,32 @@ public class IronAnvilContainer extends CraftingStationContainer {
 		} else {
 			anvilEntity.setOutputStorage(target);
 		}
+	}
+
+	private void applyTaskBoardLink(int x, int y) {
+		Point current = anvilEntity.getTaskBoard();
+		if (current != null && current.x == x && current.y == y) {
+			anvilEntity.setTaskBoard(null);
+			return;
+		}
+
+		LevelObject master = getStorageMaster(x, y);
+		if (master == null) {
+			return;
+		}
+
+		ObjectEntity targetEntity = master.getObjectEntity();
+		if (!(targetEntity instanceof AnvilCraftingTaskBoardObjectEntity)) {
+			return;
+		}
+
+		AnvilCraftingTaskBoardObjectEntity board = (AnvilCraftingTaskBoardObjectEntity)targetEntity;
+		Point owner = board.getLinkedAnvil();
+		if (owner != null && (owner.x != anvilEntity.tileX || owner.y != anvilEntity.tileY)) {
+			return;
+		}
+
+		anvilEntity.setTaskBoard(new Point(master.tileX, master.tileY));
 	}
 
 	public LevelObject getStorageMaster(int x, int y) {

@@ -17,14 +17,23 @@ import necesse.gfx.ui.HUD;
 import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
 import necesse.level.maps.hudManager.HudDrawElement;
+import opusliews.object.AnvilCraftingTaskBoardObjectEntity;
 import opusliews.object.IronAnvilObjectEntity;
 
 public class IronAnvilLinkHud {
+	private static final Color INPUT_COLOR = new Color(40, 220, 70, 255);
+	private static final Color OUTPUT_COLOR = new Color(230, 55, 55, 255);
+	private static final Color TASK_LINK_COLOR = new Color(40, 220, 70, 255);
+
 	private static final Map<Level, HudDrawElement> elements = new WeakHashMap<>();
-	private static Level openLevel;
+	private static Level openAnvilLevel;
 	private static int openAnvilX;
 	private static int openAnvilY;
 	private static boolean hasOpenAnvil;
+	private static Level openBoardLevel;
+	private static int openBoardX;
+	private static int openBoardY;
+	private static boolean hasOpenBoard;
 
 	private IronAnvilLinkHud() {
 	}
@@ -37,14 +46,19 @@ public class IronAnvilLinkHud {
 		HudDrawElement element = new HudDrawElement() {
 			@Override
 			public void addDrawables(List list, GameCamera camera, PlayerMob perspective) {
+				final DrawOptionsList options = new DrawOptionsList();
+
 				IronAnvilObjectEntity anvil = getDisplayedAnvil(level, camera);
-				if (anvil == null) {
-					return;
+				if (anvil != null) {
+					addStorageOutline(options, level, camera, anvil.getInputStorage(), INPUT_COLOR);
+					addStorageOutline(options, level, camera, anvil.getOutputStorage(), OUTPUT_COLOR);
+					addTaskBoardOutline(options, level, camera, anvil.getTaskBoard(), TASK_LINK_COLOR);
 				}
 
-				final DrawOptionsList options = new DrawOptionsList();
-				addStorageOutline(options, level, camera, anvil.getInputStorage(), new Color(40, 220, 70, 255));
-				addStorageOutline(options, level, camera, anvil.getOutputStorage(), new Color(230, 55, 55, 255));
+				AnvilCraftingTaskBoardObjectEntity board = getDisplayedBoard(level, camera);
+				if (board != null) {
+					addAnvilOutline(options, level, camera, board.getLinkedAnvil(), TASK_LINK_COLOR);
+				}
 
 				if (options.isEmpty()) {
 					return;
@@ -69,7 +83,7 @@ public class IronAnvilLinkHud {
 	}
 
 	public static void setOpenAnvil(Level level, int tileX, int tileY) {
-		openLevel = level;
+		openAnvilLevel = level;
 		openAnvilX = tileX;
 		openAnvilY = tileY;
 		hasOpenAnvil = true;
@@ -77,20 +91,62 @@ public class IronAnvilLinkHud {
 	}
 
 	public static void clearOpenAnvil(Level level, int tileX, int tileY) {
-		if (hasOpenAnvil && openLevel == level && openAnvilX == tileX && openAnvilY == tileY) {
+		if (hasOpenAnvil && openAnvilLevel == level && openAnvilX == tileX && openAnvilY == tileY) {
 			hasOpenAnvil = false;
-			openLevel = null;
+			openAnvilLevel = null;
+		}
+	}
+
+	public static void setOpenTaskBoard(Level level, int tileX, int tileY) {
+		openBoardLevel = level;
+		openBoardX = tileX;
+		openBoardY = tileY;
+		hasOpenBoard = true;
+		ensureAdded(level);
+	}
+
+	public static void clearOpenTaskBoard(Level level, int tileX, int tileY) {
+		if (hasOpenBoard && openBoardLevel == level && openBoardX == tileX && openBoardY == tileY) {
+			hasOpenBoard = false;
+			openBoardLevel = null;
 		}
 	}
 
 	private static IronAnvilObjectEntity getDisplayedAnvil(Level level, GameCamera camera) {
-		if (hasOpenAnvil && openLevel == level) {
+		if (hasOpenAnvil && openAnvilLevel == level) {
 			ObjectEntity openEntity = level.entityManager.getObjectEntity(openAnvilX, openAnvilY);
 			if (openEntity instanceof IronAnvilObjectEntity) {
 				return (IronAnvilObjectEntity)openEntity;
 			}
 		}
 
+		if (hasOpenBoard && openBoardLevel == level) {
+			return null;
+		}
+
+		ObjectEntity hoveredEntity = getHoveredMasterEntity(level, camera);
+		return hoveredEntity instanceof IronAnvilObjectEntity ? (IronAnvilObjectEntity)hoveredEntity : null;
+	}
+
+	private static AnvilCraftingTaskBoardObjectEntity getDisplayedBoard(Level level, GameCamera camera) {
+		if (hasOpenBoard && openBoardLevel == level) {
+			ObjectEntity openEntity = level.entityManager.getObjectEntity(openBoardX, openBoardY);
+			if (openEntity instanceof AnvilCraftingTaskBoardObjectEntity) {
+				return (AnvilCraftingTaskBoardObjectEntity)openEntity;
+			}
+		}
+
+		if (hasOpenAnvil && openAnvilLevel == level) {
+			return null;
+		}
+
+		ObjectEntity hoveredEntity = getHoveredMasterEntity(level, camera);
+		return hoveredEntity instanceof AnvilCraftingTaskBoardObjectEntity
+				? (AnvilCraftingTaskBoardObjectEntity)hoveredEntity
+				: null;
+	}
+
+	private static ObjectEntity getHoveredMasterEntity(Level level, GameCamera camera) {
 		int mouseX = camera.getMouseLevelTilePosX();
 		int mouseY = camera.getMouseLevelTilePosY();
 		LevelObject hovered = level.getLevelObject(mouseX, mouseY);
@@ -99,8 +155,7 @@ public class IronAnvilLinkHud {
 		}
 
 		LevelObject master = (LevelObject)hovered.getMasterLevelObject().orElse(hovered);
-		ObjectEntity hoveredEntity = master.getObjectEntity();
-		return hoveredEntity instanceof IronAnvilObjectEntity ? (IronAnvilObjectEntity)hoveredEntity : null;
+		return master.getObjectEntity();
 	}
 
 	private static void addStorageOutline(
@@ -114,13 +169,8 @@ public class IronAnvilLinkHud {
 			return;
 		}
 
-		LevelObject object = level.getLevelObject(storage.x, storage.y);
-		if (object == null) {
-			return;
-		}
-
-		LevelObject master = object.getMasterLevelObject().orElse(null);
-		if (master == null || master.tileX != storage.x || master.tileY != storage.y) {
+		LevelObject master = getStoredMaster(level, storage);
+		if (master == null) {
 			return;
 		}
 
@@ -134,6 +184,49 @@ public class IronAnvilLinkHud {
 			return;
 		}
 
+		addMasterOutline(options, camera, master, color);
+	}
+
+	private static void addTaskBoardOutline(
+			DrawOptionsList options,
+			Level level,
+			GameCamera camera,
+			Point point,
+			Color color
+	) {
+		LevelObject master = point == null ? null : getStoredMaster(level, point);
+		if (master != null && master.getObjectEntity() instanceof AnvilCraftingTaskBoardObjectEntity) {
+			addMasterOutline(options, camera, master, color);
+		}
+	}
+
+	private static void addAnvilOutline(
+			DrawOptionsList options,
+			Level level,
+			GameCamera camera,
+			Point point,
+			Color color
+	) {
+		LevelObject master = point == null ? null : getStoredMaster(level, point);
+		if (master != null && master.getObjectEntity() instanceof IronAnvilObjectEntity) {
+			addMasterOutline(options, camera, master, color);
+		}
+	}
+
+	private static LevelObject getStoredMaster(Level level, Point point) {
+		LevelObject object = level.getLevelObject(point.x, point.y);
+		if (object == null) {
+			return null;
+		}
+
+		LevelObject master = (LevelObject)object.getMasterLevelObject().orElse(null);
+		if (master == null || master.tileX != point.x || master.tileY != point.y) {
+			return null;
+		}
+		return master;
+	}
+
+	private static void addMasterOutline(DrawOptionsList options, GameCamera camera, LevelObject master, Color color) {
 		Rectangle bounds = master.getMultiTile().getTileRectangle(master.tileX, master.tileY);
 		options.add(HUD.tileBoundOptions(camera, color, true, bounds));
 	}

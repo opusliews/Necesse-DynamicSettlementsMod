@@ -1,5 +1,7 @@
 package opusliews.object;
 
+import java.awt.Point;
+import java.util.ArrayList;
 import necesse.engine.localization.message.GameMessage;
 import necesse.engine.network.PacketReader;
 import necesse.engine.network.PacketWriter;
@@ -7,6 +9,7 @@ import necesse.engine.network.packet.PacketObjectEntity;
 import necesse.engine.save.LoadData;
 import necesse.engine.save.SaveData;
 import necesse.engine.save.levelData.InventorySave;
+import necesse.entity.TileEntity;
 import necesse.entity.objectEntity.ObjectEntity;
 import necesse.entity.objectEntity.interfaces.OEInventory;
 import necesse.inventory.Inventory;
@@ -14,9 +17,6 @@ import necesse.inventory.InventoryItem;
 import necesse.inventory.InventoryRange;
 import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
-
-import java.awt.*;
-import java.util.ArrayList;
 
 public class IronAnvilObjectEntity extends ObjectEntity implements OEInventory {
 	public static final String TYPE = "dynamicironanvil";
@@ -26,6 +26,7 @@ public class IronAnvilObjectEntity extends ObjectEntity implements OEInventory {
 
 	private Point inputStorage;
 	private Point outputStorage;
+	private Point taskBoard;
 
 	public IronAnvilObjectEntity(Level level, int tileX, int tileY) {
 		super(level, TYPE, tileX, tileY);
@@ -41,6 +42,7 @@ public class IronAnvilObjectEntity extends ObjectEntity implements OEInventory {
 		save.addSaveData(InventorySave.getSave(inventory, "INVENTORY"));
 		addStorageLinkSaveData(save, "inputStorage", inputStorage);
 		addStorageLinkSaveData(save, "outputStorage", outputStorage);
+		addStorageLinkSaveData(save, "taskBoard", taskBoard);
 	}
 
 	@Override
@@ -53,6 +55,7 @@ public class IronAnvilObjectEntity extends ObjectEntity implements OEInventory {
 
 		inputStorage = readStorageLinkSaveData(save, "inputStorage");
 		outputStorage = readStorageLinkSaveData(save, "outputStorage");
+		taskBoard = readStorageLinkSaveData(save, "taskBoard");
 	}
 
 	@Override
@@ -61,6 +64,7 @@ public class IronAnvilObjectEntity extends ObjectEntity implements OEInventory {
 		inventory.writeContent(writer);
 		writeStorageLink(writer, inputStorage);
 		writeStorageLink(writer, outputStorage);
+		writeStorageLink(writer, taskBoard);
 	}
 
 	@Override
@@ -69,6 +73,7 @@ public class IronAnvilObjectEntity extends ObjectEntity implements OEInventory {
 		inventory.override(Inventory.getInventory(reader));
 		inputStorage = readStorageLink(reader);
 		outputStorage = readStorageLink(reader);
+		taskBoard = readStorageLink(reader);
 	}
 
 	@Override
@@ -83,18 +88,18 @@ public class IronAnvilObjectEntity extends ObjectEntity implements OEInventory {
 	@Override
 	public void clientTick() {
 		super.clientTick();
-		inventory.tickItems(this);
+		inventory.tickItems((TileEntity)this);
 	}
 
 	@Override
 	public void serverTick() {
 		super.serverTick();
-
 		validateStorageLinks();
-
+		validateTaskBoard();
 		inventory.tickItems(this);
 		serverTickInventorySync(getLevel().getServer(), this);
 	}
+
 
 	private void validateStorageLinks() {
 		if (inputStorage != null && !isValidLinkedStorage(inputStorage)) {
@@ -116,7 +121,7 @@ public class IronAnvilObjectEntity extends ObjectEntity implements OEInventory {
 			return false;
 		}
 
-		LevelObject master = object.getMasterLevelObject().orElse(null);
+		LevelObject master = (LevelObject)object.getMasterLevelObject().orElse(null);
 		if (master == null || master.tileX != point.x || master.tileY != point.y) {
 			return false;
 		}
@@ -128,6 +133,26 @@ public class IronAnvilObjectEntity extends ObjectEntity implements OEInventory {
 
 		OEInventory inventory = (OEInventory)objectEntity;
 		return inventory.getInventory() != null && inventory.getSettlementStorage() != null;
+	}
+
+	private void validateTaskBoard() {
+		if (taskBoard == null) {
+			return;
+		}
+
+		LevelObject object = getLevel().getLevelObject(taskBoard.x, taskBoard.y);
+		if (!(object.object instanceof AnvilCraftingTaskBoardObject)) {
+			setTaskBoard(null);
+			return;
+		}
+
+		ObjectEntity entity = getLevel().entityManager.getObjectEntity(taskBoard.x, taskBoard.y);
+		if (entity instanceof AnvilCraftingTaskBoardObjectEntity) {
+			Point linkedAnvil = ((AnvilCraftingTaskBoardObjectEntity)entity).getLinkedAnvil();
+			if (linkedAnvil == null || linkedAnvil.x != tileX || linkedAnvil.y != tileY) {
+				setTaskBoard(null);
+			}
+		}
 	}
 
 	@Override
@@ -167,6 +192,10 @@ public class IronAnvilObjectEntity extends ObjectEntity implements OEInventory {
 		return outputStorage == null ? null : new Point(outputStorage);
 	}
 
+	public Point getTaskBoard() {
+		return taskBoard == null ? null : new Point(taskBoard);
+	}
+
 	public void setInputStorage(Point point) {
 		inputStorage = point == null ? null : new Point(point);
 		markDirty();
@@ -177,6 +206,51 @@ public class IronAnvilObjectEntity extends ObjectEntity implements OEInventory {
 		outputStorage = point == null ? null : new Point(point);
 		markDirty();
 		syncContent();
+	}
+
+	public void setTaskBoard(Point point) {
+		Point old = taskBoard == null ? null : new Point(taskBoard);
+		taskBoard = point == null ? null : new Point(point);
+		markDirty();
+
+		if (getLevel().isServer()) {
+			Point self = new Point(tileX, tileY);
+			if (old != null && (taskBoard == null || !old.equals(taskBoard))) {
+				ObjectEntity oldEntity = getLevel().entityManager.getObjectEntity(old.x, old.y);
+				if (oldEntity instanceof AnvilCraftingTaskBoardObjectEntity) {
+					AnvilCraftingTaskBoardObjectEntity board = (AnvilCraftingTaskBoardObjectEntity)oldEntity;
+					Point owner = board.getLinkedAnvil();
+					if (owner != null && owner.equals(self)) {
+						board.setLinkedAnvilInternal(null, true);
+					}
+				}
+			}
+
+			if (taskBoard != null) {
+				ObjectEntity newEntity = getLevel().entityManager.getObjectEntity(taskBoard.x, taskBoard.y);
+				if (newEntity instanceof AnvilCraftingTaskBoardObjectEntity) {
+					((AnvilCraftingTaskBoardObjectEntity)newEntity).setLinkedAnvilInternal(self, true);
+				}
+			}
+		}
+
+		syncContent();
+	}
+
+	public boolean isStorageUsedByOtherAnvil(Point point) {
+		for (Object object : getLevel().entityManager.objectEntities) {
+			if (!(object instanceof IronAnvilObjectEntity) || object == this) {
+				continue;
+			}
+
+			IronAnvilObjectEntity other = (IronAnvilObjectEntity)object;
+			Point otherInput = other.getInputStorage();
+			Point otherOutput = other.getOutputStorage();
+			if (point.equals(otherInput) || point.equals(otherOutput)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private void syncContent() {
