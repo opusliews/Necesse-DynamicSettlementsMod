@@ -55,7 +55,7 @@ public class AnvilContainer extends CraftingStationContainer {
 
 		ObjectEntity objectEntity = levelObject.getObjectEntity();
 		if (!(objectEntity instanceof AnvilObjectEntity)) {
-			throw new IllegalStateException("Iron Anvil is missing its Dynamic Settlements object entity");
+			throw new IllegalStateException("Anvil is missing its Dynamic Settlements object entity");
 		}
 
 		anvilEntity = (AnvilObjectEntity)objectEntity;
