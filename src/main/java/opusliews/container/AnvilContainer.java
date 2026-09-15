@@ -25,12 +25,12 @@ import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
 import necesse.level.maps.levelData.settlementData.settler.romancePersonalities.PlayerRomanceManager;
 import opusliews.object.AnvilCraftingTaskBoardObjectEntity;
-import opusliews.object.IronAnvilObjectEntity;
+import opusliews.object.AnvilObjectEntity;
 
-public class IronAnvilContainer extends CraftingStationContainer {
+public class AnvilContainer extends CraftingStationContainer {
 	public static final long CRAFT_TIME_MS = 2000L;
 
-	public final IronAnvilObjectEntity anvilEntity;
+	public final AnvilObjectEntity anvilEntity;
 	public final int OUTPUT_SLOT;
 	public final PointCustomAction setInputStorage;
 	public final PointCustomAction setOutputStorage;
@@ -44,7 +44,7 @@ public class IronAnvilContainer extends CraftingStationContainer {
 
 	private boolean selectingStorage;
 
-	public IronAnvilContainer(
+	public AnvilContainer(
 			NetworkClient client,
 			int uniqueSeed,
 			SettlementDataEvent settlement,
@@ -54,11 +54,11 @@ public class IronAnvilContainer extends CraftingStationContainer {
 		super(client, uniqueSeed, settlement, levelObject, reader);
 
 		ObjectEntity objectEntity = levelObject.getObjectEntity();
-		if (!(objectEntity instanceof IronAnvilObjectEntity)) {
+		if (!(objectEntity instanceof AnvilObjectEntity)) {
 			throw new IllegalStateException("Iron Anvil is missing its Dynamic Settlements object entity");
 		}
 
-		anvilEntity = (IronAnvilObjectEntity)objectEntity;
+		anvilEntity = (AnvilObjectEntity)objectEntity;
 		OUTPUT_SLOT = addSlot(new ExtractOnlyContainerSlot(anvilEntity.inventory, 0));
 
 		craftInventories.remove(anvilEntity.inventory);

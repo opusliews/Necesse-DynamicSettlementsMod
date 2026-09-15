@@ -18,9 +18,9 @@ import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
 import necesse.level.maps.hudManager.HudDrawElement;
 import opusliews.object.AnvilCraftingTaskBoardObjectEntity;
-import opusliews.object.IronAnvilObjectEntity;
+import opusliews.object.AnvilObjectEntity;
 
-public class IronAnvilLinkHud {
+public class AnvilLinkHud {
 	private static final Color INPUT_COLOR = new Color(40, 220, 70, 255);
 	private static final Color OUTPUT_COLOR = new Color(230, 55, 55, 255);
 	private static final Color TASK_LINK_COLOR = new Color(40, 220, 70, 255);
@@ -35,7 +35,7 @@ public class IronAnvilLinkHud {
 	private static int openBoardY;
 	private static boolean hasOpenBoard;
 
-	private IronAnvilLinkHud() {
+	private AnvilLinkHud() {
 	}
 
 	public static void ensureAdded(Level level) {
@@ -48,7 +48,7 @@ public class IronAnvilLinkHud {
 			public void addDrawables(List list, GameCamera camera, PlayerMob perspective) {
 				final DrawOptionsList options = new DrawOptionsList();
 
-				IronAnvilObjectEntity anvil = getDisplayedAnvil(level, camera);
+				AnvilObjectEntity anvil = getDisplayedAnvil(level, camera);
 				if (anvil != null) {
 					addStorageOutline(options, level, camera, anvil.getInputStorage(), INPUT_COLOR);
 					addStorageOutline(options, level, camera, anvil.getOutputStorage(), OUTPUT_COLOR);
@@ -112,11 +112,11 @@ public class IronAnvilLinkHud {
 		}
 	}
 
-	private static IronAnvilObjectEntity getDisplayedAnvil(Level level, GameCamera camera) {
+	private static AnvilObjectEntity getDisplayedAnvil(Level level, GameCamera camera) {
 		if (hasOpenAnvil && openAnvilLevel == level) {
 			ObjectEntity openEntity = level.entityManager.getObjectEntity(openAnvilX, openAnvilY);
-			if (openEntity instanceof IronAnvilObjectEntity) {
-				return (IronAnvilObjectEntity)openEntity;
+			if (openEntity instanceof AnvilObjectEntity) {
+				return (AnvilObjectEntity)openEntity;
 			}
 		}
 
@@ -125,7 +125,7 @@ public class IronAnvilLinkHud {
 		}
 
 		ObjectEntity hoveredEntity = getHoveredMasterEntity(level, camera);
-		return hoveredEntity instanceof IronAnvilObjectEntity ? (IronAnvilObjectEntity)hoveredEntity : null;
+		return hoveredEntity instanceof AnvilObjectEntity ? (AnvilObjectEntity)hoveredEntity : null;
 	}
 
 	private static AnvilCraftingTaskBoardObjectEntity getDisplayedBoard(Level level, GameCamera camera) {
@@ -208,7 +208,7 @@ public class IronAnvilLinkHud {
 			Color color
 	) {
 		LevelObject master = point == null ? null : getStoredMaster(level, point);
-		if (master != null && master.getObjectEntity() instanceof IronAnvilObjectEntity) {
+		if (master != null && master.getObjectEntity() instanceof AnvilObjectEntity) {
 			addMasterOutline(options, camera, master, color);
 		}
 	}

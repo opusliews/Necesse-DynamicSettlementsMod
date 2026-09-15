@@ -18,8 +18,8 @@ import necesse.inventory.InventoryRange;
 import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
 
-public class IronAnvilObjectEntity extends ObjectEntity implements OEInventory {
-	public static final String TYPE = "dynamicironanvil";
+public class AnvilObjectEntity extends ObjectEntity implements OEInventory {
+	public static final String TYPE = "dynamicanvil";
 	public static final int STORAGE_LINK_RADIUS = 2;
 
 	public final Inventory inventory = new Inventory(1);
@@ -28,7 +28,7 @@ public class IronAnvilObjectEntity extends ObjectEntity implements OEInventory {
 	private Point outputStorage;
 	private Point taskBoard;
 
-	public IronAnvilObjectEntity(Level level, int tileX, int tileY) {
+	public AnvilObjectEntity(Level level, int tileX, int tileY) {
 		super(level, TYPE, tileX, tileY);
 
 		// The slot is an output only. Server code may set it directly, but
@@ -239,11 +239,11 @@ public class IronAnvilObjectEntity extends ObjectEntity implements OEInventory {
 
 	public boolean isStorageUsedByOtherAnvil(Point point) {
 		for (Object object : getLevel().entityManager.objectEntities) {
-			if (!(object instanceof IronAnvilObjectEntity) || object == this) {
+			if (!(object instanceof AnvilObjectEntity) || object == this) {
 				continue;
 			}
 
-			IronAnvilObjectEntity other = (IronAnvilObjectEntity)object;
+			AnvilObjectEntity other = (AnvilObjectEntity)object;
 			Point otherInput = other.getInputStorage();
 			Point otherOutput = other.getOutputStorage();
 			if (point.equals(otherInput) || point.equals(otherOutput)) {

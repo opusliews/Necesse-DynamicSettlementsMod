@@ -25,18 +25,18 @@ import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
 import necesse.level.maps.TilePosition;
 import necesse.level.maps.hudManager.HudDrawElement;
-import opusliews.container.IronAnvilContainer;
+import opusliews.container.AnvilContainer;
 
-import static opusliews.object.IronAnvilObjectEntity.STORAGE_LINK_RADIUS;
+import static opusliews.object.AnvilObjectEntity.STORAGE_LINK_RADIUS;
 
-public class IronAnvilStorageSelectTool extends SelectTileGameTool {
-	private final IronAnvilContainer container;
+public class AnvilStorageSelectTool extends SelectTileGameTool {
+	private final AnvilContainer container;
 	private final boolean input;
 	private final Runnable finished;
 	private final HudDrawElement rangeHud;
 
-	public IronAnvilStorageSelectTool(
-			IronAnvilContainer container,
+	public AnvilStorageSelectTool(
+			AnvilContainer container,
 			Level level,
 			boolean input,
 			Runnable finished
