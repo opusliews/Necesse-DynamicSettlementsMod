@@ -17,12 +17,6 @@ import necesse.gfx.forms.components.localComponents.FormLocalTextButton;
 import necesse.gfx.forms.presets.ContinueForm;
 import necesse.gfx.forms.presets.ModsForm;
 import necesse.gfx.gameFont.FontOptions;
-import necesse.inventory.recipe.Ingredient;
-import necesse.inventory.recipe.Recipe;
-import necesse.inventory.recipe.Recipes;
-import opusliews.armor.BuilderBootsArmorItem;
-import opusliews.armor.BuilderHatArmorItem;
-import opusliews.armor.BuilderShirtArmorItem;
 import opusliews.blueprint.BlueprintAreaLevelData;
 import opusliews.buff.MalignanceGogglesBuff;
 import opusliews.container.BlueprintWorkstationContainer;
@@ -31,10 +25,7 @@ import opusliews.crafting.AnvilCraftingTasksFeature;
 import opusliews.damage.DamageRepairLevelData;
 import opusliews.damage.WeatheringLevelData;
 import opusliews.forms.BlueprintWorkstationContainerForm;
-import opusliews.item.BlueprintItem;
-import opusliews.item.InspectionGlassItem;
 import opusliews.item.MalignanceGogglesItem;
-import opusliews.item.ProjectEraserItem;
 import opusliews.jobs.ConstructionLevelJob;
 import opusliews.jobs.RepairLevelJob;
 import opusliews.mobs.BuilderHumanMob;
@@ -162,20 +153,9 @@ public class DynamicSettlements {
 		SettlerRegistry.registerSettler("builder", new BuilderSettler());
 		MobRegistry.registerMob("builderhuman",
 				BuilderHumanMob.class, true);
-		ItemRegistry.registerItem("builderhat",
-				new BuilderHatArmorItem(), 50.0F, true);
-		ItemRegistry.registerItem("buildershirt",
-				new BuilderShirtArmorItem(), 50.0F, true);
-		ItemRegistry.registerItem("builderboots",
-				new BuilderBootsArmorItem(), 50.0F, true);
-		ItemRegistry.registerItem("blueprintItem",
-				new BlueprintItem(), 25.0F, true);
-		ItemRegistry.registerItem("projecteraser",
-				new ProjectEraserItem(), 30.0F, true);
-		ItemRegistry.registerItem("inspectionglass",
-				new InspectionGlassItem(), 20.0F, true);
-		ItemRegistry.registerItem("malignancegoggles",
-				new MalignanceGogglesItem(), 100.0F, true);
+
+		DSItemRegistry.registerItems();
+
 		ObjectRegistry.registerObject("blueprintworkstation",
 				new BlueprintWorkstationObject(), 100.0F, true);
 		ObjectRegistry.registerObject(
@@ -263,104 +243,7 @@ public class DynamicSettlements {
 		if (SBCompatFailure) {
 			return;
 		}
-		Recipes.registerModRecipe(new Recipe(
-				"blueprintItem",
-				1,
-				RecipeTechRegistry.WORKSTATION,
-				new Ingredient[]{
-						new Ingredient("stackofpaper", 1),
-						new Ingredient("quillandparchment", 1)
-				}
-		));
 
-		Recipes.registerModRecipe(new Recipe(
-				"blueprintworkstation",
-				1,
-				RecipeTechRegistry.WORKSTATION,
-				new Ingredient[]{
-						new Ingredient("anylog", 15),
-						new Ingredient("tungstenbar", 3),
-						new Ingredient("stackofpaper", 1)
-				}
-		));
-
-		Recipes.registerModRecipe(new Recipe(
-				"builderhat",
-				1,
-				RecipeTechRegistry.WORKSTATION,
-				new Ingredient[]{
-						new Ingredient("wool", 12),
-						new Ingredient("ironbar", 1)
-				}
-		));
-
-		Recipes.registerModRecipe(new Recipe(
-				"buildershirt",
-				1,
-				RecipeTechRegistry.WORKSTATION,
-				new Ingredient[]{
-						new Ingredient("wool", 16)
-				}
-		));
-
-		Recipes.registerModRecipe(new Recipe(
-				"builderboots",
-				1,
-				RecipeTechRegistry.WORKSTATION,
-				new Ingredient[]{
-						new Ingredient("wool", 8),
-						new Ingredient("leather", 1)
-				}
-		));
-
-		Recipes.registerModRecipe(new Recipe(
-				"projecteraser",
-				1,
-				RecipeTechRegistry.WORKSTATION,
-				new Ingredient[]{
-						new Ingredient("quillandparchment", 1),
-						new Ingredient("ironbar", 1)
-				}
-		));
-
-		Recipes.registerModRecipe(new Recipe(
-				"inspectionglass",
-				1,
-				RecipeTechRegistry.WORKSTATION,
-				new Ingredient[]{
-						new Ingredient("glass", 2),
-						new Ingredient("ironbar", 1)
-				}
-		));
-
-		Recipes.registerModRecipe(new Recipe(
-				"malignancegoggles",
-				1,
-				RecipeTechRegistry.DEMONIC_WORKSTATION,
-				new Ingredient[]{
-						new Ingredient("inspectionglass", 2),
-						new Ingredient("demonicbar", 1)
-				}
-		));
-
-		Recipes.registerModRecipe(new Recipe(
-				BuilderJobRequestBulletinObject.stringID,
-				1,
-				RecipeTechRegistry.WORKSTATION,
-				new Ingredient[]{
-						new Ingredient("stackofpaper", 1),
-						new Ingredient("quillandparchment", 1)
-				}
-		));
-
-		Recipes.registerModRecipe(new Recipe(
-				WarningBellObject.stringID,
-				1,
-				RecipeTechRegistry.WORKSTATION,
-				new Ingredient[]{
-						new Ingredient("goldbar", 3),
-						new Ingredient("ironbar", 1)
-				}
-		));
+		DSRecipeRegistry.registerRecipes();
 	}
 }
