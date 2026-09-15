@@ -1,6 +1,5 @@
 package opusliews;
 
-import necesse.engine.modLoader.annotations.ModEntry;
 import necesse.engine.registries.RecipeTechRegistry;
 import necesse.inventory.recipe.Ingredient;
 import necesse.inventory.recipe.Recipe;
@@ -10,7 +9,6 @@ import opusliews.object.WarningBellObject;
 
 import static opusliews.DSItemRegistry.*;
 
-@ModEntry
 public class DSRecipeRegistry {
 	public static void registerRecipes() {
 		Recipes.registerModRecipe(new Recipe(

@@ -1,6 +1,5 @@
 package opusliews;
 
-import necesse.engine.modLoader.annotations.ModEntry;
 import necesse.engine.registries.ItemRegistry;
 import necesse.inventory.item.Item;
 import necesse.inventory.item.matItem.MatItem;
@@ -12,7 +11,7 @@ import opusliews.item.InspectionGlassItem;
 import opusliews.item.MalignanceGogglesItem;
 import opusliews.item.ProjectEraserItem;
 
-@ModEntry
+
 public class DSItemRegistry {
 	public static final String featherStringID = "feather";
 	public static final String stringStringID = "string";

@@ -1,13 +1,12 @@
 package opusliews.patches;
 
-import java.util.ArrayList;
-
 import necesse.engine.modLoader.annotations.ModMethodPatch;
 import necesse.entity.objectEntity.AbstractBeeHiveObjectEntity;
 import necesse.entity.objectEntity.ApiaryObjectEntity;
 import necesse.inventory.InventoryItem;
 import net.bytebuddy.asm.Advice;
-import opusliews.crafting.CraftingMaterialsFeature;
+
+import java.util.ArrayList;
 
 import static opusliews.DSItemRegistry.honeycombFragmentStringID;
 
