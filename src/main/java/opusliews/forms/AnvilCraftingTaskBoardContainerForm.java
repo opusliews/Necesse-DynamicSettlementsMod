@@ -558,13 +558,20 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 			Item item = ItemRegistry.getItem(task.itemID);
 			if (item != null) {
 				InventoryItem inventoryItem = new InventoryItem(item);
-				FontOptions itemOptions = new FontOptions(18);
+				int nameX = 28;
+				FontOptions itemOptions = new FontOptions(20);
 				FairType itemFairType = new FairType();
-				itemFairType.append(new FairItemGlyph(24, inventoryItem));
+				itemFairType.append(new FairItemGlyph(16, inventoryItem).onlyShowNameTooltip());
 				itemFairType.append(itemOptions, " " + inventoryItem.getItemDisplayName());
-				FormFairTypeLabel itemLabel = new FormFairTypeLabel(new StaticMessage(""), itemOptions, FairType.TextAlign.LEFT, 28, 11);
+				FormFairTypeLabel itemLabel = new FormFairTypeLabel(
+						new StaticMessage(""),
+						itemOptions,
+						FairType.TextAlign.LEFT,
+						nameX,
+						getHeight() / 2 - 10
+				);
 				itemLabel.setCustomFairType(itemFairType);
-				itemLabel.setMax(ITEM_WIDTH - 36, 1, true, true);
+				itemLabel.setMax(ITEM_WIDTH - nameX - 4, 1, true, true);
 				addComponent(itemLabel);
 			}
 
