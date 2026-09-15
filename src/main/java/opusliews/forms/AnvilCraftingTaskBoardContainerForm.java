@@ -24,6 +24,7 @@ import necesse.gfx.forms.presets.containerComponent.ContainerFormSwitcher;
 import necesse.gfx.gameFont.FontManager;
 import necesse.gfx.gameFont.FontOptions;
 import necesse.gfx.ui.ButtonColor;
+import necesse.gfx.ui.ButtonIcon;
 import necesse.gfx.ui.ButtonState;
 import necesse.inventory.InventoryItem;
 import necesse.inventory.item.Item;
@@ -42,8 +43,9 @@ import java.util.*;
 public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 	private static final int ITEM_WIDTH = 400;
 	private static final int CONDITION_WIDTH = 400;
-	private static final int CONFIG_WIDTH = 44;
-	private static final int FORM_WIDTH = ITEM_WIDTH + CONDITION_WIDTH + CONFIG_WIDTH;
+	private static final int STATUS_WIDTH = 72;
+	private static final int CONFIG_WIDTH = 72;
+	private static final int FORM_WIDTH = ITEM_WIDTH + CONDITION_WIDTH + STATUS_WIDTH + CONFIG_WIDTH;
 
 	private final Client client;
 	private final AnvilCraftingTaskBoardContainer taskContainer;
@@ -98,6 +100,9 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 			result = 31 * result + task.itemID;
 			result = 31 * result + task.conditionType;
 			result = 31 * result + task.amount;
+			result = 31 * result + (task.paused ? 1 : 0);
+			result = 31 * result + task.status;
+			result = 31 * result + task.problemDetails.hashCode();
 		}
 		return result;
 	}
@@ -133,6 +138,8 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 		content.addComponent(new FormBreakLine(FormBreakLine.ALIGN_BEGINNING, ITEM_WIDTH, 0, 0, false));
 		content.addComponent(new FormLabel("Condition", headerOptions, 0, ITEM_WIDTH + CONDITION_WIDTH / 2, headerY + 2));
 		content.addComponent(new FormBreakLine(FormBreakLine.ALIGN_BEGINNING, ITEM_WIDTH + CONDITION_WIDTH, 0, 0, false));
+		content.addComponent(new FormLabel("Status", headerOptions, 0, ITEM_WIDTH + CONDITION_WIDTH + STATUS_WIDTH / 2, headerY + 2));
+		content.addComponent(new FormBreakLine(FormBreakLine.ALIGN_BEGINNING, ITEM_WIDTH + CONDITION_WIDTH + STATUS_WIDTH, 0, 0, false));
 		content.addComponent(new FormBreakLine(FormBreakLine.ALIGN_BEGINNING, 4, flow.next(), content.getWidth() - 8, true));
 		flow.next(4);
 
@@ -146,17 +153,7 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 			content.addComponent(flow.nextY(row, 2));
 		}
 
-		int gridBottom = flow.next() + 4;
-		for (Object componentObject : content.getComponents()) {
-			if (componentObject instanceof FormBreakLine) {
-				FormBreakLine line = (FormBreakLine)componentObject;
-				if (!line.horizontal) {
-					line.length = gridBottom;
-				}
-			}
-		}
-
-		flow.next(16);
+		flow.next(12);
 		FormLocalTextButton addButton = content.addComponent(new FormLocalTextButton(
 				new StaticMessage("Add New Task"),
 				content.getWidth() / 2 - 100,
@@ -171,6 +168,14 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 		});
 
 		int fullHeight = flow.next() + 10;
+		for (Object componentObject : content.getComponents()) {
+			if (componentObject instanceof FormBreakLine) {
+				FormBreakLine line = (FormBreakLine)componentObject;
+				if (!line.horizontal) {
+					line.length = fullHeight;
+				}
+			}
+		}
 		content.setContentBox(new Rectangle(content.getWidth(), fullHeight));
 	}
 
@@ -315,7 +320,7 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 				} else {
 					collapsedPickerCategories.add(category.stringID);
 				}
-				populateItemSelect(itemContent, search);
+				populateItemSelect(itemContent, searchInputText(search));
 			});
 			itemContent.addComponent(new FormLabel(
 					category.displayName.translate(),
@@ -352,6 +357,10 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 		}
 
 		itemContent.setContentBox(new Rectangle(itemContent.getWidth(), flow.next() + 8));
+	}
+
+	private String searchInputText(String text) {
+		return text == null ? "" : text;
 	}
 
 	private void setupConditionConfig(int index) {
@@ -623,8 +632,56 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 			conditionLabel.setMax(CONDITION_WIDTH - 88, 1, true, true);
 			updateConditionLabel();
 
+			int statusX = ITEM_WIDTH + CONDITION_WIDTH;
+			ButtonIcon statusIcon;
+			String statusTooltip;
+			switch (task.status) {
+				case AnvilCraftingTask.STATUS_PAUSED:
+					statusIcon = new ButtonIcon(getInterfaceStyle(), "pause_song", new Color(145, 145, 145));
+					statusTooltip = "Paused";
+					break;
+				case AnvilCraftingTask.STATUS_PROBLEM:
+					statusIcon = new ButtonIcon(getInterfaceStyle(), "settlement_error_icon", new Color(225, 55, 55));
+					statusTooltip = task.problemDetails.isEmpty() ? "Problem" : String.join("\n", task.problemDetails);
+					break;
+				case AnvilCraftingTask.STATUS_IN_PROGRESS:
+					statusIcon = new ButtonIcon(getInterfaceStyle(), "rotate_clockwise_32", new Color(70, 145, 235));
+					statusTooltip = "In Progress";
+					break;
+				default:
+					statusIcon = new ButtonIcon(getInterfaceStyle(), "button_checked_20", new Color(55, 190, 70));
+					statusTooltip = "Finished";
+					break;
+			}
+
+			FormContentIconButton status = addComponent(new FormContentIconButton(
+					statusX + STATUS_WIDTH / 2 - 12,
+					10,
+					FormInputSize.SIZE_24,
+					ButtonColor.BASE,
+					statusIcon,
+					new GameMessage[]{new StaticMessage(statusTooltip)}
+			));
+
+			int actionX = statusX + STATUS_WIDTH;
+			FormContentIconButton pause = addComponent(new FormContentIconButton(
+					actionX + 4,
+					10,
+					FormInputSize.SIZE_24,
+					ButtonColor.BASE,
+					task.paused ? getInterfaceStyle().play_song : getInterfaceStyle().pause_song,
+					new GameMessage[]{new StaticMessage(task.paused ? "Resume" : "Pause")}
+			));
+			pause.onClicked(e -> {
+				AnvilCraftingTask current = taskContainer.boardEntity.getTask(index);
+				if (current != null) {
+					taskContainer.setTaskPaused(index, !current.paused);
+					updateBoard();
+				}
+			});
+
 			FormContentIconButton delete = addComponent(new FormContentIconButton(
-					ITEM_WIDTH + CONDITION_WIDTH + 10,
+					actionX + 40,
 					10,
 					FormInputSize.SIZE_24,
 					ButtonColor.RED,
@@ -712,9 +769,7 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 						int next = Math.max(0, Math.min(65535, current.amount + direction * amount));
 						if (next != current.amount) {
 							taskContainer.updateTask(index, current.conditionType, next);
-
-							lastSignature = getSignature();
-
+							updateConditionLabel();
 							if (event.shouldSubmitSound()) conditionLabel.playTickSound();
 						}
 					}
