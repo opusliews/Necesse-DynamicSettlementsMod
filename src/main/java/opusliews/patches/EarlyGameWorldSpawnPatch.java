@@ -4,7 +4,6 @@ import necesse.engine.modLoader.annotations.ModMethodPatch;
 import necesse.engine.registries.ObjectRegistry;
 import necesse.engine.world.World;
 import necesse.engine.world.WorldEntity;
-import necesse.entity.mobs.Mob;
 import necesse.level.gameObject.GameObject;
 import necesse.level.maps.Level;
 import net.bytebuddy.asm.Advice;
@@ -41,17 +40,10 @@ public class EarlyGameWorldSpawnPatch {
 			return;
 		}
 
-		removeSpawnElder(level, worldEntity.spawnTile);
 		ensureOakStump(level, worldEntity.spawnTile, worldEntity.getWorldSeed());
 	}
 
-	private static void removeSpawnElder(Level level, Point spawnTile) {
-		level.entityManager.mobs.streamInRegionsInTileRange(spawnTile.x, spawnTile.y, 20)
-				.filter(mob -> "elderhuman".equals(mob.getStringID()))
-				.forEach(Mob::remove);
-	}
-
-	private static void ensureOakStump(Level level, Point spawnTile, int worldSeed) {
+	public static void ensureOakStump(Level level, Point spawnTile, int worldSeed) {
 		int stumpID = ObjectRegistry.getObjectID("oaktreestump");
 		if (stumpID == -1) {
 			return;
@@ -62,7 +54,7 @@ public class EarlyGameWorldSpawnPatch {
 		for (int dx = -18; dx <= 16; dx++) {
 			for (int dy = -18; dy <= 16; dy++) {
 				double distance = Math.sqrt(dx * dx + dy * dy);
-				if (distance > 10.0 && distance <= 16.0) {
+				if (distance > 3 && distance <= 6) {
 					candidates.add(new Point(spawnTile.x + dx, spawnTile.y + dy));
 				}
 			}
