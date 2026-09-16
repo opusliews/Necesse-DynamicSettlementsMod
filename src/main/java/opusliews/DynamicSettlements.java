@@ -37,6 +37,7 @@ import opusliews.object.WarningBellObject;
 import opusliews.settler.BuilderRequestLevelData;
 import opusliews.settler.BuilderSettler;
 import opusliews.sleep.SettlementSleepSettingsLevelData;
+import opusliews.tile.ShallowHoleTile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -155,6 +156,7 @@ public class DynamicSettlements {
 				BuilderHumanMob.class, true);
 
 		DSItemRegistry.registerItems();
+		TileRegistry.registerTile(ShallowHoleTile.stringID, new ShallowHoleTile(), 0.0F, false);
 
 		ObjectRegistry.registerObject("blueprintworkstation",
 				new BlueprintWorkstationObject(), 100.0F, true);
@@ -234,6 +236,7 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketSettlementSleepSettingsRequest.class);
 		PacketRegistry.registerPacket(PacketSettlementSleepSettingsSync.class);
 		PacketRegistry.registerPacket(PacketSettlementSleepSettingsUpdate.class);
+		PacketRegistry.registerPacket(PacketDigShallowHole.class);
 
 		AnvilCraftingFeature.register();
 		AnvilCraftingTasksFeature.register();
