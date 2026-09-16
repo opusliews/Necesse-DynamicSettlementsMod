@@ -9,16 +9,17 @@ import necesse.engine.modLoader.ModLoader;
 import necesse.engine.modLoader.annotations.ModEntry;
 import necesse.engine.network.PacketReader;
 import necesse.engine.registries.*;
+import necesse.engine.sound.gameSound.GameSound;
 import necesse.engine.window.GameWindow;
 import necesse.engine.window.WindowManager;
 import necesse.entity.mobs.job.JobType;
-import necesse.inventory.item.Item;
-import necesse.inventory.item.matItem.MatItem;
 import necesse.gfx.forms.components.localComponents.FormLocalLabel;
 import necesse.gfx.forms.components.localComponents.FormLocalTextButton;
 import necesse.gfx.forms.presets.ContinueForm;
 import necesse.gfx.forms.presets.ModsForm;
 import necesse.gfx.gameFont.FontOptions;
+import necesse.inventory.item.Item;
+import necesse.inventory.item.matItem.MatItem;
 import opusliews.blueprint.BlueprintAreaLevelData;
 import opusliews.buff.MalignanceGogglesBuff;
 import opusliews.container.BlueprintWorkstationContainer;
@@ -26,9 +27,11 @@ import opusliews.crafting.AnvilCraftingFeature;
 import opusliews.crafting.AnvilCraftingTasksFeature;
 import opusliews.damage.DamageRepairLevelData;
 import opusliews.damage.WeatheringLevelData;
+import opusliews.earlygame.EarlyGameLevelData;
 import opusliews.forms.BlueprintWorkstationContainerForm;
 import opusliews.item.DirtPileItem;
 import opusliews.item.MalignanceGogglesItem;
+import opusliews.item.SharpenedStoneItem;
 import opusliews.jobs.ConstructionLevelJob;
 import opusliews.jobs.RepairLevelJob;
 import opusliews.mobs.BuilderHumanMob;
@@ -40,11 +43,7 @@ import opusliews.object.WarningBellObject;
 import opusliews.settler.BuilderRequestLevelData;
 import opusliews.settler.BuilderSettler;
 import opusliews.sleep.SettlementSleepSettingsLevelData;
-import opusliews.tile.BurningCharcoalPitTile;
-import opusliews.tile.CharcoalPitLevelData;
-import opusliews.tile.CharcoalPitTile;
-import opusliews.tile.CoveredCharcoalPitTile;
-import opusliews.tile.ShallowHoleTile;
+import opusliews.tile.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,6 +53,7 @@ public class DynamicSettlements {
 	public static int blueprintWorkstationContainerID;
 	public static boolean debugBlueprintMaterialGrant = false;
 	public static boolean SBCompatFailure = false;
+	public static GameSound stoneTapSound;
 
 	public void preInit() {
 		boolean settlementBuildersLoaded = ModLoader.getEnabledMods().stream()
@@ -164,6 +164,7 @@ public class DynamicSettlements {
 		DSItemRegistry.registerItems();
 		ItemRegistry.registerItem(DirtPileItem.stringID, new DirtPileItem(), 0.0F, true);
 		ItemRegistry.registerItem("charcoal", new MatItem(500, Item.Rarity.NORMAL), 4.0F, true);
+		ItemRegistry.registerItem(SharpenedStoneItem.stringID, new SharpenedStoneItem(), 0.5F, true);
 		TileRegistry.registerTile(ShallowHoleTile.stringID, new ShallowHoleTile(), 0.0F, false);
 		TileRegistry.registerTile(CharcoalPitTile.stringID, new CharcoalPitTile(), 0.0F, false);
 		TileRegistry.registerTile(CoveredCharcoalPitTile.stringID, new CoveredCharcoalPitTile(), 0.0F, false);
@@ -204,6 +205,7 @@ public class DynamicSettlements {
 		LevelDataRegistry.registerLevelData(BuilderRequestLevelData.managerKey, BuilderRequestLevelData.class);
 		LevelDataRegistry.registerLevelData(SettlementSleepSettingsLevelData.managerKey, SettlementSleepSettingsLevelData.class);
 		LevelDataRegistry.registerLevelData(CharcoalPitLevelData.managerKey, CharcoalPitLevelData.class);
+		LevelDataRegistry.registerLevelData(EarlyGameLevelData.managerKey, EarlyGameLevelData.class);
 
 		JobTypeRegistry.registerType(
 				"construction",
@@ -261,5 +263,10 @@ public class DynamicSettlements {
 		}
 
 		DSRecipeRegistry.registerRecipes();
+		loadSounds();
+	}
+
+	public static void loadSounds() {
+		stoneTapSound = GameSound.fromFile("StoneTap");
 	}
 }
