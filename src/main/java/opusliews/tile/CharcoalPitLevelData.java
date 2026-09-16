@@ -2,10 +2,13 @@ package opusliews.tile;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import necesse.engine.registries.TileRegistry;
 import necesse.engine.save.LoadData;
 import necesse.engine.save.SaveData;
+import necesse.inventory.InventoryItem;
 import necesse.level.maps.Level;
 import necesse.level.maps.levelData.LevelData;
 
@@ -13,6 +16,7 @@ public class CharcoalPitLevelData extends LevelData {
 	public static final String managerKey = "opuscharcoalpitdata";
 
 	private final Map<Long, List<StoredLog>> pitLogs = new HashMap<>();
+	private final Map<Long, Long> burnEndWorldTimes = new HashMap<>();
 
 	public static CharcoalPitLevelData get(Level level, boolean createNewIfNull) {
 		if (level == null) {
@@ -47,6 +51,50 @@ public class CharcoalPitLevelData extends LevelData {
 		return logs == null ? new ArrayList<>() : copyLogs(logs);
 	}
 
+	public void startBurn(int tileX, int tileY, long burnEndWorldTime) {
+		burnEndWorldTimes.put(getKey(tileX, tileY), burnEndWorldTime);
+	}
+
+	public void removeBurn(int tileX, int tileY) {
+		burnEndWorldTimes.remove(getKey(tileX, tileY));
+	}
+
+	@Override
+	public void tick() {
+		if (!isServer() || burnEndWorldTimes.isEmpty()) {
+			return;
+		}
+
+		long currentWorldTime = level.getWorldEntity().getWorldTime();
+		int burningTileID = TileRegistry.getTileID(BurningCharcoalPitTile.stringID);
+		Iterator<Map.Entry<Long, Long>> iterator = burnEndWorldTimes.entrySet().iterator();
+
+		while (iterator.hasNext()) {
+			Map.Entry<Long, Long> entry = iterator.next();
+			int tileX = (int)(entry.getKey() >> 32);
+			int tileY = (int)(long)entry.getKey();
+
+			if (!level.isTileWithinBounds(tileX, tileY) || level.getTileID(tileX, tileY) != burningTileID) {
+				iterator.remove();
+				continue;
+			}
+
+			if (currentWorldTime < entry.getValue()) {
+				continue;
+			}
+
+			iterator.remove();
+			pitLogs.remove(entry.getKey());
+			level.setTile(tileX, tileY, TileRegistry.getTileID(ShallowHoleTile.stringID));
+			level.sendTileUpdatePacket(tileX, tileY);
+			level.getLevelTile(tileX, tileY).checkAround();
+			level.getLevelObject(tileX, tileY).checkAround();
+
+			InventoryItem charcoal = new InventoryItem("charcoal", 32);
+			level.entityManager.pickups.add(charcoal.getPickupEntity(level, tileX * 32.0F + 16.0F, tileY * 32.0F + 16.0F));
+		}
+	}
+
 	@Override
 	public void addSaveData(SaveData save) {
 		super.addSaveData(save);
@@ -57,6 +105,11 @@ public class CharcoalPitLevelData extends LevelData {
 			SaveData pit = new SaveData("CHARCOAL_PIT");
 			pit.addInt("tileX", tileX);
 			pit.addInt("tileY", tileY);
+
+			Long burnEndWorldTime = burnEndWorldTimes.get(entry.getKey());
+			if (burnEndWorldTime != null) {
+				pit.addLong("burnEndWorldTime", burnEndWorldTime);
+			}
 
 			for (StoredLog log : entry.getValue()) {
 				SaveData logData = new SaveData("LOG");
@@ -73,6 +126,7 @@ public class CharcoalPitLevelData extends LevelData {
 	public void applyLoadData(LoadData save) {
 		super.applyLoadData(save);
 		pitLogs.clear();
+		burnEndWorldTimes.clear();
 
 		for (LoadData pit : save.getLoadDataByName("CHARCOAL_PIT")) {
 			int tileX = pit.getInt("tileX", 0, false);
@@ -89,7 +143,13 @@ public class CharcoalPitLevelData extends LevelData {
 			}
 
 			if (!logs.isEmpty()) {
-				pitLogs.put(getKey(tileX, tileY), logs);
+				long key = getKey(tileX, tileY);
+				pitLogs.put(key, logs);
+
+				long burnEndWorldTime = pit.getLong("burnEndWorldTime", 0L, false);
+				if (burnEndWorldTime > 0L) {
+					burnEndWorldTimes.put(key, burnEndWorldTime);
+				}
 			}
 		}
 	}

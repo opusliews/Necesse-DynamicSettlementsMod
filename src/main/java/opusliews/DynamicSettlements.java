@@ -12,6 +12,8 @@ import necesse.engine.registries.*;
 import necesse.engine.window.GameWindow;
 import necesse.engine.window.WindowManager;
 import necesse.entity.mobs.job.JobType;
+import necesse.inventory.item.Item;
+import necesse.inventory.item.matItem.MatItem;
 import necesse.gfx.forms.components.localComponents.FormLocalLabel;
 import necesse.gfx.forms.components.localComponents.FormLocalTextButton;
 import necesse.gfx.forms.presets.ContinueForm;
@@ -38,6 +40,7 @@ import opusliews.object.WarningBellObject;
 import opusliews.settler.BuilderRequestLevelData;
 import opusliews.settler.BuilderSettler;
 import opusliews.sleep.SettlementSleepSettingsLevelData;
+import opusliews.tile.BurningCharcoalPitTile;
 import opusliews.tile.CharcoalPitLevelData;
 import opusliews.tile.CharcoalPitTile;
 import opusliews.tile.CoveredCharcoalPitTile;
@@ -159,10 +162,12 @@ public class DynamicSettlements {
 				BuilderHumanMob.class, true);
 
 		DSItemRegistry.registerItems();
-		ItemRegistry.registerItem(DirtPileItem.stringID, new DirtPileItem(), 1.0F, true);
+		ItemRegistry.registerItem(DirtPileItem.stringID, new DirtPileItem(), 0.0F, true);
+		ItemRegistry.registerItem("charcoal", new MatItem(500, Item.Rarity.NORMAL), 4.0F, true);
 		TileRegistry.registerTile(ShallowHoleTile.stringID, new ShallowHoleTile(), 0.0F, false);
 		TileRegistry.registerTile(CharcoalPitTile.stringID, new CharcoalPitTile(), 0.0F, false);
 		TileRegistry.registerTile(CoveredCharcoalPitTile.stringID, new CoveredCharcoalPitTile(), 0.0F, false);
+		TileRegistry.registerTile(BurningCharcoalPitTile.stringID, new BurningCharcoalPitTile(), 0.0F, false);
 
 		ObjectRegistry.registerObject("blueprintworkstation",
 				new BlueprintWorkstationObject(), 100.0F, true);

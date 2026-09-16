@@ -1,22 +1,18 @@
 package opusliews.tile;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import necesse.engine.registries.TileRegistry;
 import necesse.engine.util.GameMath;
 import necesse.entity.mobs.PlayerMob;
 import necesse.inventory.Inventory;
 import necesse.inventory.InventoryItem;
-import necesse.inventory.item.Item;
+import necesse.inventory.item.TorchItem;
 import necesse.inventory.item.toolItem.shovelToolItem.ShovelToolItem;
 import necesse.level.maps.Level;
 import opusliews.item.DirtPileItem;
 import opusliews.network.PacketCharcoalPitInteract;
 import opusliews.tile.CharcoalPitLevelData.StoredLog;
+
+import java.util.*;
 
 public final class CharcoalPitSystem {
 	private static final int requiredLogs = 32;
@@ -44,9 +40,11 @@ public final class CharcoalPitSystem {
 		if (tileID == TileRegistry.getTileID(ShallowHoleTile.stringID)) {
 			allowedAction = isDirtPile(selected) || isLog(selected);
 		} else if (tileID == TileRegistry.getTileID(CharcoalPitTile.stringID)) {
-			allowedAction = isDirtPile(selected) || isShovel(selected);
+			allowedAction = isDirtPile(selected) || isShovel(selected) || isTorch(selected);
 		} else if (tileID == TileRegistry.getTileID(CoveredCharcoalPitTile.stringID)) {
-			allowedAction = isShovel(selected);
+			allowedAction = isShovel(selected) || isTorch(selected);
+		} else if (tileID == TileRegistry.getTileID(BurningCharcoalPitTile.stringID)) {
+			return true;
 		}
 
 		if (allowedAction) {
@@ -87,10 +85,12 @@ public final class CharcoalPitSystem {
 			return;
 		}
 
-		if (tileID == TileRegistry.getTileID(CoveredCharcoalPitTile.stringID)
-				&& isShovel(selected)
-				&& isShovelInRange(level, player, selected, tileX, tileY)) {
-			extractPit(level, tileX, tileY, true);
+		if (tileID == TileRegistry.getTileID(CoveredCharcoalPitTile.stringID)) {
+			if (isShovel(selected) && isShovelInRange(level, player, selected, tileX, tileY)) {
+				extractPit(level, tileX, tileY, true);
+			} else if (isTorch(selected) && isTorchInRange(level, player, selected, tileX, tileY)) {
+				ignitePit(level, tileX, tileY);
+			}
 		}
 	}
 
@@ -102,7 +102,8 @@ public final class CharcoalPitSystem {
 		int tileID = level.getTileID(tileX, tileY);
 		return tileID == TileRegistry.getTileID(ShallowHoleTile.stringID)
 				|| tileID == TileRegistry.getTileID(CharcoalPitTile.stringID)
-				|| tileID == TileRegistry.getTileID(CoveredCharcoalPitTile.stringID);
+				|| tileID == TileRegistry.getTileID(CoveredCharcoalPitTile.stringID)
+				|| tileID == TileRegistry.getTileID(BurningCharcoalPitTile.stringID);
 	}
 
 	private static void fillHoleWithDirt(Level level, PlayerMob player, InventoryItem selected, int tileX, int tileY) {
@@ -111,6 +112,7 @@ public final class CharcoalPitSystem {
 		CharcoalPitLevelData data = CharcoalPitLevelData.get(level, false);
 		if (data != null) {
 			data.removeLogs(tileX, tileY);
+			data.removeBurn(tileX, tileY);
 		}
 	}
 
@@ -137,6 +139,9 @@ public final class CharcoalPitSystem {
 	private static void extractPit(Level level, int tileX, int tileY, boolean returnDirt) {
 		CharcoalPitLevelData data = CharcoalPitLevelData.get(level, false);
 		List<StoredLog> logs = data == null ? new ArrayList<>() : data.removeLogs(tileX, tileY);
+		if (data != null) {
+			data.removeBurn(tileX, tileY);
+		}
 
 		setTile(level, tileX, tileY, TileRegistry.getTileID(ShallowHoleTile.stringID));
 		for (StoredLog log : logs) {
@@ -146,6 +151,18 @@ public final class CharcoalPitSystem {
 		if (returnDirt) {
 			dropItem(level, tileX, tileY, new InventoryItem(DirtPileItem.stringID, 1));
 		}
+	}
+
+	private static void ignitePit(Level level, int tileX, int tileY) {
+		CharcoalPitLevelData data = CharcoalPitLevelData.get(level, false);
+		if (data == null || data.getLogs(tileX, tileY).isEmpty()) {
+			return;
+		}
+
+		long fullDayDuration = (long)level.getWorldEntity().getDayTimeMax() * 1000L;
+		long burnEndWorldTime = level.getWorldEntity().getWorldTime() + 10000;//fullDayDuration;
+		data.startBurn(tileX, tileY, burnEndWorldTime);
+		setTile(level, tileX, tileY, TileRegistry.getTileID(BurningCharcoalPitTile.stringID));
 	}
 
 	private static List<StoredLog> removeLogs(PlayerMob player, String preferredItemStringID, int amount) {
@@ -223,6 +240,10 @@ public final class CharcoalPitSystem {
 		return item != null && item.item instanceof ShovelToolItem;
 	}
 
+	private static boolean isTorch(InventoryItem item) {
+		return item != null && item.item instanceof TorchItem;
+	}
+
 	private static boolean isWithinRange(PlayerMob player, int tileX, int tileY) {
 		return player.getPositionPoint().distance(tileX * 32.0 + 16.0, tileY * 32.0 + 16.0) <= interactRange;
 	}
@@ -230,6 +251,12 @@ public final class CharcoalPitSystem {
 	private static boolean isShovelInRange(Level level, PlayerMob player, InventoryItem item, int tileX, int tileY) {
 		ShovelToolItem shovel = (ShovelToolItem)item.item;
 		return shovel.isTileInRange(level, tileX, tileY, player, null, item);
+	}
+
+	private static boolean isTorchInRange(Level level, PlayerMob player, InventoryItem item, int tileX, int tileY) {
+		TorchItem torch = (TorchItem)item.item;
+		int range = torch.getTorchPlaceRange(level, item, player);
+		return player.getPositionPoint().distance(tileX * 32.0 + 16.0, tileY * 32.0 + 16.0) <= range;
 	}
 
 	private static void setTile(Level level, int tileX, int tileY, int tileID) {
