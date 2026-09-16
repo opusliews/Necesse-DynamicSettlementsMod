@@ -25,6 +25,7 @@ import opusliews.crafting.AnvilCraftingTasksFeature;
 import opusliews.damage.DamageRepairLevelData;
 import opusliews.damage.WeatheringLevelData;
 import opusliews.forms.BlueprintWorkstationContainerForm;
+import opusliews.item.DirtPileItem;
 import opusliews.item.MalignanceGogglesItem;
 import opusliews.jobs.ConstructionLevelJob;
 import opusliews.jobs.RepairLevelJob;
@@ -156,6 +157,7 @@ public class DynamicSettlements {
 				BuilderHumanMob.class, true);
 
 		DSItemRegistry.registerItems();
+		ItemRegistry.registerItem(DirtPileItem.stringID, new DirtPileItem(), 1.0F, true);
 		TileRegistry.registerTile(ShallowHoleTile.stringID, new ShallowHoleTile(), 0.0F, false);
 
 		ObjectRegistry.registerObject("blueprintworkstation",

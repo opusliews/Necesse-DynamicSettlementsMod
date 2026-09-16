@@ -6,9 +6,17 @@ import necesse.entity.mobs.PlayerMob;
 import necesse.inventory.InventoryItem;
 import necesse.inventory.item.toolItem.shovelToolItem.ShovelToolItem;
 import necesse.level.maps.Level;
+import opusliews.item.DirtPileItem;
 import opusliews.network.PacketDigShallowHole;
 
 public final class ShallowHoleSystem {
+	private static final int[][] cardinalOffsets = {
+			{0, -1},
+			{1, 0},
+			{0, 1},
+			{-1, 0}
+	};
+
 	private ShallowHoleSystem() {
 	}
 
@@ -55,6 +63,9 @@ public final class ShallowHoleSystem {
 
 		level.setTile(tileX, tileY, TileRegistry.getTileID(ShallowHoleTile.stringID));
 		level.sendTileUpdatePacket(tileX, tileY);
+
+		InventoryItem dirtPile = new InventoryItem(DirtPileItem.stringID, 2);
+		level.entityManager.pickups.add(dirtPile.getPickupEntity(level, tileX * 32.0F + 16.0F, tileY * 32.0F + 16.0F));
 		return true;
 	}
 
@@ -64,6 +75,10 @@ public final class ShallowHoleSystem {
 	}
 
 	private static boolean canDig(Level level, int tileX, int tileY, PlayerMob player, InventoryItem item) {
+		if (!level.isTileWithinBounds(tileX, tileY)) {
+			return false;
+		}
+
 		if (level.getTileID(tileX, tileY) != TileRegistry.dirtID) {
 			return false;
 		}
@@ -72,7 +87,26 @@ public final class ShallowHoleSystem {
 			return false;
 		}
 
+		if (hasCardinalShallowHole(level, tileX, tileY)) {
+			return false;
+		}
+
 		ShovelToolItem shovel = (ShovelToolItem)item.item;
 		return shovel.isTileInRange(level, tileX, tileY, player, null, item);
+	}
+
+	private static boolean hasCardinalShallowHole(Level level, int tileX, int tileY) {
+		int shallowHoleTileID = TileRegistry.getTileID(ShallowHoleTile.stringID);
+
+		for (int[] offset : cardinalOffsets) {
+			int checkX = tileX + offset[0];
+			int checkY = tileY + offset[1];
+
+			if (level.isTileWithinBounds(checkX, checkY) && level.getTileID(checkX, checkY) == shallowHoleTileID) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 }
