@@ -75,7 +75,7 @@ public final class ShallowHoleSystem {
 	}
 
 	private static boolean canDig(Level level, int tileX, int tileY, PlayerMob player, InventoryItem item) {
-		if (!level.isTileWithinBounds(tileX, tileY)) {
+		if (!level.isTileWithinBounds(tileX, tileY) || level.isProtected(tileX, tileY)) {
 			return false;
 		}
 
@@ -87,7 +87,7 @@ public final class ShallowHoleSystem {
 			return false;
 		}
 
-		if (hasCardinalShallowHole(level, tileX, tileY)) {
+		if (hasCardinalPit(level, tileX, tileY)) {
 			return false;
 		}
 
@@ -95,14 +95,12 @@ public final class ShallowHoleSystem {
 		return shovel.isTileInRange(level, tileX, tileY, player, null, item);
 	}
 
-	private static boolean hasCardinalShallowHole(Level level, int tileX, int tileY) {
-		int shallowHoleTileID = TileRegistry.getTileID(ShallowHoleTile.stringID);
-
+	private static boolean hasCardinalPit(Level level, int tileX, int tileY) {
 		for (int[] offset : cardinalOffsets) {
 			int checkX = tileX + offset[0];
 			int checkY = tileY + offset[1];
 
-			if (level.isTileWithinBounds(checkX, checkY) && level.getTileID(checkX, checkY) == shallowHoleTileID) {
+			if (CharcoalPitSystem.isPitTile(level, checkX, checkY)) {
 				return true;
 			}
 		}

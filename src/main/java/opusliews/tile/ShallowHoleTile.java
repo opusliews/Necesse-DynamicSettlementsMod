@@ -13,6 +13,7 @@ import necesse.gfx.drawables.OrderableDrawables;
 import necesse.gfx.gameTexture.GameTexture;
 import necesse.gfx.gameTexture.GameTextureSection;
 import necesse.level.gameTile.DirtTile;
+import necesse.level.gameTile.GameTile;
 import necesse.level.maps.Level;
 import necesse.level.maps.regionSystem.SimulatePriorityList;
 
@@ -32,14 +33,38 @@ public class ShallowHoleTile extends DirtTile {
 		canBeMined = false;
 	}
 
+	protected String getHoleTexturePath() {
+		return "tiles/shallowhole";
+	}
+
+	protected String getMobMaskTexturePath() {
+		return "tiles/shallowholemask";
+	}
+
 	public boolean isMobInSinkingArea(Mob mob) {
 		int tileX = mob.getTileX();
 		float localX = mob.getX() - tileX * 32.0F;
 		return localX > sideExitMargin && localX < 32.0F - sideExitMargin;
 	}
 
+	@Override
+	public GameTexture generateItemTexture() {
+		GameTexture texture = GameTexture.fromFile("tiles/shallowhole", true);
+		GameTexture itemTexture = new GameTexture("shallow hole item", 32, 32);
+
+		itemTexture.copy(texture, 0, 0, 0, 0, 32, 32);
+		itemTexture.makeFinal();
+
+		return itemTexture;
+	}
+
 	public boolean isPlayerInSinkingArea(PlayerMob player) {
 		return isMobInSinkingArea(player);
+	}
+
+	@Override
+	public boolean canBePlacedOn(Level level, int tileX, int tileY, GameTile placing) {
+		return false;
 	}
 
 	@Override
@@ -55,8 +80,8 @@ public class ShallowHoleTile extends DirtTile {
 	@Override
 	protected void loadTextures() {
 		super.loadTextures();
-		holeTexture = tileTextures.addTexture(GameTexture.fromFile("tiles/shallowhole"));
-		mobMaskTexture = GameTexture.fromFile("tiles/shallowholemask");
+		holeTexture = tileTextures.addTexture(GameTexture.fromFile(getHoleTexturePath()));
+		mobMaskTexture = GameTexture.fromFile(getMobMaskTexturePath());
 	}
 
 	@Override
@@ -113,7 +138,6 @@ public class ShallowHoleTile extends DirtTile {
 		int vanillaMaskOffset = mob.getSwimMaskOffset() + (int)(depthPercent * (float)maskMove);
 		int drawYOffset = -mob.getSwimMaskOffset() + vanillaMaskOffset
 				+ (int)(depthPercent * (float)swimSinkOffset);
-
 
 		int alignmentCorrection = mob.getSwimMaskOffset() - Math.round(swimSinkOffset / 2.0F);
 		int localY = Math.round(mob.getY() - mob.getTileY() * 32.0F);

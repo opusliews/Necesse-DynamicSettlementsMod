@@ -75,8 +75,8 @@ blueprinttoolhelp=\n\n\nSelect the blueprint area by pressing [input=mouse1] and
 projecterasertip=Click [input=mouse1] a placed blueprint project to cancel it.\nExisting construction will not be removed\nbut all jobs will be cancelled
 inspectionglasstip=While selected in the hotbar, shows reinforcement levels when applicable.\n\nClick [input=mouse2] to <toggle> placed blueprint previews.
 malignancegogglestip=While equipped, reveals tiles where hostile mobs can spawn
-shallowholedig=\nClick [input=mouse2] on a raw dirt tile to dig a hole on the ground.\n
-dirtpiletip=Click [input=mouse2] on a shallow hole to fill it with dirt, or\n[input=mouse2] on a charcoal pit to cover it with dirt.
+shallowholedig=\n\nClick [input=mouse2] on a raw dirt tile [item=dirttile] to dig a hole on the ground.\n
+dirtpiletip=\n\nClick [input=mouse2] on a shallow hole [item=shallowholetile] to fill it with dirt, or\n[input=mouse2] on a charcoal pit to cover it with dirt.
 
 
 [misc]

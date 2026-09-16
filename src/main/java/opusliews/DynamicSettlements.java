@@ -38,6 +38,9 @@ import opusliews.object.WarningBellObject;
 import opusliews.settler.BuilderRequestLevelData;
 import opusliews.settler.BuilderSettler;
 import opusliews.sleep.SettlementSleepSettingsLevelData;
+import opusliews.tile.CharcoalPitLevelData;
+import opusliews.tile.CharcoalPitTile;
+import opusliews.tile.CoveredCharcoalPitTile;
 import opusliews.tile.ShallowHoleTile;
 
 import java.util.ArrayList;
@@ -58,7 +61,6 @@ public class DynamicSettlements {
 		}
 
 		SBCompatFailure = true;
-
 		setupIncompatibilityNotice();
 	}
 
@@ -159,6 +161,8 @@ public class DynamicSettlements {
 		DSItemRegistry.registerItems();
 		ItemRegistry.registerItem(DirtPileItem.stringID, new DirtPileItem(), 1.0F, true);
 		TileRegistry.registerTile(ShallowHoleTile.stringID, new ShallowHoleTile(), 0.0F, false);
+		TileRegistry.registerTile(CharcoalPitTile.stringID, new CharcoalPitTile(), 0.0F, false);
+		TileRegistry.registerTile(CoveredCharcoalPitTile.stringID, new CoveredCharcoalPitTile(), 0.0F, false);
 
 		ObjectRegistry.registerObject("blueprintworkstation",
 				new BlueprintWorkstationObject(), 100.0F, true);
@@ -194,6 +198,7 @@ public class DynamicSettlements {
 		LevelDataRegistry.registerLevelData(WeatheringLevelData.managerKey, WeatheringLevelData.class);
 		LevelDataRegistry.registerLevelData(BuilderRequestLevelData.managerKey, BuilderRequestLevelData.class);
 		LevelDataRegistry.registerLevelData(SettlementSleepSettingsLevelData.managerKey, SettlementSleepSettingsLevelData.class);
+		LevelDataRegistry.registerLevelData(CharcoalPitLevelData.managerKey, CharcoalPitLevelData.class);
 
 		JobTypeRegistry.registerType(
 				"construction",
@@ -239,6 +244,7 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketSettlementSleepSettingsSync.class);
 		PacketRegistry.registerPacket(PacketSettlementSleepSettingsUpdate.class);
 		PacketRegistry.registerPacket(PacketDigShallowHole.class);
+		PacketRegistry.registerPacket(PacketCharcoalPitInteract.class);
 
 		AnvilCraftingFeature.register();
 		AnvilCraftingTasksFeature.register();
