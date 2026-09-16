@@ -1,6 +1,7 @@
 package opusliews.tile;
 
 import java.awt.Color;
+import java.util.List;
 import necesse.engine.gameLoop.tickManager.TickManager;
 import necesse.entity.mobs.MaskShaderOptions;
 import necesse.entity.mobs.Mob;
@@ -15,30 +16,30 @@ import necesse.level.gameTile.DirtTile;
 import necesse.level.maps.Level;
 import necesse.level.maps.regionSystem.SimulatePriorityList;
 
-import java.util.List;
-
 public class ShallowHoleTile extends DirtTile {
 	public static final String stringID = "shallowholetile";
 	private static final int sideExitMargin = 8;
-	public static final int playerSinkingAmount = 10;
-	private static final int maskTextureCutoffY = 32;
-	private static final int playerSpriteTopOffset = 51;
-	private static final int playerSpriteHeight = 64;
+	public static final int mobSinkingAmount = 10;
+	public static final int playerSinkingAmount = mobSinkingAmount;
+	private static final int maskReferenceSpriteTop = 51;
 
 	private GameTextureSection holeTexture;
-	private GameTexture playerMaskTexture;
-
-	public boolean isPlayerInSinkingArea(PlayerMob player) {
-		int tileX = player.getTileX();
-		float localX = player.getX() - tileX * 32.0F;
-
-		return localX > sideExitMargin && localX < 32.0F - sideExitMargin;
-	}
+	private GameTexture mobMaskTexture;
 
 	public ShallowHoleTile() {
 		super();
 		mapColor = new Color(88, 68, 58);
 		canBeMined = false;
+	}
+
+	public boolean isMobInSinkingArea(Mob mob) {
+		int tileX = mob.getTileX();
+		float localX = mob.getX() - tileX * 32.0F;
+		return localX > sideExitMargin && localX < 32.0F - sideExitMargin;
+	}
+
+	public boolean isPlayerInSinkingArea(PlayerMob player) {
+		return isMobInSinkingArea(player);
 	}
 
 	@Override
@@ -55,17 +56,12 @@ public class ShallowHoleTile extends DirtTile {
 	protected void loadTextures() {
 		super.loadTextures();
 		holeTexture = tileTextures.addTexture(GameTexture.fromFile("tiles/shallowhole"));
-		playerMaskTexture = GameTexture.fromFile("tiles/shallowholemask");
+		mobMaskTexture = GameTexture.fromFile("tiles/shallowholemask");
 	}
 
 	@Override
 	public int getMobSinkingAmount(Mob mob) {
-		if (!(mob instanceof PlayerMob)) {
-			return 0;
-		}
-
-		PlayerMob player = (PlayerMob)mob;
-		return isPlayerInSinkingArea(player) ? playerSinkingAmount : 0;
+		return 0;
 	}
 
 	@Override
@@ -99,18 +95,34 @@ public class ShallowHoleTile extends DirtTile {
 		underLiquidList.add(holeTexture).pos(drawX, drawY);
 	}
 
-	public MaskShaderOptions getPlayerMaskOptions(PlayerMob player) {
-		if (playerMaskTexture == null) {
+	public MaskShaderOptions getMobMaskOptions(Mob mob) {
+		if (mobMaskTexture == null || !isMobInSinkingArea(mob)) {
 			return new MaskShaderOptions(0, 0);
 		}
 
-		int tileY = player.getTileY();
-		int southEdgeWorldY = (tileY + 1) * 32;
+		int maskMove = mob.getSwimMaskMove();
+		int swimSinkOffset = mob.getSwimSinkOffset();
+		int totalSwimMove = maskMove + swimSinkOffset;
 
-		int cutoffLocalY = southEdgeWorldY - player.getY() + playerSpriteTopOffset - playerSinkingAmount;
-		cutoffLocalY = Math.max(0, Math.min(playerSpriteHeight, cutoffLocalY));
+		if (totalSwimMove <= 0) {
+			return new MaskShaderOptions(mobMaskTexture, 0, 0, 0, 0);
+		}
 
-		int maskYOffset = maskTextureCutoffY - cutoffLocalY;
-		return new MaskShaderOptions(playerMaskTexture, 0, 0, 0, maskYOffset);
+		int targetSink = Math.min(mobSinkingAmount, totalSwimMove);
+		float depthPercent = (float)targetSink / (float)totalSwimMove;
+		int vanillaMaskOffset = mob.getSwimMaskOffset() + (int)(depthPercent * (float)maskMove);
+		int drawYOffset = -mob.getSwimMaskOffset() + vanillaMaskOffset
+				+ (int)(depthPercent * (float)swimSinkOffset);
+
+
+		int alignmentCorrection = mob.getSwimMaskOffset() - Math.round(swimSinkOffset / 2.0F);
+		int localY = Math.round(mob.getY() - mob.getTileY() * 32.0F);
+		int maskYOffset = localY - maskReferenceSpriteTop + alignmentCorrection + drawYOffset;
+
+		return new MaskShaderOptions(mobMaskTexture, 0, drawYOffset, 0, maskYOffset);
+	}
+
+	public MaskShaderOptions getPlayerMaskOptions(PlayerMob player) {
+		return getMobMaskOptions(player);
 	}
 }
