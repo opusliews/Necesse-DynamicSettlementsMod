@@ -866,7 +866,7 @@ wooddoor	workstation	anylog:4
 woodencandleset	tungstencarpenter	wax:1,string:1,honey:1
 woodfence	workstation	anylog:2
 woodfencegate	workstation	anylog:4
-woodfishingrod	ironanvil	woodenshaft:1,string:1,hook:1
+woodfishingrod	ironanvil	woodenshaft:1,string:1,metalhook:1
 woodfishingrod	workstation	anylog:10,ironbar:1,anysapling:1
 woodfloor	workstation	anylog:1
 woodpathtile	workstation	anylog:2
