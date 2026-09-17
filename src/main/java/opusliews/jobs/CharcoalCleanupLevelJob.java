@@ -7,6 +7,7 @@ import necesse.engine.localization.message.LocalMessage;
 import necesse.engine.registries.ItemRegistry;
 import necesse.engine.registries.TileRegistry;
 import necesse.engine.save.LoadData;
+import necesse.engine.save.SaveData;
 import necesse.entity.mobs.friendly.human.HumanMob;
 import necesse.entity.mobs.job.EntityJobWorker;
 import necesse.entity.mobs.job.FoundJob;
@@ -35,19 +36,32 @@ import opusliews.tile.ShallowHoleTile;
 public class CharcoalCleanupLevelJob extends TileLevelJob {
 	private static final long holeFillTime = 2000L;
 	private ItemPickupEntity charcoalPickup;
+	private int charcoalPickupUniqueID;
 
 	public CharcoalCleanupLevelJob(int tileX, int tileY, ItemPickupEntity charcoalPickup) {
+		this(tileX, tileY, charcoalPickup, charcoalPickup == null ? 0 : charcoalPickup.getUniqueID());
+	}
+
+	public CharcoalCleanupLevelJob(int tileX, int tileY, ItemPickupEntity charcoalPickup, int charcoalPickupUniqueID) {
 		super(tileX, tileY);
 		this.charcoalPickup = charcoalPickup;
+		this.charcoalPickupUniqueID = charcoalPickupUniqueID;
 	}
 
 	public CharcoalCleanupLevelJob(LoadData save) {
 		super(save);
+		this.charcoalPickupUniqueID = save.getInt("charcoalPickupUniqueID", 0, false);
+	}
+
+	@Override
+	public void addSaveData(SaveData save) {
+		super.addSaveData(save);
+		save.addInt("charcoalPickupUniqueID", charcoalPickupUniqueID);
 	}
 
 	@Override
 	public boolean shouldSave() {
-		return false;
+		return true;
 	}
 
 	@Override
@@ -57,6 +71,7 @@ public class CharcoalCleanupLevelJob extends TileLevelJob {
 	}
 
 	private JobSequence getJobSequence(EntityJobWorker worker, JobTypeHandler.TypePriority priority) {
+		resolveCharcoalPickup();
 		Logging.logMessage(
 				"[CharcoalCleanup] getJobSequence: worker=" + worker.getMobWorker().getUniqueID()
 						+ ", pit=" + tileX + "," + tileY
@@ -262,6 +277,26 @@ public class CharcoalCleanupLevelJob extends TileLevelJob {
 		jobs.clear();
 	}
 
+	private void resolveCharcoalPickup() {
+		if (charcoalPickup != null && !charcoalPickup.removed()) {
+			return;
+		}
+		if (charcoalPickupUniqueID == 0 || getLevel() == null) {
+			charcoalPickup = null;
+			return;
+		}
+
+		Object pickup = getLevel().entityManager.pickups.get(charcoalPickupUniqueID, false);
+		if (pickup instanceof ItemPickupEntity) {
+			ItemPickupEntity itemPickup = (ItemPickupEntity)pickup;
+			if (itemPickup.item != null && "charcoal".equals(itemPickup.item.item.getStringID())) {
+				charcoalPickup = itemPickup;
+				return;
+			}
+		}
+		charcoalPickup = null;
+	}
+
 	private String describePickup() {
 		if (charcoalPickup == null) return "null";
 		String itemID = charcoalPickup.item == null ? "null" : charcoalPickup.item.item.getStringID();
@@ -274,6 +309,7 @@ public class CharcoalCleanupLevelJob extends TileLevelJob {
 	}
 
 	private boolean hasCharcoalPickup() {
+		resolveCharcoalPickup();
 		return charcoalPickup != null
 				&& !charcoalPickup.removed()
 				&& charcoalPickup.item != null
@@ -381,6 +417,10 @@ public class CharcoalCleanupLevelJob extends TileLevelJob {
 							null
 					)) {
 				Logging.logMessage("[CharcoalCleanup] Reusing shallow hole for another charcoal batch at " + tileX + "," + tileY);
+				opusliews.tile.CharcoalPitLevelData pitData = opusliews.tile.CharcoalPitLevelData.get(getLevel(), true);
+				pitData.clearPendingCleanup(tileX, tileY);
+				pitData.setProductionRecoveryState(
+						tileX, tileY, opusliews.tile.CharcoalPitLevelData.ProductionStage.DUG, zone.getUniqueID());
 				CharcoalCleanupLevelJob.this.remove();
 				getLevel().jobsLayer.addJob(new CharcoalProductionLevelJob(tileX, tileY, zone, true));
 				return ActiveJobResult.FINISHED;
@@ -414,6 +454,7 @@ public class CharcoalCleanupLevelJob extends TileLevelJob {
 					tileY
 			);
 
+			opusliews.tile.CharcoalPitLevelData.get(getLevel(), true).clearPendingCleanup(tileX, tileY);
 			Logging.logMessage("[CharcoalCleanup] Filled shallow hole with dirt and completed cleanup at " + tileX + "," + tileY);
 			CharcoalCleanupLevelJob.this.remove();
 			return ActiveJobResult.FINISHED;

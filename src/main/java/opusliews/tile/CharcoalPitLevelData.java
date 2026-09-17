@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import necesse.engine.registries.TileRegistry;
+import necesse.engine.world.worldData.SettlementsWorldData;
 import necesse.engine.save.LoadData;
 import necesse.engine.save.SaveData;
 import necesse.entity.pickup.ItemPickupEntity;
@@ -14,12 +15,18 @@ import opusliews.jobs.CharcoalCleanupLevelJob;
 import opusliews.logging.Logging;
 import necesse.level.maps.Level;
 import necesse.level.maps.levelData.LevelData;
+import necesse.level.maps.levelData.settlementData.ServerSettlementData;
+import necesse.level.maps.levelData.settlementData.zones.SettlementWorkZone;
+import opusliews.charcoal.CharcoalProductionZone;
+import opusliews.jobs.CharcoalProductionLevelJob;
 
 public class CharcoalPitLevelData extends LevelData {
 	public static final String managerKey = "opuscharcoalpitdata";
 
 	private final Map<Long, List<StoredLog>> pitLogs = new HashMap<>();
 	private final Map<Long, Long> burnEndWorldTimes = new HashMap<>();
+	private final Map<Long, ProductionRecoveryState> productionRecoveryStates = new HashMap<>();
+	private final Map<Long, Integer> pendingCleanupPickupIDs = new HashMap<>();
 	private int produceUntilUnitsStocked;
 	private boolean repeatForever;
 	private String lastProductionBlockedReason;
@@ -44,6 +51,36 @@ public class CharcoalPitLevelData extends LevelData {
 		return data;
 	}
 
+
+	public enum ProductionStage {
+		DUG,
+		LOADED,
+		COVERED
+	}
+
+	public void setProductionRecoveryState(int tileX, int tileY, ProductionStage stage, int zoneUniqueID) {
+		if (stage == null) {
+			productionRecoveryStates.remove(getKey(tileX, tileY));
+			return;
+		}
+		productionRecoveryStates.put(getKey(tileX, tileY), new ProductionRecoveryState(stage, zoneUniqueID));
+	}
+
+	public void clearProductionRecoveryState(int tileX, int tileY) {
+		productionRecoveryStates.remove(getKey(tileX, tileY));
+	}
+
+	public ProductionRecoveryState getProductionRecoveryState(int tileX, int tileY) {
+		return productionRecoveryStates.get(getKey(tileX, tileY));
+	}
+
+	public void setPendingCleanup(int tileX, int tileY, ItemPickupEntity pickup) {
+		pendingCleanupPickupIDs.put(getKey(tileX, tileY), pickup == null ? 0 : pickup.getUniqueID());
+	}
+
+	public void clearPendingCleanup(int tileX, int tileY) {
+		pendingCleanupPickupIDs.remove(getKey(tileX, tileY));
+	}
 
 	public int getProduceUntilUnitsStocked() {
 		return produceUntilUnitsStocked;
@@ -151,6 +188,7 @@ public class CharcoalPitLevelData extends LevelData {
 			InventoryItem charcoal = new InventoryItem("charcoal", 32);
 			ItemPickupEntity pickup = charcoal.getPickupEntity(level, tileX * 32.0F + 16.0F, tileY * 32.0F + 16.0F);
 			level.entityManager.pickups.add(pickup);
+			setPendingCleanup(tileX, tileY, pickup);
 			Logging.logMessage(
 					"[CharcoalCleanup] Burn completed at " + tileX + "," + tileY
 							+ "; spawned charcoal pickup amount=" + pickup.item.getAmount()
@@ -189,6 +227,23 @@ public class CharcoalPitLevelData extends LevelData {
 
 			save.addSaveData(pit);
 		}
+
+		for (Map.Entry<Long, ProductionRecoveryState> entry : productionRecoveryStates.entrySet()) {
+			SaveData stateSave = new SaveData("CHARCOAL_PRODUCTION_RECOVERY");
+			stateSave.addInt("tileX", (int)(entry.getKey() >> 32));
+			stateSave.addInt("tileY", (int)(long)entry.getKey());
+			stateSave.addSafeString("stage", entry.getValue().stage.name());
+			stateSave.addInt("zoneUniqueID", entry.getValue().zoneUniqueID);
+			save.addSaveData(stateSave);
+		}
+
+		for (Map.Entry<Long, Integer> entry : pendingCleanupPickupIDs.entrySet()) {
+			SaveData cleanupSave = new SaveData("CHARCOAL_CLEANUP_RECOVERY");
+			cleanupSave.addInt("tileX", (int)(entry.getKey() >> 32));
+			cleanupSave.addInt("tileY", (int)(long)entry.getKey());
+			cleanupSave.addInt("pickupUniqueID", entry.getValue());
+			save.addSaveData(cleanupSave);
+		}
 	}
 
 	@Override
@@ -196,6 +251,8 @@ public class CharcoalPitLevelData extends LevelData {
 		super.applyLoadData(save);
 		pitLogs.clear();
 		burnEndWorldTimes.clear();
+		productionRecoveryStates.clear();
+		pendingCleanupPickupIDs.clear();
 		produceUntilUnitsStocked = Math.max(0, save.getInt("produceUntilUnitsStocked", 0, false));
 		repeatForever = save.getBoolean("repeatForever", false, false);
 
@@ -223,6 +280,163 @@ public class CharcoalPitLevelData extends LevelData {
 				}
 			}
 		}
+
+		for (LoadData stateSave : save.getLoadDataByName("CHARCOAL_PRODUCTION_RECOVERY")) {
+			int tileX = stateSave.getInt("tileX", 0, false);
+			int tileY = stateSave.getInt("tileY", 0, false);
+			String stageName = stateSave.getSafeString("stage", "", false);
+			int zoneUniqueID = stateSave.getInt("zoneUniqueID", 0, false);
+			try {
+				ProductionStage stage = ProductionStage.valueOf(stageName);
+				productionRecoveryStates.put(getKey(tileX, tileY), new ProductionRecoveryState(stage, zoneUniqueID));
+			} catch (IllegalArgumentException ignored) {
+			}
+		}
+
+		for (LoadData cleanupSave : save.getLoadDataByName("CHARCOAL_CLEANUP_RECOVERY")) {
+			int tileX = cleanupSave.getInt("tileX", 0, false);
+			int tileY = cleanupSave.getInt("tileY", 0, false);
+			int pickupUniqueID = cleanupSave.getInt("pickupUniqueID", 0, false);
+			pendingCleanupPickupIDs.put(getKey(tileX, tileY), pickupUniqueID);
+		}
+	}
+
+	@Override
+	public void onLoadingComplete() {
+		super.onLoadingComplete();
+		if (!isServer()) {
+			return;
+		}
+
+		recoverProductionJobs();
+		recoverCleanupJobs();
+	}
+
+	private void recoverProductionJobs() {
+		for (Map.Entry<Long, ProductionRecoveryState> entry : new ArrayList<>(productionRecoveryStates.entrySet())) {
+			long key = entry.getKey();
+			int tileX = (int)(key >> 32);
+			int tileY = (int)key;
+			ProductionRecoveryState state = entry.getValue();
+
+			if (!level.isTileWithinBounds(tileX, tileY)) {
+				productionRecoveryStates.remove(key);
+				continue;
+			}
+
+			int tileID = level.getTileID(tileX, tileY);
+			if (tileID == TileRegistry.getTileID(BurningCharcoalPitTile.stringID)) {
+				productionRecoveryStates.remove(key);
+				continue;
+			}
+
+			ProductionStage physicalStage = getPhysicalProductionStage(tileX, tileY);
+			if (physicalStage == null) {
+				recoverAbandonedPit(tileX, tileY);
+				productionRecoveryStates.remove(key);
+				continue;
+			}
+
+			CharcoalProductionZone zone = findProductionZone(tileX, tileY, state.zoneUniqueID);
+			if (zone == null) {
+				recoverAbandonedPit(tileX, tileY);
+				productionRecoveryStates.remove(key);
+				continue;
+			}
+
+			productionRecoveryStates.put(key, new ProductionRecoveryState(physicalStage, zone.getUniqueID()));
+			level.jobsLayer.addJob(new CharcoalProductionLevelJob(tileX, tileY, zone, true, physicalStage));
+			Logging.logMessage("[CharcoalRecovery] Restored production job at " + tileX + "," + tileY + " from stage " + physicalStage);
+		}
+	}
+
+	private void recoverCleanupJobs() {
+		for (Map.Entry<Long, Integer> entry : new ArrayList<>(pendingCleanupPickupIDs.entrySet())) {
+			long key = entry.getKey();
+			int tileX = (int)(key >> 32);
+			int tileY = (int)key;
+
+			if (!level.isTileWithinBounds(tileX, tileY)
+					|| level.getTileID(tileX, tileY) != TileRegistry.getTileID(ShallowHoleTile.stringID)) {
+				pendingCleanupPickupIDs.remove(key);
+				continue;
+			}
+
+			ItemPickupEntity pickup = resolvePickup(entry.getValue());
+			level.jobsLayer.addJob(new CharcoalCleanupLevelJob(tileX, tileY, pickup, entry.getValue()));
+			Logging.logMessage("[CharcoalRecovery] Restored cleanup job at " + tileX + "," + tileY);
+		}
+	}
+
+	private ProductionStage getPhysicalProductionStage(int tileX, int tileY) {
+		int tileID = level.getTileID(tileX, tileY);
+		if (tileID == TileRegistry.getTileID(CoveredCharcoalPitTile.stringID) && !getLogs(tileX, tileY).isEmpty()) {
+			return ProductionStage.COVERED;
+		}
+		if (tileID == TileRegistry.getTileID(CharcoalPitTile.stringID) && !getLogs(tileX, tileY).isEmpty()) {
+			return ProductionStage.LOADED;
+		}
+		if (tileID == TileRegistry.getTileID(ShallowHoleTile.stringID)) {
+			return ProductionStage.DUG;
+		}
+		return null;
+	}
+
+	private CharcoalProductionZone findProductionZone(int tileX, int tileY, int preferredZoneUniqueID) {
+		ServerSettlementData settlement = SettlementsWorldData.getSettlementsData(level)
+				.getOrLoadServerDataAtTile(level.getIdentifier(), tileX, tileY);
+		if (settlement == null) {
+			return null;
+		}
+
+		if (preferredZoneUniqueID != 0) {
+			Object preferred = settlement.getWorkZones().getZones().get(preferredZoneUniqueID);
+			if (preferred instanceof CharcoalProductionZone) {
+				CharcoalProductionZone zone = (CharcoalProductionZone)preferred;
+				if (!zone.isRemoved() && zone.containsTile(tileX, tileY)) {
+					return zone;
+				}
+			}
+		}
+
+		for (Object value : settlement.getWorkZones().getZones().values()) {
+			SettlementWorkZone workZone = (SettlementWorkZone)value;
+			if (workZone instanceof CharcoalProductionZone
+					&& !workZone.isRemoved()
+					&& workZone.containsTile(tileX, tileY)) {
+				return (CharcoalProductionZone)workZone;
+			}
+		}
+		return null;
+	}
+
+	private void recoverAbandonedPit(int tileX, int tileY) {
+		removeBurn(tileX, tileY);
+		List<StoredLog> logs = removeLogs(tileX, tileY);
+		for (StoredLog log : logs) {
+			if (log.amount > 0) {
+				InventoryItem item = new InventoryItem(log.itemStringID, log.amount);
+				level.entityManager.pickups.add(item.getPickupEntity(level, tileX * 32.0F + 16.0F, tileY * 32.0F + 16.0F));
+			}
+		}
+
+		int tileID = level.getTileID(tileX, tileY);
+		if (tileID == TileRegistry.getTileID(ShallowHoleTile.stringID)
+				|| tileID == TileRegistry.getTileID(CharcoalPitTile.stringID)
+				|| tileID == TileRegistry.getTileID(CoveredCharcoalPitTile.stringID)) {
+			level.setTile(tileX, tileY, TileRegistry.dirtID);
+			level.sendTileUpdatePacket(tileX, tileY);
+			level.getLevelTile(tileX, tileY).checkAround();
+			level.getLevelObject(tileX, tileY).checkAround();
+		}
+	}
+
+	private ItemPickupEntity resolvePickup(int uniqueID) {
+		if (uniqueID == 0) {
+			return null;
+		}
+		Object pickup = level.entityManager.pickups.get(uniqueID, false);
+		return pickup instanceof ItemPickupEntity ? (ItemPickupEntity)pickup : null;
 	}
 
 	private static long getKey(int tileX, int tileY) {
@@ -237,6 +451,16 @@ public class CharcoalPitLevelData extends LevelData {
 			}
 		}
 		return copy;
+	}
+
+	public static class ProductionRecoveryState {
+		public final ProductionStage stage;
+		public final int zoneUniqueID;
+
+		public ProductionRecoveryState(ProductionStage stage, int zoneUniqueID) {
+			this.stage = stage;
+			this.zoneUniqueID = zoneUniqueID;
+		}
 	}
 
 	public static class StoredLog {
