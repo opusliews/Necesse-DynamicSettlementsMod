@@ -61,6 +61,13 @@ public final class CharcoalProductionUI {
 				CharcoalProductionZone.hideZones,
 				new LocalMessage("ui", "hidebutton"),
 				new LocalMessage("ui", "showbutton")));
+
+		int requiredHeight = flow.next() + 8;
+		if (requiredHeight > form.work.getHeight()) {
+			form.work.setHeight(requiredHeight);
+			content.setHeight(requiredHeight);
+		}
+		content.setContentBox(new Rectangle(0, 0, content.getWidth(), requiredHeight));
 	}
 
 	public static void openSettings(SettlementAssignWorkForm form) {
