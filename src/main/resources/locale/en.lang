@@ -41,9 +41,11 @@ honeycombfragment=Honeycomb Fragment
 wax=Wax
 dirtpile=Pile of Dirt
 charcoal=Charcoal
+firestarter=Firestarter
 sharpenedstone=Sharpened Stone
 
 [object]
+crudeworkbench=Crude Workbench
 blueprintworkstation=Blueprint Workstation
 builderjobrequestbulletin=Builder Job Request Bulletin
 warningbell=Warning Bell
@@ -96,3 +98,6 @@ projecterased=Blueprint project cancelled.
 sleepwarningraid=We have a raid incoming!
 sleepwarningbarrierattack=We have zombies attacking our defences!
 sleepwarningbarrierbreach=We have zombies breaching our defences!
+
+[tech]
+crudeworkbench=Crude Workbench

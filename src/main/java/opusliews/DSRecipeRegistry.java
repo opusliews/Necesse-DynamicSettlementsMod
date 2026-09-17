@@ -5,6 +5,8 @@ import necesse.inventory.recipe.Ingredient;
 import necesse.inventory.recipe.Recipe;
 import necesse.inventory.recipe.Recipes;
 import necesse.inventory.recipe.Tech;
+import opusliews.earlygame.CrudeWorkbenchFeature;
+import opusliews.item.FirestarterItem;
 import opusliews.object.BuilderJobRequestBulletinObject;
 import opusliews.object.WarningBellObject;
 
@@ -12,8 +14,16 @@ import static opusliews.DSItemRegistry.*;
 
 public class DSRecipeRegistry {
 	public static void registerRecipes() {
+		registerEarlyGameRecipes();
 		registerExistingModRecipes();
 		registerCraftingMaterialRecipes();
+	}
+
+	private static void registerEarlyGameRecipes() {
+		register(FirestarterItem.stringID, 1, CrudeWorkbenchFeature.tech,
+				ingredient(stringStringID, 1),
+				ingredient("dsanyplank", 1),
+				ingredient(woodenshaftStringID, 1));
 	}
 
 	private static void registerExistingModRecipes() {

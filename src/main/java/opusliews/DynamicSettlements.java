@@ -23,13 +23,17 @@ import necesse.inventory.item.matItem.MatItem;
 import opusliews.blueprint.BlueprintAreaLevelData;
 import opusliews.buff.MalignanceGogglesBuff;
 import opusliews.container.BlueprintWorkstationContainer;
+import opusliews.container.CrudeWorkbenchContainer;
 import opusliews.crafting.AnvilCraftingFeature;
 import opusliews.crafting.AnvilCraftingTasksFeature;
 import opusliews.damage.DamageRepairLevelData;
 import opusliews.damage.WeatheringLevelData;
+import opusliews.earlygame.CrudeWorkbenchFeature;
 import opusliews.earlygame.EarlyGameLevelData;
 import opusliews.forms.BlueprintWorkstationContainerForm;
+import necesse.gfx.forms.presets.containerComponent.object.CraftingStationContainerForm;
 import opusliews.item.DirtPileItem;
+import opusliews.item.FirestarterItem;
 import opusliews.item.MalignanceGogglesItem;
 import opusliews.item.SharpenedStoneItem;
 import opusliews.jobs.ConstructionLevelJob;
@@ -51,6 +55,7 @@ import java.util.List;
 @ModEntry
 public class DynamicSettlements {
 	public static int blueprintWorkstationContainerID;
+	public static int crudeWorkbenchContainerID;
 	public static boolean debugBlueprintMaterialGrant = false;
 	public static boolean SBCompatFailure = false;
 	public static GameSound stoneTapSound;
@@ -161,10 +166,12 @@ public class DynamicSettlements {
 		MobRegistry.registerMob("builderhuman",
 				BuilderHumanMob.class, true);
 
+		CrudeWorkbenchFeature.register();
 		DSItemRegistry.registerItems();
 		ItemRegistry.registerItem(DirtPileItem.stringID, new DirtPileItem(), 0.0F, true);
 		ItemRegistry.registerItem("charcoal", new MatItem(500, Item.Rarity.NORMAL), 4.0F, true);
 		ItemRegistry.registerItem(SharpenedStoneItem.stringID, new SharpenedStoneItem(), 0.5F, true);
+		ItemRegistry.registerItem(FirestarterItem.stringID, new FirestarterItem(), 8.0F, true);
 		TileRegistry.registerTile(ShallowHoleTile.stringID, new ShallowHoleTile(), 0.0F, false);
 		TileRegistry.registerTile(CharcoalPitTile.stringID, new CharcoalPitTile(), 0.0F, false);
 		TileRegistry.registerTile(CoveredCharcoalPitTile.stringID, new CoveredCharcoalPitTile(), 0.0F, false);
@@ -178,6 +185,16 @@ public class DynamicSettlements {
 		ObjectRegistry.registerObject(
 				WarningBellObject.stringID,
 				new WarningBellObject(), 60.0F, true);
+
+		crudeWorkbenchContainerID = ContainerRegistry.registerSettlementDependantLOContainer(
+				(client, uniqueSeed, settlement, levelObject, content) -> new CraftingStationContainerForm(
+						client,
+						new CrudeWorkbenchContainer(client.getClient(), uniqueSeed, settlement, levelObject, new PacketReader(content))
+				),
+				(client, uniqueSeed, settlement, levelObject, content, serverObject) -> new CrudeWorkbenchContainer(
+						client, uniqueSeed, settlement, levelObject, new PacketReader(content)
+				)
+		);
 
 		blueprintWorkstationContainerID = ContainerRegistry.registerSettlementDependantOEContainer(
 				(client, uniqueSeed, settlement, oe, content) -> new BlueprintWorkstationContainerForm(
