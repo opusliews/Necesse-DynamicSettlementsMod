@@ -19,6 +19,8 @@ public class CharcoalPitLevelData extends LevelData {
 	private final Map<Long, Long> burnEndWorldTimes = new HashMap<>();
 	private int produceUntilUnitsStocked;
 	private boolean repeatForever;
+	private String lastProductionBlockedReason;
+	private long lastProductionBlockedMessageTime;
 
 	public static CharcoalPitLevelData get(Level level, boolean createNewIfNull) {
 		if (level == null) {
@@ -61,6 +63,28 @@ public class CharcoalPitLevelData extends LevelData {
 			}
 		}
 		return amount;
+	}
+
+
+	public boolean shouldSendProductionBlockedReason(String reason, long currentTime) {
+		if (reason == null || reason.isEmpty()) {
+			return false;
+		}
+
+		boolean changed = !reason.equals(lastProductionBlockedReason);
+		boolean cooldownExpired = currentTime - lastProductionBlockedMessageTime >= 30000L;
+		if (!changed && !cooldownExpired) {
+			return false;
+		}
+
+		lastProductionBlockedReason = reason;
+		lastProductionBlockedMessageTime = currentTime;
+		return true;
+	}
+
+	public void clearProductionBlockedReason() {
+		lastProductionBlockedReason = null;
+		lastProductionBlockedMessageTime = 0L;
 	}
 
 	public void setProductionSettings(int produceUntilUnitsStocked, boolean repeatForever) {
