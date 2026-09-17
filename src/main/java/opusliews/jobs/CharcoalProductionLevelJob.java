@@ -177,7 +177,8 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 				int shallowHoleID = TileRegistry.getTileID(ShallowHoleTile.stringID);
 				int charcoalPitID = TileRegistry.getTileID(CharcoalPitTile.stringID);
 				int coveredCharcoalPitID = TileRegistry.getTileID(CoveredCharcoalPitTile.stringID);
-				if (currentTileID == shallowHoleID || currentTileID == charcoalPitID || currentTileID == coveredCharcoalPitID) {
+				if ((currentTileID == shallowHoleID || currentTileID == charcoalPitID || currentTileID == coveredCharcoalPitID)
+						&& getLevel().getObjectID(tileX, tileY) == 0) {
 					getLevel().setTile(tileX, tileY, TileRegistry.dirtID);
 					getLevel().sendTileUpdatePacket(tileX, tileY);
 					getLevel().getLevelTile(tileX, tileY).checkAround();
@@ -252,7 +253,9 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 				int charcoalPitID = TileRegistry.getTileID(CharcoalPitTile.stringID);
 				int coveredCharcoalPitID = TileRegistry.getTileID(CoveredCharcoalPitTile.stringID);
 
-				boolean ownsDugPit = holeDigStarted && currentTileID == shallowHoleID;
+				boolean ownsDugPit = holeDigStarted
+						&& currentTileID == shallowHoleID
+						&& getLevel().getObjectID(tileX, tileY) == 0;
 				boolean ownsLoadedPit = logsLoaded
 						&& (currentTileID == charcoalPitID || currentTileID == coveredCharcoalPitID);
 				if (ownsDugPit || ownsLoadedPit) {
@@ -347,7 +350,8 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 						return ActiveJobResult.PERFORMING;
 					}
 
-					if (getLevel().getTileID(tileX, tileY) != shallowHoleID) {
+					if (getLevel().getTileID(tileX, tileY) != shallowHoleID
+							|| getLevel().getObjectID(tileX, tileY) != 0) {
 						sendBlockedMessage(worker, "charcoalinvalidsite");
 						return ActiveJobResult.FAILED;
 					}

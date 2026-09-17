@@ -18,6 +18,7 @@ public class TrapdoorHiddenBuff extends Buff {
 	@Override
 	public void init(ActiveBuff buff, BuffEventSubscriber eventSubscriber) {
 		buff.setModifier(BuffModifiers.UNTARGETABLE, true);
+		buff.setModifier(BuffModifiers.SUMMON_DAMAGE, -1.0F);
 		buff.setMaxModifier(BuffModifiers.KNOCKBACK_INCOMING_MOD, 0.0F);
 	}
 }

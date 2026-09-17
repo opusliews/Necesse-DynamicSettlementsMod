@@ -10,6 +10,7 @@ import necesse.level.maps.LevelObject;
 import net.bytebuddy.asm.Advice;
 import opusliews.logging.Logging;
 import opusliews.object.TrapdoorObject;
+import opusliews.trapdoor.TrapdoorSystem;
 
 @ModMethodPatch(target = PlayerMob.class, name = "runClientInteract", arguments = {int.class, int.class, boolean.class})
 public class TrapdoorPlayerInteractPatch {
@@ -20,14 +21,16 @@ public class TrapdoorPlayerInteractPatch {
 			@Advice.Argument(1) int levelY,
 			@Advice.Argument(2) boolean onlyItemInteract
 	) {
-		if (onlyItemInteract || player.getLevel() == null) return false;
+		if (player.getLevel() == null) return false;
+		boolean hidden = TrapdoorSystem.isHidden(player);
+		if (onlyItemInteract) return hidden;
 
 		int tileX = player.getTileX();
 		int tileY = player.getTileY();
-		if (!(player.getLevel().getObject(tileX, tileY) instanceof TrapdoorObject)) return false;
+		if (!(player.getLevel().getObject(tileX, tileY) instanceof TrapdoorObject)) return hidden;
 
 		LevelObject trapdoor = player.getLevel().getLevelObject(tileX, tileY);
-		if (!trapdoor.isInInteractRange(player) || !trapdoor.canInteract(player)) return false;
+		if (!trapdoor.isInInteractRange(player) || !trapdoor.canInteract(player)) return hidden;
 
 		boolean mouseOverTrapdoor = false;
 		for (ObjectHoverHitbox box : trapdoor.getHoverHitboxes()) {
@@ -37,7 +40,7 @@ public class TrapdoorPlayerInteractPatch {
 			}
 		}
 
-		if (!mouseOverTrapdoor) return false;
+		if (!mouseOverTrapdoor) return hidden;
 
 		if (Logging.logEnabled) {
 			Logging.logMessage(

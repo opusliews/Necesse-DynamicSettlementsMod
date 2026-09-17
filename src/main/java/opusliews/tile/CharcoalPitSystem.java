@@ -1,5 +1,6 @@
 package opusliews.tile;
 
+import necesse.engine.registries.ObjectRegistry;
 import necesse.engine.registries.TileRegistry;
 import necesse.engine.util.GameMath;
 import necesse.entity.mobs.PlayerMob;
@@ -11,6 +12,7 @@ import necesse.level.maps.Level;
 import opusliews.item.DirtPileItem;
 import opusliews.item.FirestarterItem;
 import opusliews.network.PacketCharcoalPitInteract;
+import opusliews.object.TrapdoorObject;
 import opusliews.tile.CharcoalPitLevelData.StoredLog;
 
 import java.util.*;
@@ -39,6 +41,10 @@ public final class CharcoalPitSystem {
 		boolean allowedAction = false;
 
 		if (tileID == TileRegistry.getTileID(ShallowHoleTile.stringID)) {
+			if (hasTrapdoor(level, tileX, tileY)) {
+				return false;
+			}
+
 			allowedAction = isDirtPile(selected) || isLog(selected);
 		} else if (tileID == TileRegistry.getTileID(CharcoalPitTile.stringID)) {
 			allowedAction = isDirtPile(selected) || isShovel(selected) || isTorch(selected);
@@ -69,6 +75,10 @@ public final class CharcoalPitSystem {
 
 		int tileID = level.getTileID(tileX, tileY);
 		if (tileID == TileRegistry.getTileID(ShallowHoleTile.stringID)) {
+			if (hasTrapdoor(level, tileX, tileY)) {
+				return;
+			}
+
 			if (isDirtPile(selected)) {
 				fillHoleWithDirt(level, player, selected, tileX, tileY);
 			} else if (isLog(selected)) {
@@ -94,6 +104,16 @@ public final class CharcoalPitSystem {
 				ignitePit(level, tileX, tileY);
 			}
 		}
+	}
+
+	public static boolean hasTrapdoor(Level level, int tileX, int tileY) {
+		if (level == null || !level.isTileWithinBounds(tileX, tileY)) {
+			return false;
+		}
+
+		int objectID = level.getObjectID(tileX, tileY);
+		return objectID == ObjectRegistry.getObjectID(TrapdoorObject.openStringID)
+				|| objectID == ObjectRegistry.getObjectID(TrapdoorObject.closedStringID);
 	}
 
 	public static boolean isPitTile(Level level, int tileX, int tileY) {

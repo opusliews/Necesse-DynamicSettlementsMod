@@ -18,6 +18,11 @@ public class TrapdoorSystem {
 		if (level.getObjectID(tileX, tileY) != ObjectRegistry.getObjectID(TrapdoorObject.openStringID)) return;
 
 		player.dismount();
+		player.forceEndAttack();
+		player.endAttackHandler(true);
+		if (player.isServer() && player.serverFollowersManager != null) {
+			player.serverFollowersManager.clearSummonFocus();
+		}
 		player.moveX = 0.0F;
 		player.moveY = 0.0F;
 		player.dx = 0.0F;
