@@ -6,7 +6,9 @@ import necesse.inventory.recipe.Recipe;
 import necesse.inventory.recipe.Recipes;
 import necesse.inventory.recipe.Tech;
 import opusliews.earlygame.CrudeWorkbenchFeature;
+import opusliews.item.CrudeAxeItem;
 import opusliews.item.FirestarterItem;
+import opusliews.item.SharpenedStoneItem;
 import opusliews.object.BuilderJobRequestBulletinObject;
 import opusliews.object.WarningBellObject;
 
@@ -24,6 +26,21 @@ public class DSRecipeRegistry {
 				ingredient(stringStringID, 1),
 				ingredient("dsanyplank", 1),
 				ingredient(woodenshaftStringID, 1));
+
+		register(CrudeAxeItem.stringID, 1, CrudeWorkbenchFeature.tech,
+				ingredient(stringStringID, 4),
+				ingredient(woodenshaftStringID, 1),
+				ingredient(SharpenedStoneItem.stringID, 1));
+
+		register(FirestarterItem.stringID, 1, RecipeTechRegistry.WORKSTATION,
+				ingredient(stringStringID, 1),
+				ingredient("dsanyplank", 1),
+				ingredient(woodenshaftStringID, 1));
+
+		register(CrudeAxeItem.stringID, 1, RecipeTechRegistry.WORKSTATION,
+				ingredient(stringStringID, 4),
+				ingredient(woodenshaftStringID, 1),
+				ingredient(SharpenedStoneItem.stringID, 1));
 	}
 
 	private static void registerExistingModRecipes() {
@@ -126,6 +143,7 @@ public class DSRecipeRegistry {
 		register("clothscraps", 4, RecipeTechRegistry.WORKSTATION, ingredient("wool", 1));
 
 		// Previously-added crafting materials
+		register(stringStringID, 1, CrudeWorkbenchFeature.tech, ingredient("grass", 4));
 		register(stringStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("grass", 4));
 		register(groundFiremoneStringID, 5, RecipeTechRegistry.GRAIN_MILL, ingredient("firemone", 1));
 		register(waxStringID, 1, RecipeTechRegistry.COOKING_POT, ingredient(honeycombFragmentStringID, 1));

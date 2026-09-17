@@ -32,6 +32,7 @@ import opusliews.earlygame.CrudeWorkbenchFeature;
 import opusliews.earlygame.EarlyGameLevelData;
 import opusliews.forms.BlueprintWorkstationContainerForm;
 import necesse.gfx.forms.presets.containerComponent.object.CraftingStationContainerForm;
+import opusliews.item.CrudeAxeItem;
 import opusliews.item.DirtPileItem;
 import opusliews.item.FirestarterItem;
 import opusliews.item.MalignanceGogglesItem;
@@ -172,6 +173,7 @@ public class DynamicSettlements {
 		ItemRegistry.registerItem("charcoal", new MatItem(500, Item.Rarity.NORMAL), 4.0F, true);
 		ItemRegistry.registerItem(SharpenedStoneItem.stringID, new SharpenedStoneItem(), 0.5F, true);
 		ItemRegistry.registerItem(FirestarterItem.stringID, new FirestarterItem(), 8.0F, true);
+		ItemRegistry.registerItem(CrudeAxeItem.stringID, new CrudeAxeItem(), 6.0F, true);
 		TileRegistry.registerTile(ShallowHoleTile.stringID, new ShallowHoleTile(), 0.0F, false);
 		TileRegistry.registerTile(CharcoalPitTile.stringID, new CharcoalPitTile(), 0.0F, false);
 		TileRegistry.registerTile(CoveredCharcoalPitTile.stringID, new CoveredCharcoalPitTile(), 0.0F, false);
