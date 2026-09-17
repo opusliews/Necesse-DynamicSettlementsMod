@@ -27,6 +27,7 @@ import opusliews.network.PacketBuilderTilePlaceSound;
 public class CharcoalProductionLevelJob extends TileLevelJob {
 	public static final int requiredLogs = 32;
 	private static final long grassRemovalTime = 2000L;
+	private static final long holeDigTime = 2000L;
 
 	private final CharcoalProductionZone zone;
 
@@ -63,6 +64,8 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 		return new TileActiveJob(worker, priority, tileX, tileY) {
 			private boolean grassRemovalStarted;
 			private long grassRemovalCompleteTime;
+			private boolean holeDigStarted;
+			private long holeDigCompleteTime;
 
 			@Override
 			public JobMoveToTile getMoveToTile(JobMoveToTile lastTile) {
@@ -83,7 +86,7 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 					}
 				}
 
-				if (isCurrent && !isMovingTo && hasGrassTile()) {
+				if (isCurrent && !isMovingTo && (hasGrassTile() || holeDigStarted)) {
 					worker.showWorkAnimation(
 							tileX * 32 + 16,
 							tileY * 32 + 16,
@@ -110,31 +113,54 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 
 			@Override
 			public ActiveJobResult perform() {
-				if (!hasGrassTile()) {
-					return finishCurrentStep();
-				}
-
 				long currentTime = getLevel().getTime();
-				if (!grassRemovalStarted) {
-					grassRemovalStarted = true;
-					grassRemovalCompleteTime = currentTime + grassRemovalTime;
+
+				if (hasGrassTile()) {
+					if (!grassRemovalStarted) {
+						grassRemovalStarted = true;
+						grassRemovalCompleteTime = currentTime + grassRemovalTime;
+						return ActiveJobResult.PERFORMING;
+					}
+
+					if (currentTime < grassRemovalCompleteTime) {
+						return ActiveJobResult.PERFORMING;
+					}
+
+					if (hasGrassTile()) {
+						getLevel().setObject(tileX, tileY, 0);
+						getLevel().setTile(tileX, tileY, TileRegistry.dirtID);
+						getLevel().sendObjectUpdatePacket(tileX, tileY);
+						getLevel().sendTileUpdatePacket(tileX, tileY);
+						getLevel().getServer().network.sendToClientsWithTile(
+								new PacketBuilderTilePlaceSound(TileRegistry.dirtID, tileX, tileY),
+								getLevel(),
+								tileX,
+								tileY
+						);
+					}
+				}
+
+				if (!holeDigStarted) {
+					holeDigStarted = true;
+					holeDigCompleteTime = currentTime + holeDigTime;
 					return ActiveJobResult.PERFORMING;
 				}
 
-				if (currentTime < grassRemovalCompleteTime) {
+				if (currentTime < holeDigCompleteTime) {
 					return ActiveJobResult.PERFORMING;
 				}
 
-				if (!hasGrassTile()) {
+				if (!CharcoalProductionZone.isValidCandidate(getLevel(), tileX, tileY, CharcoalProductionLevelJob.this)) {
 					return finishCurrentStep();
 				}
 
-				getLevel().setObject(tileX, tileY, 0);
-				getLevel().setTile(tileX, tileY, TileRegistry.dirtID);
-				getLevel().sendObjectUpdatePacket(tileX, tileY);
+				int shallowHoleID = TileRegistry.getTileID(opusliews.tile.ShallowHoleTile.stringID);
+				getLevel().setTile(tileX, tileY, shallowHoleID);
 				getLevel().sendTileUpdatePacket(tileX, tileY);
+				getLevel().getLevelTile(tileX, tileY).checkAround();
+				getLevel().getLevelObject(tileX, tileY).checkAround();
 				getLevel().getServer().network.sendToClientsWithTile(
-						new PacketBuilderTilePlaceSound(TileRegistry.dirtID, tileX, tileY),
+						new PacketBuilderTilePlaceSound(shallowHoleID, tileX, tileY),
 						getLevel(),
 						tileX,
 						tileY

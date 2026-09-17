@@ -60,7 +60,9 @@ public class CharcoalProductionZone extends SettlementTileTickZone {
 		}
 
 		SettlementStorageItemIDIndex itemIndex = manager.data.storageRecords.getIndex(SettlementStorageItemIDIndex.class);
-		return itemIndex.getTotalItems("charcoal") < target;
+		int storedCharcoal = itemIndex.getTotalItems("charcoal");
+		int potentialCharcoal = settings.getPotentialCharcoalAmount();
+		return storedCharcoal + potentialCharcoal < target;
 	}
 
 	public boolean hasEnoughLogs() {

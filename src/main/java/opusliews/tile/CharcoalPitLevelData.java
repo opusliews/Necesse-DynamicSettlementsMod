@@ -48,6 +48,21 @@ public class CharcoalPitLevelData extends LevelData {
 		return repeatForever;
 	}
 
+	public int getPotentialCharcoalAmount() {
+		int amount = 0;
+		for (Long key : burnEndWorldTimes.keySet()) {
+			List<StoredLog> logs = pitLogs.get(key);
+			if (logs == null) {
+				continue;
+			}
+
+			for (StoredLog log : logs) {
+				amount += Math.max(0, log.amount);
+			}
+		}
+		return amount;
+	}
+
 	public void setProductionSettings(int produceUntilUnitsStocked, boolean repeatForever) {
 		this.produceUntilUnitsStocked = Math.max(0, produceUntilUnitsStocked);
 		this.repeatForever = repeatForever;
