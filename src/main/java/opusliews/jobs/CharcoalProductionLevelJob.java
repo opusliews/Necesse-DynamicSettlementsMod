@@ -40,6 +40,7 @@ import opusliews.network.PacketBuilderTilePlaceSound;
 import opusliews.tile.CharcoalPitLevelData;
 import opusliews.tile.CharcoalPitLevelData.StoredLog;
 import opusliews.tile.CharcoalPitTile;
+import opusliews.tile.CoveredCharcoalPitTile;
 import opusliews.tile.ShallowHoleTile;
 
 public class CharcoalProductionLevelJob extends TileLevelJob {
@@ -47,6 +48,7 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 	private static final long grassRemovalTime = 2000L;
 	private static final long holeDigTime = 2000L;
 	private static final long logLoadingTime = 2000L;
+	private static final long pitCoveringTime = 2000L;
 
 	private final CharcoalProductionZone zone;
 
@@ -83,6 +85,9 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 			private long holeDigCompleteTime;
 			private boolean logLoadingStarted;
 			private long logLoadingCompleteTime;
+			private boolean logsLoaded;
+			private boolean pitCoveringStarted;
+			private long pitCoveringCompleteTime;
 			private boolean loggedPitActionStart;
 
 			@Override
@@ -110,7 +115,15 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 							+ ", workLogs=" + countWorkInventoryLogs(worker));
 				}
 
-				if (logLoadingStarted) {
+				if (pitCoveringStarted) {
+					worker.showWorkAnimation(
+							tileX * 32 + 16,
+							tileY * 32 + 16,
+							ItemRegistry.getItem("ironshovel"),
+							1000,
+							true
+					);
+				} else if (logLoadingStarted) {
 					InventoryItem log = getFirstWorkInventoryLog(worker);
 					if (log != null) {
 						worker.showWorkAnimation(tileX * 32 + 16, tileY * 32 + 16, log.item, 1000, true);
@@ -135,14 +148,20 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 					return false;
 				}
 
-				if (isCurrent && countWorkInventoryLogs(worker) < requiredLogs) {
+				if (isCurrent && !logsLoaded && countWorkInventoryLogs(worker) < requiredLogs) {
 					sendBlockedMessage(worker, "charcoalworkerlogsmissing");
 					return false;
 				}
 
+				int currentTileID = getLevel().getTileID(tileX, tileY);
 				int shallowHoleID = TileRegistry.getTileID(ShallowHoleTile.stringID);
-				boolean ownsDugPit = holeDigStarted && getLevel().getTileID(tileX, tileY) == shallowHoleID;
-				if (ownsDugPit) {
+				int charcoalPitID = TileRegistry.getTileID(CharcoalPitTile.stringID);
+				int coveredCharcoalPitID = TileRegistry.getTileID(CoveredCharcoalPitTile.stringID);
+
+				boolean ownsDugPit = holeDigStarted && currentTileID == shallowHoleID;
+				boolean ownsLoadedPit = logsLoaded
+						&& (currentTileID == charcoalPitID || currentTileID == coveredCharcoalPitID);
+				if (ownsDugPit || ownsLoadedPit) {
 					return true;
 				}
 
@@ -190,7 +209,7 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 				}
 
 				int shallowHoleID = TileRegistry.getTileID(ShallowHoleTile.stringID);
-				if (getLevel().getTileID(tileX, tileY) != shallowHoleID) {
+				if (!logsLoaded && getLevel().getTileID(tileX, tileY) != shallowHoleID) {
 					if (currentTime < holeDigCompleteTime) {
 						return ActiveJobResult.PERFORMING;
 					}
@@ -218,29 +237,70 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 					return ActiveJobResult.PERFORMING;
 				}
 
-				if (currentTime < logLoadingCompleteTime) {
+				int charcoalPitID = TileRegistry.getTileID(CharcoalPitTile.stringID);
+				if (!logsLoaded) {
+					if (currentTime < logLoadingCompleteTime) {
+						return ActiveJobResult.PERFORMING;
+					}
+
+					if (getLevel().getTileID(tileX, tileY) != shallowHoleID) {
+						sendBlockedMessage(worker, "charcoalinvalidsite");
+						return ActiveJobResult.FAILED;
+					}
+
+					List<StoredLog> logs = removeWorkInventoryLogs(worker, requiredLogs);
+					if (logs == null) {
+						sendBlockedMessage(worker, "charcoalworkerlogsmissing");
+						return ActiveJobResult.FAILED;
+					}
+
+					CharcoalPitLevelData.get(getLevel(), true).setLogs(tileX, tileY, logs);
+					getLevel().setTile(tileX, tileY, charcoalPitID);
+					getLevel().sendTileUpdatePacket(tileX, tileY);
+					getLevel().getLevelTile(tileX, tileY).checkAround();
+					getLevel().getLevelObject(tileX, tileY).checkAround();
+					getLevel().getServer().network.sendToClientsWithTile(
+							new PacketBuilderTilePlaceSound(charcoalPitID, tileX, tileY),
+							getLevel(),
+							tileX,
+							tileY
+					);
+					logsLoaded = true;
+				}
+
+				if (!pitCoveringStarted) {
+					pitCoveringStarted = true;
+					pitCoveringCompleteTime = currentTime + pitCoveringTime;
 					return ActiveJobResult.PERFORMING;
 				}
 
-				if (getLevel().getTileID(tileX, tileY) != shallowHoleID) {
+				if (currentTime < pitCoveringCompleteTime) {
+					return ActiveJobResult.PERFORMING;
+				}
+
+				int coveredCharcoalPitID = TileRegistry.getTileID(CoveredCharcoalPitTile.stringID);
+				if (getLevel().getTileID(tileX, tileY) != charcoalPitID) {
+					if (getLevel().getTileID(tileX, tileY) == coveredCharcoalPitID) {
+						CharcoalProductionLevelJob.this.remove();
+						return ActiveJobResult.FINISHED;
+					}
+
 					sendBlockedMessage(worker, "charcoalinvalidsite");
 					return ActiveJobResult.FAILED;
 				}
 
-				List<StoredLog> logs = removeWorkInventoryLogs(worker, requiredLogs);
-				if (logs == null) {
-					sendBlockedMessage(worker, "charcoalworkerlogsmissing");
+				CharcoalPitLevelData pitData = CharcoalPitLevelData.get(getLevel(), false);
+				if (pitData == null || pitData.getLogs(tileX, tileY).isEmpty()) {
+					sendBlockedMessage(worker, "charcoalinvalidsite");
 					return ActiveJobResult.FAILED;
 				}
 
-				CharcoalPitLevelData.get(getLevel(), true).setLogs(tileX, tileY, logs);
-				int charcoalPitID = TileRegistry.getTileID(CharcoalPitTile.stringID);
-				getLevel().setTile(tileX, tileY, charcoalPitID);
+				getLevel().setTile(tileX, tileY, coveredCharcoalPitID);
 				getLevel().sendTileUpdatePacket(tileX, tileY);
 				getLevel().getLevelTile(tileX, tileY).checkAround();
 				getLevel().getLevelObject(tileX, tileY).checkAround();
 				getLevel().getServer().network.sendToClientsWithTile(
-						new PacketBuilderTilePlaceSound(charcoalPitID, tileX, tileY),
+						new PacketBuilderTilePlaceSound(coveredCharcoalPitID, tileX, tileY),
 						getLevel(),
 						tileX,
 						tileY
