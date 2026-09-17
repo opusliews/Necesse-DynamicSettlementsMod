@@ -44,6 +44,7 @@ import opusliews.network.*;
 import opusliews.object.BlueprintWorkstationObject;
 import opusliews.object.BlueprintWorkstationObjectEntity;
 import opusliews.object.BuilderJobRequestBulletinObject;
+import opusliews.object.PlacedLogRegistry;
 import opusliews.object.WarningBellObject;
 import opusliews.settler.BuilderRequestLevelData;
 import opusliews.settler.BuilderSettler;
@@ -187,6 +188,7 @@ public class DynamicSettlements {
 		ObjectRegistry.registerObject(
 				WarningBellObject.stringID,
 				new WarningBellObject(), 60.0F, true);
+		PlacedLogRegistry.register();
 
 		crudeWorkbenchContainerID = ContainerRegistry.registerSettlementDependantLOContainer(
 				(client, uniqueSeed, settlement, levelObject, content) -> new CraftingStationContainerForm(
@@ -272,6 +274,7 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketDigShallowHole.class);
 		PacketRegistry.registerPacket(PacketCharcoalPitInteract.class);
 		PacketRegistry.registerPacket(PacketFirestarterUse.class);
+		PacketRegistry.registerPacket(PacketPlaceLog.class);
 
 		AnvilCraftingFeature.register();
 		AnvilCraftingTasksFeature.register();
