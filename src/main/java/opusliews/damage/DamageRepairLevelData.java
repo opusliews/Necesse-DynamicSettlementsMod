@@ -63,6 +63,10 @@ public class DamageRepairLevelData extends LevelData implements RegionLoadedList
 			return;
 		}
 
+		if (objectLayerID < 0 && !level.tileLayer.isPlayerPlaced(damagedEntity.tileX, damagedEntity.tileY)) {
+			return;
+		}
+
 		damagedEntity.shouldSave = true;
 
 		Point repairTile = objectLayerID >= 0
@@ -134,13 +138,16 @@ public class DamageRepairLevelData extends LevelData implements RegionLoadedList
 			return;
 		}
 
-		damagedEntity.shouldSave = true;
+		boolean hasPersistentDamage = false;
 
-		if (damagedEntity.tileDamage > 0) {
+		if (damagedEntity.tileDamage > 0
+				&& level.tileLayer.isPlayerPlaced(damagedEntity.tileX, damagedEntity.tileY)) {
 			pendingRepairs.add(GameMath.getUniqueLongKey(damagedEntity.tileX, damagedEntity.tileY));
+			hasPersistentDamage = true;
 		}
 
 		if (damagedEntity.hasAnyObjectDamage()) {
+			hasPersistentDamage = true;
 			for (int layerID = 0; layerID < damagedEntity.objectDamage.length; layerID++) {
 				if (damagedEntity.objectDamage[layerID] <= 0) {
 					continue;
@@ -150,6 +157,8 @@ public class DamageRepairLevelData extends LevelData implements RegionLoadedList
 				pendingRepairs.add(GameMath.getUniqueLongKey(masterTile.x, masterTile.y));
 			}
 		}
+
+		damagedEntity.shouldSave = hasPersistentDamage;
 	}
 
 	public static boolean hasRepairableDamage(Level level, int tileX, int tileY) {
