@@ -116,6 +116,40 @@ public class CharcoalProductionZone extends SettlementTileTickZone {
 		return true;
 	}
 
+	public static boolean isValidReusableHole(Level level, int tileX, int tileY, CharcoalProductionLevelJob currentJob) {
+		if (level == null || !level.isTileWithinBounds(tileX, tileY) || level.isProtected(tileX, tileY)) {
+			return false;
+		}
+
+		if (level.getTileID(tileX, tileY) != TileRegistry.getTileID(opusliews.tile.ShallowHoleTile.stringID)) {
+			return false;
+		}
+
+		if (level.getObjectID(tileX, tileY) != 0) {
+			return false;
+		}
+
+		for (int[] offset : cardinalOffsets) {
+			int checkX = tileX + offset[0];
+			int checkY = tileY + offset[1];
+			if (!level.isTileWithinBounds(checkX, checkY)) {
+				continue;
+			}
+
+			if (CharcoalPitSystem.isPitTile(level, checkX, checkY)) {
+				return false;
+			}
+
+			boolean hasReservedPit = level.jobsLayer.streamJobsInTile(checkX, checkY)
+					.anyMatch(job -> job instanceof CharcoalProductionLevelJob && job != currentJob);
+			if (hasReservedPit) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	@Override
 	public boolean isHiddenSetting() {
 		return (Boolean)hideZones.get();

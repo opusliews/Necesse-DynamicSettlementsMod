@@ -19,11 +19,13 @@ import necesse.entity.mobs.job.FoundJob;
 import necesse.entity.mobs.job.JobSequence;
 import necesse.entity.mobs.job.JobTypeHandler;
 import necesse.entity.mobs.job.LinkedListJobSequence;
+import necesse.entity.mobs.job.activeJob.ActiveJob;
 import necesse.entity.mobs.job.activeJob.ActiveJobResult;
 import necesse.entity.mobs.job.activeJob.PickupSettlementStorageActiveJob;
 import necesse.entity.mobs.job.activeJob.TileActiveJob;
 import necesse.inventory.InventoryItem;
 import necesse.inventory.item.Item;
+import necesse.level.maps.levelData.jobs.HasStorageLevelJob;
 import necesse.level.maps.levelData.jobs.JobMoveToTile;
 import necesse.level.maps.levelData.jobs.TileLevelJob;
 import necesse.level.maps.levelData.settlementData.ServerSettlementData;
@@ -35,11 +37,13 @@ import necesse.level.maps.levelData.settlementData.storage.SettlementStorageReco
 import necesse.gfx.GameColor;
 import necesse.level.maps.levelData.settlementData.storage.SettlementStorageRecordsRegionData;
 import opusliews.charcoal.CharcoalProductionZone;
+import opusliews.item.FirestarterItem;
 import opusliews.logging.Logging;
 import opusliews.network.PacketBuilderTilePlaceSound;
 import opusliews.tile.CharcoalPitLevelData;
 import opusliews.tile.CharcoalPitLevelData.StoredLog;
 import opusliews.tile.CharcoalPitTile;
+import opusliews.tile.BurningCharcoalPitTile;
 import opusliews.tile.CoveredCharcoalPitTile;
 import opusliews.tile.ShallowHoleTile;
 
@@ -49,17 +53,25 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 	private static final long holeDigTime = 2000L;
 	private static final long logLoadingTime = 2000L;
 	private static final long pitCoveringTime = 2000L;
+	private static final long pitIgnitionTime = 2000L;
 
 	private final CharcoalProductionZone zone;
+	private final boolean reuseExistingHole;
 
 	public CharcoalProductionLevelJob(int tileX, int tileY, CharcoalProductionZone zone) {
+		this(tileX, tileY, zone, false);
+	}
+
+	public CharcoalProductionLevelJob(int tileX, int tileY, CharcoalProductionZone zone, boolean reuseExistingHole) {
 		super(tileX, tileY);
 		this.zone = zone;
+		this.reuseExistingHole = reuseExistingHole;
 	}
 
 	public CharcoalProductionLevelJob(LoadData save) {
 		super(save);
 		this.zone = null;
+		this.reuseExistingHole = false;
 	}
 
 	@Override
@@ -74,20 +86,26 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 				&& !zone.isRemoved()
 				&& zone.containsTile(tileX, tileY)
 				&& zone.canProduce()
-				&& CharcoalProductionZone.isValidCandidate(getLevel(), tileX, tileY, this);
+				&& (reuseExistingHole
+						? CharcoalProductionZone.isValidReusableHole(getLevel(), tileX, tileY, this)
+						: CharcoalProductionZone.isValidCandidate(getLevel(), tileX, tileY, this));
 	}
 
 	private TileActiveJob getActiveJob(EntityJobWorker worker, JobTypeHandler.TypePriority priority) {
 		return new TileActiveJob(worker, priority, tileX, tileY) {
 			private boolean grassRemovalStarted;
 			private long grassRemovalCompleteTime;
-			private boolean holeDigStarted;
+			private boolean holeDigStarted = reuseExistingHole;
 			private long holeDigCompleteTime;
 			private boolean logLoadingStarted;
 			private long logLoadingCompleteTime;
 			private boolean logsLoaded;
 			private boolean pitCoveringStarted;
 			private long pitCoveringCompleteTime;
+			private boolean pitCovered;
+			private boolean pitIgnitionStarted;
+			private long pitIgnitionCompleteTime;
+			private boolean burnStarted;
 			private boolean loggedPitActionStart;
 
 			@Override
@@ -98,6 +116,38 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 			@Override
 			public int getCompleteRange() {
 				return 8;
+			}
+
+			@Override
+			public void onCancelled(boolean becauseOfInvalid, boolean isCurrent, boolean isMovingTo) {
+				super.onCancelled(becauseOfInvalid, isCurrent, isMovingTo);
+
+				int burningCharcoalPitID = TileRegistry.getTileID(BurningCharcoalPitTile.stringID);
+				if (burnStarted || getLevel().getTileID(tileX, tileY) == burningCharcoalPitID) {
+					return;
+				}
+
+				CharcoalPitLevelData pitData = CharcoalPitLevelData.get(getLevel(), false);
+				if (pitData != null) {
+					pitData.removeBurn(tileX, tileY);
+					List<StoredLog> storedLogs = pitData.removeLogs(tileX, tileY);
+					for (StoredLog log : storedLogs) {
+						if (log.amount > 0 && ItemRegistry.getItem(log.itemStringID) != null) {
+							worker.getWorkInventory().add(new InventoryItem(log.itemStringID, log.amount));
+						}
+					}
+				}
+
+				int currentTileID = getLevel().getTileID(tileX, tileY);
+				int shallowHoleID = TileRegistry.getTileID(ShallowHoleTile.stringID);
+				int charcoalPitID = TileRegistry.getTileID(CharcoalPitTile.stringID);
+				int coveredCharcoalPitID = TileRegistry.getTileID(CoveredCharcoalPitTile.stringID);
+				if (currentTileID == shallowHoleID || currentTileID == charcoalPitID || currentTileID == coveredCharcoalPitID) {
+					getLevel().setTile(tileX, tileY, TileRegistry.dirtID);
+					getLevel().sendTileUpdatePacket(tileX, tileY);
+					getLevel().getLevelTile(tileX, tileY).checkAround();
+					getLevel().getLevelObject(tileX, tileY).checkAround();
+				}
 			}
 
 			@Override
@@ -115,7 +165,15 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 							+ ", workLogs=" + countWorkInventoryLogs(worker));
 				}
 
-				if (pitCoveringStarted) {
+				if (pitIgnitionStarted) {
+					worker.showWorkAnimation(
+							tileX * 32 + 16,
+							tileY * 32 + 16,
+							ItemRegistry.getItem(FirestarterItem.stringID),
+							1000,
+							true
+					);
+				} else if (pitCoveringStarted) {
 					worker.showWorkAnimation(
 							tileX * 32 + 16,
 							tileY * 32 + 16,
@@ -128,7 +186,7 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 					if (log != null) {
 						worker.showWorkAnimation(tileX * 32 + 16, tileY * 32 + 16, log.item, 1000, true);
 					}
-				} else if (hasGrassTile() || holeDigStarted) {
+				} else if (!reuseExistingHole && (hasGrassTile() || holeDigStarted)) {
 					worker.showWorkAnimation(
 							tileX * 32 + 16,
 							tileY * 32 + 16,
@@ -170,7 +228,9 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 					return false;
 				}
 
-				return CharcoalProductionZone.isValidCandidate(getLevel(), tileX, tileY, CharcoalProductionLevelJob.this);
+				return reuseExistingHole
+						? CharcoalProductionZone.isValidReusableHole(getLevel(), tileX, tileY, CharcoalProductionLevelJob.this)
+						: CharcoalProductionZone.isValidCandidate(getLevel(), tileX, tileY, CharcoalProductionLevelJob.this);
 			}
 
 			@Override
@@ -279,28 +339,59 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 				}
 
 				int coveredCharcoalPitID = TileRegistry.getTileID(CoveredCharcoalPitTile.stringID);
-				if (getLevel().getTileID(tileX, tileY) != charcoalPitID) {
-					if (getLevel().getTileID(tileX, tileY) == coveredCharcoalPitID) {
-						CharcoalProductionLevelJob.this.remove();
-						return ActiveJobResult.FINISHED;
-					}
-
-					sendBlockedMessage(worker, "charcoalinvalidsite");
-					return ActiveJobResult.FAILED;
-				}
-
 				CharcoalPitLevelData pitData = CharcoalPitLevelData.get(getLevel(), false);
 				if (pitData == null || pitData.getLogs(tileX, tileY).isEmpty()) {
 					sendBlockedMessage(worker, "charcoalinvalidsite");
 					return ActiveJobResult.FAILED;
 				}
 
-				getLevel().setTile(tileX, tileY, coveredCharcoalPitID);
+				if (!pitCovered) {
+					int currentTileID = getLevel().getTileID(tileX, tileY);
+					if (currentTileID == charcoalPitID) {
+						getLevel().setTile(tileX, tileY, coveredCharcoalPitID);
+						getLevel().sendTileUpdatePacket(tileX, tileY);
+						getLevel().getLevelTile(tileX, tileY).checkAround();
+						getLevel().getLevelObject(tileX, tileY).checkAround();
+						getLevel().getServer().network.sendToClientsWithTile(
+								new PacketBuilderTilePlaceSound(coveredCharcoalPitID, tileX, tileY),
+								getLevel(),
+								tileX,
+								tileY
+						);
+					} else if (currentTileID != coveredCharcoalPitID) {
+						sendBlockedMessage(worker, "charcoalinvalidsite");
+						return ActiveJobResult.FAILED;
+					}
+					pitCovered = true;
+				}
+
+				if (!pitIgnitionStarted) {
+					pitIgnitionStarted = true;
+					pitIgnitionCompleteTime = currentTime + pitIgnitionTime;
+					return ActiveJobResult.PERFORMING;
+				}
+
+				if (currentTime < pitIgnitionCompleteTime) {
+					return ActiveJobResult.PERFORMING;
+				}
+
+				if (getLevel().getTileID(tileX, tileY) != coveredCharcoalPitID) {
+					sendBlockedMessage(worker, "charcoalinvalidsite");
+					return ActiveJobResult.FAILED;
+				}
+
+				long fullDayDuration = (long)getLevel().getWorldEntity().getDayTimeMax() * 1000L;
+				long burnEndWorldTime = getLevel().getWorldEntity().getWorldTime() + fullDayDuration;
+				pitData.startBurn(tileX, tileY, burnEndWorldTime);
+				burnStarted = true;
+
+				int burningCharcoalPitID = TileRegistry.getTileID(BurningCharcoalPitTile.stringID);
+				getLevel().setTile(tileX, tileY, burningCharcoalPitID);
 				getLevel().sendTileUpdatePacket(tileX, tileY);
 				getLevel().getLevelTile(tileX, tileY).checkAround();
 				getLevel().getLevelObject(tileX, tileY).checkAround();
 				getLevel().getServer().network.sendToClientsWithTile(
-						new PacketBuilderTilePlaceSound(coveredCharcoalPitID, tileX, tileY),
+						new PacketBuilderTilePlaceSound(burningCharcoalPitID, tileX, tileY),
 						getLevel(),
 						tileX,
 						tileY
@@ -322,8 +413,16 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 			return null;
 		}
 
+		List<ActiveJob> inventoryDropOffJobs = new ArrayList<>();
+		if (!addCurrentInventoryDropOffJobs(worker, foundJob.priority, inventoryDropOffJobs)) {
+			Logging.logMessage("[FiringInventory] Production job waiting because current work inventory cannot be fully deposited: worker="
+					+ worker.getMobWorker().getUniqueID());
+			return null;
+		}
+
 		List<SettlementStoragePickupSlot> logReservations = reserveLogs(worker);
 		if (logReservations == null) {
+			cancelPlannedJobs(inventoryDropOffJobs);
 			if (getAvailableLogCount(worker) < requiredLogs) {
 				sendBlockedMessage(worker, "charcoalmissinglogs");
 			} else {
@@ -334,6 +433,7 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 
 		if (!job.isValid()) {
 			releaseReservations(logReservations);
+			cancelPlannedJobs(inventoryDropOffJobs);
 			return null;
 		}
 
@@ -343,9 +443,12 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 		);
 
 		Logging.logMessage("[CharcoalPickup] Building sequence: worker=" + worker.getMobWorker().getUniqueID()
+				+ ", inventoryDropOffJobs=" + inventoryDropOffJobs.size()
 				+ ", reservations=" + logReservations.size()
 				+ ", workLogsBefore=" + countWorkInventoryLogs(worker)
 				+ ", pit=" + job.tileX + "," + job.tileY);
+
+		sequence.addAll(inventoryDropOffJobs);
 
 		for (SettlementStoragePickupSlot slot : logReservations) {
 			sequence.add(new DebugPickupJob(worker, foundJob.priority, slot));
@@ -355,6 +458,56 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 		return sequence;
 	}
 
+
+	private static boolean addCurrentInventoryDropOffJobs(
+			EntityJobWorker worker,
+			JobTypeHandler.TypePriority priority,
+			List<ActiveJob> jobs
+	) {
+		List<InventoryItem> currentItems = new ArrayList<>();
+
+		for (InventoryItem item : worker.getWorkInventory().items()) {
+			if (item != null && item.getAmount() > 0) {
+				currentItems.add(item.copy());
+			}
+		}
+
+		if (!currentItems.isEmpty()) {
+			Logging.logMessage("[FiringInventory] Planning deposit of " + currentItems.size()
+					+ " work-inventory stack(s) before charcoal production for worker="
+					+ worker.getMobWorker().getUniqueID());
+		}
+
+		for (InventoryItem item : currentItems) {
+			ArrayList<HasStorageLevelJob.DropOffFind> dropOffLocations =
+					HasStorageLevelJob.findDropOffLocation(worker, item);
+			int dropOffCapacity = 0;
+
+			for (HasStorageLevelJob.DropOffFind location : dropOffLocations) {
+				dropOffCapacity += location.item.getAmount();
+			}
+
+			if (dropOffCapacity < item.getAmount()) {
+				Logging.logMessage("[FiringInventory] Cannot fully deposit " + item.item.getStringID()
+						+ " x" + item.getAmount() + " before charcoal production; capacity=" + dropOffCapacity);
+				cancelPlannedJobs(jobs);
+				return false;
+			}
+
+			for (HasStorageLevelJob.DropOffFind location : dropOffLocations) {
+				jobs.add(location.getActiveJob(worker, priority, null, false));
+			}
+		}
+
+		return true;
+	}
+
+	private static void cancelPlannedJobs(List<ActiveJob> jobs) {
+		for (ActiveJob job : jobs) {
+			job.onCancelled(true, false, false);
+		}
+		jobs.clear();
+	}
 
 
 	private static class DebugPickupJob extends PickupSettlementStorageActiveJob {

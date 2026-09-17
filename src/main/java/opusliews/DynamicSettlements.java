@@ -22,6 +22,7 @@ import necesse.inventory.item.Item;
 import necesse.inventory.item.matItem.MatItem;
 import opusliews.blueprint.BlueprintAreaLevelData;
 import opusliews.charcoal.CharcoalProductionZone;
+import opusliews.jobs.CharcoalCleanupLevelJob;
 import opusliews.jobs.CharcoalProductionLevelJob;
 import opusliews.buff.MalignanceGogglesBuff;
 import opusliews.container.BlueprintWorkstationContainer;
@@ -257,6 +258,13 @@ public class DynamicSettlements {
 				CharcoalProductionZone.stringID,
 				CharcoalProductionLevelJob.class,
 				CharcoalProductionLevelJob::handler,
+				"firing"
+		);
+
+		LevelJobRegistry.registerJob(
+				"charcoalcleanup",
+				CharcoalCleanupLevelJob.class,
+				CharcoalCleanupLevelJob::handler,
 				"firing"
 		);
 

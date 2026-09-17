@@ -8,7 +8,10 @@ import java.util.Map;
 import necesse.engine.registries.TileRegistry;
 import necesse.engine.save.LoadData;
 import necesse.engine.save.SaveData;
+import necesse.entity.pickup.ItemPickupEntity;
 import necesse.inventory.InventoryItem;
+import opusliews.jobs.CharcoalCleanupLevelJob;
+import opusliews.logging.Logging;
 import necesse.level.maps.Level;
 import necesse.level.maps.levelData.LevelData;
 
@@ -146,7 +149,16 @@ public class CharcoalPitLevelData extends LevelData {
 			level.getLevelObject(tileX, tileY).checkAround();
 
 			InventoryItem charcoal = new InventoryItem("charcoal", 32);
-			level.entityManager.pickups.add(charcoal.getPickupEntity(level, tileX * 32.0F + 16.0F, tileY * 32.0F + 16.0F));
+			ItemPickupEntity pickup = charcoal.getPickupEntity(level, tileX * 32.0F + 16.0F, tileY * 32.0F + 16.0F);
+			level.entityManager.pickups.add(pickup);
+			Logging.logMessage(
+					"[CharcoalCleanup] Burn completed at " + tileX + "," + tileY
+							+ "; spawned charcoal pickup amount=" + pickup.item.getAmount()
+							+ ", removed=" + pickup.removed()
+							+ ", available=" + pickup.getAvailableAmount()
+			);
+			level.jobsLayer.addJob(new CharcoalCleanupLevelJob(tileX, tileY, pickup));
+			Logging.logMessage("[CharcoalCleanup] Added cleanup level job at " + tileX + "," + tileY);
 		}
 	}
 
