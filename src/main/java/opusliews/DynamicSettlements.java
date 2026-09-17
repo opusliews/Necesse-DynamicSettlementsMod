@@ -269,6 +269,7 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketSettlementSleepSettingsUpdate.class);
 		PacketRegistry.registerPacket(PacketDigShallowHole.class);
 		PacketRegistry.registerPacket(PacketCharcoalPitInteract.class);
+		PacketRegistry.registerPacket(PacketFirestarterUse.class);
 
 		AnvilCraftingFeature.register();
 		AnvilCraftingTasksFeature.register();

@@ -9,6 +9,7 @@ import necesse.inventory.item.TorchItem;
 import necesse.inventory.item.toolItem.shovelToolItem.ShovelToolItem;
 import necesse.level.maps.Level;
 import opusliews.item.DirtPileItem;
+import opusliews.item.FirestarterItem;
 import opusliews.network.PacketCharcoalPitInteract;
 import opusliews.tile.CharcoalPitLevelData.StoredLog;
 
@@ -42,7 +43,7 @@ public final class CharcoalPitSystem {
 		} else if (tileID == TileRegistry.getTileID(CharcoalPitTile.stringID)) {
 			allowedAction = isDirtPile(selected) || isShovel(selected) || isTorch(selected);
 		} else if (tileID == TileRegistry.getTileID(CoveredCharcoalPitTile.stringID)) {
-			allowedAction = isShovel(selected) || isTorch(selected);
+			allowedAction = isShovel(selected) || isTorch(selected) || isFirestarter(selected);
 		} else if (tileID == TileRegistry.getTileID(BurningCharcoalPitTile.stringID)) {
 			return true;
 		}
@@ -88,7 +89,8 @@ public final class CharcoalPitSystem {
 		if (tileID == TileRegistry.getTileID(CoveredCharcoalPitTile.stringID)) {
 			if (isShovel(selected) && isShovelInRange(level, player, selected, tileX, tileY)) {
 				extractPit(level, tileX, tileY, true);
-			} else if (isTorch(selected) && isTorchInRange(level, player, selected, tileX, tileY)) {
+			} else if ((isTorch(selected) && isTorchInRange(level, player, selected, tileX, tileY))
+					|| (isFirestarter(selected) && isWithinRange(player, tileX, tileY))) {
 				ignitePit(level, tileX, tileY);
 			}
 		}
@@ -160,7 +162,7 @@ public final class CharcoalPitSystem {
 		}
 
 		long fullDayDuration = (long)level.getWorldEntity().getDayTimeMax() * 1000L;
-		long burnEndWorldTime = level.getWorldEntity().getWorldTime() + 10000;//fullDayDuration;
+		long burnEndWorldTime = level.getWorldEntity().getWorldTime() + fullDayDuration;
 		data.startBurn(tileX, tileY, burnEndWorldTime);
 		setTile(level, tileX, tileY, TileRegistry.getTileID(BurningCharcoalPitTile.stringID));
 	}
@@ -242,6 +244,10 @@ public final class CharcoalPitSystem {
 
 	private static boolean isTorch(InventoryItem item) {
 		return item != null && item.item instanceof TorchItem;
+	}
+
+	private static boolean isFirestarter(InventoryItem item) {
+		return item != null && FirestarterItem.stringID.equals(item.item.getStringID());
 	}
 
 	private static boolean isWithinRange(PlayerMob player, int tileX, int tileY) {

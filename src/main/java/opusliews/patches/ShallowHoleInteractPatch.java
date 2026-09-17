@@ -3,6 +3,7 @@ package opusliews.patches;
 import necesse.engine.modLoader.annotations.ModMethodPatch;
 import necesse.entity.mobs.PlayerMob;
 import net.bytebuddy.asm.Advice;
+import opusliews.earlygame.FirestarterSystem;
 import opusliews.tile.CharcoalPitSystem;
 import opusliews.tile.ShallowHoleSystem;
 
@@ -19,6 +20,10 @@ public class ShallowHoleInteractPatch {
 			@Advice.Argument(1) int levelY
 	) {
 		if (CharcoalPitSystem.tryClientInteract(player, levelX, levelY)) {
+			return true;
+		}
+
+		if (FirestarterSystem.tryClientInteract(player, levelX, levelY)) {
 			return true;
 		}
 
