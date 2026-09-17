@@ -469,6 +469,7 @@ public class CharcoalCleanupLevelJob extends TileLevelJob {
 							+ ", pit=" + tileX + "," + tileY
 							+ ", pickup=" + describePickup()
 			);
+			super.onCancelled(becauseOfInvalid, isCurrent, isMovingTo);
 		}
 	}
 

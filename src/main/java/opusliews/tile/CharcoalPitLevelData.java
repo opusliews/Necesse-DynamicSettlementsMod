@@ -171,6 +171,7 @@ public class CharcoalPitLevelData extends LevelData {
 
 			if (!level.isTileWithinBounds(tileX, tileY) || level.getTileID(tileX, tileY) != burningTileID) {
 				iterator.remove();
+				pitLogs.remove(entry.getKey());
 				continue;
 			}
 
@@ -359,6 +360,12 @@ public class CharcoalPitLevelData extends LevelData {
 			if (!level.isTileWithinBounds(tileX, tileY)
 					|| level.getTileID(tileX, tileY) != TileRegistry.getTileID(ShallowHoleTile.stringID)) {
 				pendingCleanupPickupIDs.remove(key);
+				continue;
+			}
+
+			boolean cleanupJobExists = level.jobsLayer.streamJobsInTile(tileX, tileY)
+					.anyMatch(job -> job instanceof CharcoalCleanupLevelJob);
+			if (cleanupJobExists) {
 				continue;
 			}
 
