@@ -1,7 +1,9 @@
 package opusliews.logging;
 
 public final class Logging {
-	public static boolean logEnabled = false;
+	public static final boolean logEnabled = Boolean.parseBoolean(
+			System.getenv().getOrDefault("DYNAMIC_SETTLEMENTS_LOGGING", "false")
+	);
 
 	private Logging() {
 	}

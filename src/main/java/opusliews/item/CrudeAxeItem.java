@@ -12,6 +12,7 @@ import necesse.level.gameObject.TreeObject;
 import necesse.level.gameObject.TreeStumpObject;
 import necesse.level.maps.Level;
 import opusliews.object.PlacedLogObject;
+import opusliews.object.TrapdoorObject;
 
 public class CrudeAxeItem extends CustomAxeToolItem {
 	public static final String stringID = "crudeaxe";
@@ -34,7 +35,7 @@ public class CrudeAxeItem extends CustomAxeToolItem {
 		}
 
 		GameObject object = level.getObject(layerID, tileX, tileY);
-		return object.getClass() == TreeObject.class || object instanceof PlacedLogObject;
+		return object.getClass() == TreeObject.class || object instanceof PlacedLogObject || object instanceof TrapdoorObject;
 	}
 
 	@Override

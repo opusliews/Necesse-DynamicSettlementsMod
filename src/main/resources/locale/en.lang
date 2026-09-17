@@ -51,6 +51,7 @@ dirtpile=Pile of Dirt
 charcoal=Charcoal
 firestarter=Firestarter
 crudeaxe=Crude Axe
+trapdoor=Trapdoor
 sharpenedstone=Sharpened Stone
 
 [object]
@@ -59,6 +60,8 @@ crudeworkbench=Crude Workbench
 blueprintworkstation=Blueprint Workstation
 builderjobrequestbulletin=Builder Job Request Bulletin
 warningbell=Warning Bell
+trapdoor=Trapdoor
+closedtrapdoor=Trapdoor
 anvilcraftingtaskboard=Anvil Crafting Tasks
 
 [controls]

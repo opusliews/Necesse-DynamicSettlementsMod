@@ -25,6 +25,7 @@ import opusliews.charcoal.CharcoalProductionZone;
 import opusliews.jobs.CharcoalCleanupLevelJob;
 import opusliews.jobs.CharcoalProductionLevelJob;
 import opusliews.buff.MalignanceGogglesBuff;
+import opusliews.buff.TrapdoorHiddenBuff;
 import opusliews.container.BlueprintWorkstationContainer;
 import opusliews.container.CrudeWorkbenchContainer;
 import opusliews.crafting.AnvilCraftingFeature;
@@ -49,6 +50,7 @@ import opusliews.object.BlueprintWorkstationObjectEntity;
 import opusliews.object.BuilderJobRequestBulletinObject;
 import opusliews.object.PlacedLogRegistry;
 import opusliews.object.WarningBellObject;
+import opusliews.object.TrapdoorObject;
 import opusliews.settler.BuilderRequestLevelData;
 import opusliews.settler.BuilderSettler;
 import opusliews.sleep.SettlementSleepSettingsLevelData;
@@ -168,6 +170,7 @@ public class DynamicSettlements {
 		}
 		// Registrations
 		BuffRegistry.registerBuff(MalignanceGogglesItem.buffStringID, new MalignanceGogglesBuff());
+		BuffRegistry.registerBuff(TrapdoorHiddenBuff.stringID, new TrapdoorHiddenBuff());
 		SettlerRegistry.registerSettler("builder", new BuilderSettler());
 		MobRegistry.registerMob("builderhuman",
 				BuilderHumanMob.class, true);
@@ -192,6 +195,8 @@ public class DynamicSettlements {
 		ObjectRegistry.registerObject(
 				WarningBellObject.stringID,
 				new WarningBellObject(), 60.0F, true);
+		ObjectRegistry.registerObject(TrapdoorObject.openStringID, new TrapdoorObject(false), 20.0F, true);
+		ObjectRegistry.registerObject(TrapdoorObject.closedStringID, new TrapdoorObject(true), 0.0F, false);
 		PlacedLogRegistry.register();
 
 		crudeWorkbenchContainerID = ContainerRegistry.registerSettlementDependantLOContainer(
