@@ -275,6 +275,7 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketCharcoalPitInteract.class);
 		PacketRegistry.registerPacket(PacketFirestarterUse.class);
 		PacketRegistry.registerPacket(PacketPlaceLog.class);
+		PacketRegistry.registerPacket(PacketLogCutSound.class);
 
 		AnvilCraftingFeature.register();
 		AnvilCraftingTasksFeature.register();
