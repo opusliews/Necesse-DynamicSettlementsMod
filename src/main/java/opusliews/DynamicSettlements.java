@@ -22,6 +22,7 @@ import necesse.inventory.item.Item;
 import necesse.inventory.item.matItem.MatItem;
 import opusliews.blueprint.BlueprintAreaLevelData;
 import opusliews.charcoal.CharcoalProductionZone;
+import opusliews.jobs.CharcoalProductionLevelJob;
 import opusliews.buff.MalignanceGogglesBuff;
 import opusliews.container.BlueprintWorkstationContainer;
 import opusliews.container.CrudeWorkbenchContainer;
@@ -251,6 +252,13 @@ public class DynamicSettlements {
 		);
 
 		SettlementWorkZoneRegistry.registerZone(CharcoalProductionZone.stringID, CharcoalProductionZone.class);
+
+		LevelJobRegistry.registerJob(
+				CharcoalProductionZone.stringID,
+				CharcoalProductionLevelJob.class,
+				CharcoalProductionLevelJob::handler,
+				CharcoalProductionZone.stringID
+		);
 
 		LevelJobRegistry.registerJob(
 				"construction",

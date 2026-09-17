@@ -14,6 +14,7 @@ constructionalreadycomplete=Blueprint is already complete.
 
 [activities]
 construction=Constructing
+charcoalproduction=Producing charcoal
 guardpatrolling=Patrolling
 
 [mobmsg]
