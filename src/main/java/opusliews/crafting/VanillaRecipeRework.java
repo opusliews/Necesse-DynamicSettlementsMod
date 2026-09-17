@@ -34,6 +34,8 @@ public class VanillaRecipeRework {
 	}
 
 	public static void apply(ArrayList recipes) {
+		recipes.removeIf(value -> value instanceof Recipe && "woodaxe".equals(((Recipe)value).resultStringID));
+
 		Set<String> registeredGlobalIngredients = getRegisteredGlobalIngredientIDs();
 
 		for (Object value : recipes) {
