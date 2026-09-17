@@ -1,38 +1,77 @@
 package opusliews.charcoal;
 
+import java.awt.Color;
+import java.awt.Point;
+import java.util.function.BooleanSupplier;
 import necesse.engine.localization.message.GameMessage;
 import necesse.engine.localization.message.LocalMessage;
+import necesse.engine.registries.GlobalIngredientRegistry;
 import necesse.engine.registries.TileRegistry;
 import necesse.engine.util.EventVariable;
 import necesse.level.gameObject.GameObject;
 import necesse.level.gameObject.SurfaceGrassObject;
 import necesse.level.maps.Level;
 import necesse.level.maps.hudManager.HudDrawElement;
+import necesse.level.maps.levelData.settlementData.storage.SettlementStorageGlobalIngredientIDIndex;
+import necesse.level.maps.levelData.settlementData.storage.SettlementStorageItemIDIndex;
+import necesse.level.maps.levelData.settlementData.storage.SettlementStorageRecordsRegionData;
 import necesse.level.maps.levelData.settlementData.zones.SettlementTileTickZone;
 import opusliews.jobs.CharcoalProductionLevelJob;
+import opusliews.tile.CharcoalPitLevelData;
 import opusliews.tile.CharcoalPitSystem;
-
-import java.awt.*;
-import java.util.function.BooleanSupplier;
 
 public class CharcoalProductionZone extends SettlementTileTickZone {
 	public static final String stringID = "charcoalproduction";
 	public static final EventVariable hideZones = new EventVariable(false);
 	private static final int[][] cardinalOffsets = {
-			{0, -1},
-			{1, 0},
-			{0, 1},
-			{-1, 0}
+		{0, -1},
+		{1, 0},
+		{0, 1},
+		{-1, 0}
 	};
 
 	@Override
 	protected void handleTile(Point tile) {
 		Level level = manager.data.getLevel();
-		if (!isValidCandidate(level, tile.x, tile.y, null)) {
+		if (!canProduce() || !hasEnoughLogs() || !isValidCandidate(level, tile.x, tile.y, null)) {
 			return;
 		}
 
 		level.jobsLayer.addJob(new CharcoalProductionLevelJob(tile.x, tile.y, this));
+	}
+
+	public boolean canProduce() {
+		if (manager == null || manager.data == null) {
+			return false;
+		}
+
+		CharcoalPitLevelData settings = CharcoalPitLevelData.get(manager.data.getLevel(), false);
+		if (settings == null) {
+			return false;
+		}
+
+		if (settings.isRepeatForever()) {
+			return true;
+		}
+
+		int target = settings.getProduceUntilUnitsStocked();
+		if (target <= 0) {
+			return false;
+		}
+
+		SettlementStorageItemIDIndex itemIndex = manager.data.storageRecords.getIndex(SettlementStorageItemIDIndex.class);
+		return itemIndex.getTotalItems("charcoal") < target;
+	}
+
+	public boolean hasEnoughLogs() {
+		if (manager == null || manager.data == null) {
+			return false;
+		}
+
+		int anyLogID = GlobalIngredientRegistry.getGlobalIngredientID("anylog");
+		SettlementStorageGlobalIngredientIDIndex index = manager.data.storageRecords.getIndex(SettlementStorageGlobalIngredientIDIndex.class);
+		SettlementStorageRecordsRegionData logs = index.getGlobalIngredient(anyLogID);
+		return logs != null && logs.getTotalItems() >= CharcoalProductionLevelJob.requiredLogs;
 	}
 
 	public static boolean isValidCandidate(Level level, int tileX, int tileY, CharcoalProductionLevelJob currentJob) {
