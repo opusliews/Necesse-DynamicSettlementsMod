@@ -21,6 +21,7 @@ import necesse.gfx.gameFont.FontOptions;
 import necesse.inventory.item.Item;
 import necesse.inventory.item.matItem.MatItem;
 import opusliews.blueprint.BlueprintAreaLevelData;
+import opusliews.charcoal.CharcoalProductionZone;
 import opusliews.buff.MalignanceGogglesBuff;
 import opusliews.container.BlueprintWorkstationContainer;
 import opusliews.container.CrudeWorkbenchContainer;
@@ -50,6 +51,7 @@ import opusliews.settler.BuilderRequestLevelData;
 import opusliews.settler.BuilderSettler;
 import opusliews.sleep.SettlementSleepSettingsLevelData;
 import opusliews.tile.*;
+import necesse.level.maps.levelData.settlementData.zones.SettlementWorkZoneRegistry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -238,6 +240,18 @@ public class DynamicSettlements {
 				)
 		);
 
+		JobTypeRegistry.registerType(
+				CharcoalProductionZone.stringID,
+				new JobType(
+						true,
+						false,
+						new LocalMessage("jobs", "charcoalproductionname"),
+						new LocalMessage("jobs", "charcoalproductiontip")
+				)
+		);
+
+		SettlementWorkZoneRegistry.registerZone(CharcoalProductionZone.stringID, CharcoalProductionZone.class);
+
 		LevelJobRegistry.registerJob(
 				"construction",
 				ConstructionLevelJob.class,
@@ -276,6 +290,9 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketFirestarterUse.class);
 		PacketRegistry.registerPacket(PacketPlaceLog.class);
 		PacketRegistry.registerPacket(PacketLogCutSound.class);
+		PacketRegistry.registerPacket(PacketCharcoalProductionSettingsRequest.class);
+		PacketRegistry.registerPacket(PacketCharcoalProductionSettingsUpdate.class);
+		PacketRegistry.registerPacket(PacketCharcoalProductionSettingsSync.class);
 
 		AnvilCraftingFeature.register();
 		AnvilCraftingTasksFeature.register();

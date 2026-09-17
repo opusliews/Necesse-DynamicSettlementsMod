@@ -17,6 +17,8 @@ public class CharcoalPitLevelData extends LevelData {
 
 	private final Map<Long, List<StoredLog>> pitLogs = new HashMap<>();
 	private final Map<Long, Long> burnEndWorldTimes = new HashMap<>();
+	private int produceUntilUnitsStocked;
+	private boolean repeatForever;
 
 	public static CharcoalPitLevelData get(Level level, boolean createNewIfNull) {
 		if (level == null) {
@@ -35,6 +37,20 @@ public class CharcoalPitLevelData extends LevelData {
 		CharcoalPitLevelData data = new CharcoalPitLevelData();
 		level.addLevelData(managerKey, data);
 		return data;
+	}
+
+
+	public int getProduceUntilUnitsStocked() {
+		return produceUntilUnitsStocked;
+	}
+
+	public boolean isRepeatForever() {
+		return repeatForever;
+	}
+
+	public void setProductionSettings(int produceUntilUnitsStocked, boolean repeatForever) {
+		this.produceUntilUnitsStocked = Math.max(0, produceUntilUnitsStocked);
+		this.repeatForever = repeatForever;
 	}
 
 	public void setLogs(int tileX, int tileY, List<StoredLog> logs) {
@@ -98,6 +114,8 @@ public class CharcoalPitLevelData extends LevelData {
 	@Override
 	public void addSaveData(SaveData save) {
 		super.addSaveData(save);
+		save.addInt("produceUntilUnitsStocked", produceUntilUnitsStocked);
+		save.addBoolean("repeatForever", repeatForever);
 
 		for (Map.Entry<Long, List<StoredLog>> entry : pitLogs.entrySet()) {
 			int tileX = (int)(entry.getKey() >> 32);
@@ -127,6 +145,8 @@ public class CharcoalPitLevelData extends LevelData {
 		super.applyLoadData(save);
 		pitLogs.clear();
 		burnEndWorldTimes.clear();
+		produceUntilUnitsStocked = Math.max(0, save.getInt("produceUntilUnitsStocked", 0, false));
+		repeatForever = save.getBoolean("repeatForever", false, false);
 
 		for (LoadData pit : save.getLoadDataByName("CHARCOAL_PIT")) {
 			int tileX = pit.getInt("tileX", 0, false);
