@@ -91,6 +91,8 @@ public class DSItemRegistry {
 	public static final String metalcasingStringID = "metalcasing";
 	public static final String clockworkmechanismStringID = "clockworkmechanism";
 	public static final String magicfocusStringID = "magicfocus";
+	public static final String unfiredBrickStringID = "unfiredbrick";
+	public static final String brickStringID = "brick";
 
 	public static void registerItems() {
 		registerGlobalGroups();
@@ -180,6 +182,8 @@ public class DSItemRegistry {
 		registerMaterial(metalcasingStringID, new CraftingMaterialItem("Metal Casing", 500, Item.Rarity.NORMAL), 5.0F, "casing", "metal", "metal");
 		registerMaterial(clockworkmechanismStringID, new CraftingMaterialItem("Clockwork Mechanism", 500, Item.Rarity.NORMAL), 5.0F, "mechanism", "metal", "metal");
 		registerMaterial(magicfocusStringID, new CraftingMaterialItem("Magic Focus", 500, Item.Rarity.NORMAL), 5.0F, "focus", "magic", "magic");
+		registerMaterial(unfiredBrickStringID, new MatItem(500, Item.Rarity.NORMAL), 1.0F, null, null, null);
+		registerMaterial(brickStringID, new MatItem(500, Item.Rarity.NORMAL), 2.0F, null, null, null);
 	}
 
 	private static void registerGlobalGroups() {

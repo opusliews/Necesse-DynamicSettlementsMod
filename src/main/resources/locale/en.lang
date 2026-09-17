@@ -53,6 +53,8 @@ firestarter=Firestarter
 crudeaxe=Crude Axe
 trapdoor=Trapdoor
 sharpenedstone=Sharpened Stone
+unfiredbrick=Unfired Brick
+brick=Brick
 
 [object]
 placedlog=Log

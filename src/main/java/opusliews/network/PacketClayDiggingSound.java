@@ -8,26 +8,30 @@ import necesse.engine.network.client.Client;
 import necesse.engine.sound.SoundEffect;
 import necesse.engine.sound.SoundManager;
 import necesse.engine.util.GameRandom;
-import necesse.gfx.GameResources;
 import necesse.level.maps.Level;
+import opusliews.DynamicSettlements;
 
-public class PacketLogCutSound extends Packet {
+public class PacketClayDiggingSound extends Packet {
 	public final int tileX;
 	public final int tileY;
+	public final boolean breaking;
 
-	public PacketLogCutSound(byte[] data) {
+	public PacketClayDiggingSound(byte[] data) {
 		super(data);
 		PacketReader reader = new PacketReader(this);
 		this.tileX = reader.getNextInt();
 		this.tileY = reader.getNextInt();
+		this.breaking = reader.getNextBoolean();
 	}
 
-	public PacketLogCutSound(int tileX, int tileY) {
+	public PacketClayDiggingSound(int tileX, int tileY, boolean breaking) {
 		this.tileX = tileX;
 		this.tileY = tileY;
+		this.breaking = breaking;
 		PacketWriter writer = new PacketWriter(this);
 		writer.putNextInt(tileX);
 		writer.putNextInt(tileY);
+		writer.putNextBoolean(breaking);
 	}
 
 	@Override
@@ -37,13 +41,20 @@ public class PacketLogCutSound extends Packet {
 			return;
 		}
 
-		double pitch = GameRandom.globalRandom.nextDouble(0.8,1.2);
-
-		SoundManager.playSound(
-				GameResources.tap,
-				SoundEffect.effect(tileX * 32 + 16, tileY * 32 + 16)
-						.volume(1.0F)
-						.pitch((float)pitch)
-		);
+		if (!breaking) {
+			double pitch = GameRandom.globalRandom.nextDouble(0.9,1.1);
+			SoundManager.playSound(
+					DynamicSettlements.clayDigFastSound,
+					SoundEffect
+							.effect(tileX * 32 + 16, tileY * 32 + 16)
+							.pitch((float)pitch).volume(1.0F)
+			);
+		}
+		else {
+			SoundManager.playSound(
+					DynamicSettlements.clayDigSound,
+					SoundEffect.effect(tileX * 32 + 16, tileY * 32 + 16).volume(1.0F)
+			);
+		}
 	}
 }

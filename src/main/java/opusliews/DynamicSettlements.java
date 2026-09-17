@@ -20,6 +20,8 @@ import necesse.gfx.forms.presets.ModsForm;
 import necesse.gfx.gameFont.FontOptions;
 import necesse.inventory.item.Item;
 import necesse.inventory.item.matItem.MatItem;
+import necesse.inventory.item.toolItem.ToolType;
+import necesse.level.gameObject.GameObject;
 import opusliews.blueprint.BlueprintAreaLevelData;
 import opusliews.charcoal.CharcoalProductionZone;
 import opusliews.jobs.CharcoalCleanupLevelJob;
@@ -67,6 +69,8 @@ public class DynamicSettlements {
 	public static boolean debugBlueprintMaterialGrant = false;
 	public static boolean SBCompatFailure = false;
 	public static GameSound stoneTapSound;
+	public static GameSound clayDigSound;
+	public static GameSound clayDigFastSound;
 
 	public void preInit() {
 		boolean settlementBuildersLoaded = ModLoader.getEnabledMods().stream()
@@ -199,6 +203,10 @@ public class DynamicSettlements {
 		ObjectRegistry.registerObject(TrapdoorObject.closedStringID, new TrapdoorObject(true), 0.0F, false);
 		PlacedLogRegistry.register();
 
+		GameObject clayRock = ObjectRegistry.getObject("clayrock");
+		clayRock.toolType = ToolType.SHOVEL;
+		clayRock.toolTier = 0.0F;
+
 		crudeWorkbenchContainerID = ContainerRegistry.registerSettlementDependantLOContainer(
 				(client, uniqueSeed, settlement, levelObject, content) -> new CraftingStationContainerForm(
 						client,
@@ -314,6 +322,7 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketCharcoalProductionSettingsRequest.class);
 		PacketRegistry.registerPacket(PacketCharcoalProductionSettingsUpdate.class);
 		PacketRegistry.registerPacket(PacketCharcoalProductionSettingsSync.class);
+		PacketRegistry.registerPacket(PacketClayDiggingSound.class);
 
 		AnvilCraftingFeature.register();
 		AnvilCraftingTasksFeature.register();
@@ -330,5 +339,7 @@ public class DynamicSettlements {
 
 	public static void loadSounds() {
 		stoneTapSound = GameSound.fromFile("StoneTap");
+		clayDigSound = GameSound.fromFile("ClayDig");
+		clayDigFastSound = GameSound.fromFile("ClayDigFast");
 	}
 }

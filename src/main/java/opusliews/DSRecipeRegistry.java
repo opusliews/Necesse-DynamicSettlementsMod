@@ -42,6 +42,9 @@ public class DSRecipeRegistry {
 				ingredient(stringStringID, 4),
 				ingredient(woodenshaftStringID, 1),
 				ingredient(SharpenedStoneItem.stringID, 1));
+
+		register(unfiredBrickStringID, 1, CrudeWorkbenchFeature.tech, ingredient("clay", 1));
+		register(unfiredBrickStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("clay", 1));
 	}
 
 	private static void registerExistingModRecipes() {
