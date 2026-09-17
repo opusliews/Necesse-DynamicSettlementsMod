@@ -4,6 +4,8 @@ import java.util.LinkedList;
 import java.util.List;
 import necesse.engine.localization.message.LocalMessage;
 import necesse.engine.registries.GlobalIngredientRegistry;
+import necesse.engine.registries.TileRegistry;
+import necesse.engine.registries.ItemRegistry;
 import necesse.engine.save.LoadData;
 import necesse.entity.mobs.friendly.human.HumanMob;
 import necesse.entity.mobs.job.EntityJobWorker;
@@ -20,9 +22,11 @@ import necesse.level.maps.levelData.settlementData.SettlementStoragePickupSlot;
 import necesse.level.maps.levelData.settlementData.storage.SettlementStorageGlobalIngredientIDIndex;
 import necesse.level.maps.levelData.settlementData.storage.SettlementStorageRecords;
 import opusliews.charcoal.CharcoalProductionZone;
+import opusliews.network.PacketBuilderTilePlaceSound;
 
 public class CharcoalProductionLevelJob extends TileLevelJob {
 	public static final int requiredLogs = 32;
+	private static final long grassRemovalTime = 2000L;
 
 	private final CharcoalProductionZone zone;
 
@@ -57,6 +61,9 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 			List<SettlementStoragePickupSlot> logReservations
 	) {
 		return new TileActiveJob(worker, priority, tileX, tileY) {
+			private boolean grassRemovalStarted;
+			private long grassRemovalCompleteTime;
+
 			@Override
 			public JobMoveToTile getMoveToTile(JobMoveToTile lastTile) {
 				return new JobMoveToTile(tileX, tileY, true);
@@ -74,6 +81,16 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 					if (!slot.isRemoved()) {
 						slot.reserve(worker.getMobWorker());
 					}
+				}
+
+				if (isCurrent && !isMovingTo && hasGrassTile()) {
+					worker.showWorkAnimation(
+							tileX * 32 + 16,
+							tileY * 32 + 16,
+							ItemRegistry.getItem("ironshovel"),
+							1000,
+							true
+					);
 				}
 			}
 
@@ -93,6 +110,44 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 
 			@Override
 			public ActiveJobResult perform() {
+				if (!hasGrassTile()) {
+					return finishCurrentStep();
+				}
+
+				long currentTime = getLevel().getTime();
+				if (!grassRemovalStarted) {
+					grassRemovalStarted = true;
+					grassRemovalCompleteTime = currentTime + grassRemovalTime;
+					return ActiveJobResult.PERFORMING;
+				}
+
+				if (currentTime < grassRemovalCompleteTime) {
+					return ActiveJobResult.PERFORMING;
+				}
+
+				if (!hasGrassTile()) {
+					return finishCurrentStep();
+				}
+
+				getLevel().setObject(tileX, tileY, 0);
+				getLevel().setTile(tileX, tileY, TileRegistry.dirtID);
+				getLevel().sendObjectUpdatePacket(tileX, tileY);
+				getLevel().sendTileUpdatePacket(tileX, tileY);
+				getLevel().getServer().network.sendToClientsWithTile(
+						new PacketBuilderTilePlaceSound(TileRegistry.dirtID, tileX, tileY),
+						getLevel(),
+						tileX,
+						tileY
+				);
+
+				return finishCurrentStep();
+			}
+
+			private boolean hasGrassTile() {
+				return getLevel().getTileID(tileX, tileY) == TileRegistry.grassID;
+			}
+
+			private ActiveJobResult finishCurrentStep() {
 				releaseReservations(logReservations);
 				CharcoalProductionLevelJob.this.remove();
 				return ActiveJobResult.FINISHED;
