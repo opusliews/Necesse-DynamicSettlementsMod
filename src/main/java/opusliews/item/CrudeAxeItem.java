@@ -5,16 +5,36 @@ import necesse.engine.registries.ObjectRegistry;
 import necesse.inventory.InventoryItem;
 import necesse.inventory.item.toolItem.axeToolItem.CustomAxeToolItem;
 import necesse.inventory.lootTable.presets.ToolsLootTable;
+import necesse.entity.mobs.itemAttacker.ItemAttackerMob;
 import necesse.entity.mobs.PlayerMob;
 import necesse.level.gameObject.GameObject;
+import necesse.level.gameObject.TreeObject;
 import necesse.level.gameObject.TreeStumpObject;
 import necesse.level.maps.Level;
+import opusliews.object.PlacedLogObject;
 
 public class CrudeAxeItem extends CustomAxeToolItem {
 	public static final String stringID = "crudeaxe";
 
 	public CrudeAxeItem() {
 		super(500, 25, 0.0F, 8, 50, 50, 100, ToolsLootTable.tools);
+	}
+
+	@Override
+	public boolean canDamageTile(
+			Level level,
+			int layerID,
+			int tileX,
+			int tileY,
+			ItemAttackerMob attackerMob,
+			InventoryItem item
+	) {
+		if (layerID < 0) {
+			return false;
+		}
+
+		GameObject object = level.getObject(layerID, tileX, tileY);
+		return object.getClass() == TreeObject.class || object instanceof PlacedLogObject;
 	}
 
 	@Override

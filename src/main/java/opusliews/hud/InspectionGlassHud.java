@@ -4,15 +4,22 @@ import necesse.engine.gameLoop.tickManager.TickManager;
 import necesse.engine.network.client.Client;
 import necesse.engine.state.MainGame;
 import necesse.engine.util.GameMath;
+import necesse.entity.DamagedObjectEntity;
 import necesse.entity.mobs.PlayerMob;
 import necesse.gfx.Renderer;
 import necesse.gfx.camera.GameCamera;
 import necesse.gfx.drawables.SortedDrawable;
 import necesse.inventory.InventoryItem;
+import necesse.level.gameObject.GameObject;
+import necesse.level.gameTile.GameTile;
 import necesse.level.maps.Level;
+import opusliews.damage.DamageRepairLevelData;
+import opusliews.damage.MaterialWeatheringClassifier;
+import opusliews.damage.WeatheringMaterialTier;
 import necesse.level.maps.hudManager.HudDrawElement;
 import opusliews.network.PacketRequestInspectionGlassData;
 
+import java.awt.Point;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -134,11 +141,11 @@ public final class InspectionGlassHud {
 				continue;
 			}
 
-			drawIndicator(
-					camera.getTileDrawX(x),
-					camera.getTileDrawY(y),
-					entry.getValue()
-			);
+			int drawX = camera.getTileDrawX(x);
+			int drawY = camera.getTileDrawY(y);
+
+			drawReinforcementIndicator(drawX, drawY, entry.getValue());
+			drawHealthIndicator(drawX, drawY, getHealthRatio(level, x, y));
 		}
 	}
 
@@ -166,7 +173,7 @@ public final class InspectionGlassHud {
 		);
 	}
 
-	private static void drawIndicator(int drawX, int drawY, int reinforcement) {
+	private static void drawReinforcementIndicator(int drawX, int drawY, int reinforcement) {
 		int iconX = drawX + 1;
 		int iconY = drawY + 13;
 
@@ -184,6 +191,79 @@ public final class InspectionGlassHud {
 			} else {
 				drawQuad(iconX + 2, pipY, 5, 2, 180, 180, 180);
 			}
+		}
+	}
+
+	private static float getHealthRatio(Level level, int tileX, int tileY) {
+		float healthRatio = 1.0F;
+		boolean found = false;
+
+		GameTile tile = level.getTile(tileX, tileY);
+		WeatheringMaterialTier tileTier = MaterialWeatheringClassifier.getTileTier(tile);
+
+		if (tileTier != null && tileTier.isWeatherable() && level.tileLayer.isPlayerPlaced(tileX, tileY)) {
+			DamagedObjectEntity damaged = level.entityManager.getDamagedObjectEntity(tileX, tileY);
+			int damage = damaged == null ? 0 : damaged.tileDamage;
+			healthRatio = getRemainingHealthRatio(tile.tileHealth, damage);
+			found = true;
+		}
+
+		for (int layerID : necesse.engine.registries.ObjectLayerRegistry.getLayerIDs()) {
+			GameObject object = level.getObject(layerID, tileX, tileY);
+			WeatheringMaterialTier objectTier = MaterialWeatheringClassifier.getObjectTier(object);
+
+			if (objectTier == null || !objectTier.isWeatherable()) {
+				continue;
+			}
+
+			Point masterTile = DamageRepairLevelData.getObjectMasterTile(level, layerID, tileX, tileY);
+			GameObject masterObject = level.getObject(layerID, masterTile.x, masterTile.y);
+
+			if (masterObject.getID() == 0 || !level.objectLayer.isPlayerPlaced(layerID, masterTile.x, masterTile.y)) {
+				continue;
+			}
+
+			DamagedObjectEntity damaged = level.entityManager.getDamagedObjectEntity(masterTile.x, masterTile.y);
+			int damage = damaged == null ? 0 : damaged.getObjectDamage(layerID);
+			float objectHealthRatio = getRemainingHealthRatio(masterObject.objectHealth, damage);
+
+			healthRatio = found ? Math.min(healthRatio, objectHealthRatio) : objectHealthRatio;
+			found = true;
+		}
+
+		return found ? healthRatio : 1.0F;
+	}
+
+	private static float getRemainingHealthRatio(int maxHealth, int damage) {
+		if (maxHealth <= 0) {
+			return 1.0F;
+		}
+
+		return Math.max(0.0F, Math.min(1.0F, (maxHealth - damage) / (float)maxHealth));
+	}
+
+	private static void drawHealthIndicator(int drawX, int drawY, float healthRatio) {
+		int iconX = drawX + 22;
+		int iconY = drawY + 13;
+
+		drawQuad(iconX, iconY, 9, 18, 0, 0, 0);
+		drawQuad(iconX + 1, iconY + 1, 7, 16, 209, 248, 255);
+
+		int barX = iconX + 2;
+		int barY = iconY + 2;
+		int barWidth = 5;
+		int barHeight = 14;
+		int filledHeight = Math.max(0, Math.min(barHeight, Math.round(barHeight * healthRatio)));
+		int emptyHeight = barHeight - filledHeight;
+
+		if (emptyHeight > 0) {
+			drawQuad(barX, barY, barWidth, emptyHeight, 180, 180, 180);
+		}
+
+		if (filledHeight > 0) {
+			int red = Math.round(255.0F * (1.0F - healthRatio));
+			int green = Math.round(255.0F * healthRatio);
+			drawQuad(barX, barY + emptyHeight, barWidth, filledHeight, red, green, 0);
 		}
 	}
 
