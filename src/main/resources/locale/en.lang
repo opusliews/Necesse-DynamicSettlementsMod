@@ -5,8 +5,8 @@ builderhumanname=Builder
 [jobs]
 constructionname=Construction
 constructiontip=Building from blueprints, requires objects and tiles available in any settlement chest
-charcoalproductionname=Charcoal Production
-charcoalproductiontip=Produces charcoal from logs in assigned charcoal pit zones
+firingname=Firing
+firingtip=Producing materials with application of heat
 constructionmissingmaterials=Blueprint construction blocked. Missing materials: <materials>
 constructionnostoragespace=Blueprint construction blocked: no settlement storage has enough room for the Builder's carried items.
 constructionmaterialsunavailable=Blueprint construction blocked. Required materials are present, but they are currently unavailable for pickup.

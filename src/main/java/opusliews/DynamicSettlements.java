@@ -242,12 +242,12 @@ public class DynamicSettlements {
 		);
 
 		JobTypeRegistry.registerType(
-				CharcoalProductionZone.stringID,
+				"firing",
 				new JobType(
 						true,
 						false,
-						new LocalMessage("jobs", "charcoalproductionname"),
-						new LocalMessage("jobs", "charcoalproductiontip")
+						new LocalMessage("jobs", "firingname"),
+						new LocalMessage("jobs", "firingtip")
 				)
 		);
 
@@ -257,7 +257,7 @@ public class DynamicSettlements {
 				CharcoalProductionZone.stringID,
 				CharcoalProductionLevelJob.class,
 				CharcoalProductionLevelJob::handler,
-				CharcoalProductionZone.stringID
+				"firing"
 		);
 
 		LevelJobRegistry.registerJob(

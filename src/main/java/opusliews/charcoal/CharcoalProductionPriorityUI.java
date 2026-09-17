@@ -21,7 +21,7 @@ public final class CharcoalProductionPriorityUI {
 		}
 
 		FormLabel charcoalLabel = (FormLabel)labels.get(labels.size() - 1);
-		charcoalLabel.setText("Charcoal Production");
+		charcoalLabel.setText("Firing");
 
 		int extraWidth = 48;
 		int maxWidth = Math.max(200, WindowManager.getWindow().getHudWidth() - 200);
