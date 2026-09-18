@@ -1,13 +1,21 @@
 package opusliews.deephole;
 
+import java.awt.Point;
 import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
+import necesse.engine.localization.message.GameMessage;
+import necesse.engine.network.server.ServerClient;
+import necesse.engine.registries.ObjectRegistry;
 import necesse.engine.registries.TileRegistry;
 import necesse.engine.sound.SoundEffect;
 import necesse.engine.sound.SoundManager;
 import necesse.engine.util.GameMath;
+import necesse.engine.util.LevelIdentifier;
+import necesse.engine.util.TeleportResult;
 import necesse.entity.mobs.PlayerMob;
+import necesse.entity.objectEntity.LadderDownObjectEntity;
+import necesse.entity.objectEntity.PortalObjectEntity;
 import necesse.entity.mobs.buffs.ActiveBuff;
 import necesse.gfx.GameResources;
 import necesse.inventory.InventoryItem;
@@ -30,9 +38,12 @@ public final class DeepHoleSystem {
 	public static final int strikeCount = 5;
 	public static final int strikeCycleDuration = windupDuration + strikeDuration;
 	public static final int diggingDuration = strikeCycleDuration * strikeCount;
+	public static final int ladderTravelDelay = 2000;
 
 	private static final String fallStartKey = "fallStartTime";
 	private static final String diggingStartKey = "diggingStartTime";
+	private static final String ladderTravelTimeKey = "ladderTravelTime";
+	private static final String ladderTravelStartedKey = "ladderTravelStarted";
 	private static final Map<PlayerMob, Long> clientFallStartTimes = Collections.synchronizedMap(new WeakHashMap<>());
 	private static final Map<PlayerMob, ClientDiggingState> clientDiggingStates = Collections.synchronizedMap(new WeakHashMap<>());
 
@@ -126,6 +137,11 @@ public final class DeepHoleSystem {
 			ClientDiggingState state = clientDiggingStates.remove(player);
 			if (state != null && player.getLevel() != null && player.getLevel().isClient()) {
 				player.forceEndAttack();
+			}
+
+			Level level = player.getLevel();
+			if (level != null && level.isServer() && isOccupied(player)) {
+				tickServerPendingLadderTravel(player);
 			}
 			return;
 		}
@@ -243,10 +259,91 @@ public final class DeepHoleSystem {
 		level.setTile(tileX, tileY, TileRegistry.getTileID(DeepHoleTile.stringID));
 		level.sendTileUpdatePacket(tileX, tileY);
 
+		long now = level.getWorldEntity().getTime();
 		player.buffManager.removeBuff(DeepHoleDiggingBuff.stringID, true);
 		ActiveBuff buff = new ActiveBuff(DeepHoleHiddenBuff.stringID, player, Integer.MAX_VALUE, null);
-		buff.getGndData().setLong(fallStartKey, level.getWorldEntity().getTime());
+		buff.getGndData().setLong(fallStartKey, now);
+		buff.getGndData().setLong(ladderTravelTimeKey, now + ladderTravelDelay);
+		buff.getGndData().setLong(ladderTravelStartedKey, 0L);
 		player.buffManager.addBuff(buff, true);
+	}
+
+	private static void tickServerPendingLadderTravel(PlayerMob player) {
+		Level level = player.getLevel();
+		ActiveBuff buff = player.buffManager.getBuff(DeepHoleHiddenBuff.stringID);
+		if (level == null || buff == null) return;
+		if (buff.getGndData().getLong(ladderTravelStartedKey, 0L) != 0L) return;
+
+		long travelTime = buff.getGndData().getLong(ladderTravelTimeKey, Long.MAX_VALUE);
+		if (level.getWorldEntity().getTime() < travelTime) return;
+
+		buff.getGndData().setLong(ladderTravelStartedKey, 1L);
+		useVanillaSurfaceLadder(player);
+	}
+
+	private static void useVanillaSurfaceLadder(PlayerMob player) {
+		if (!player.isServerClient()) return;
+
+		ServerClient client = player.getServerClient();
+		Level sourceLevel = player.getLevel();
+		if (sourceLevel == null || !sourceLevel.isServer()) return;
+
+		int tileX = player.getTileX();
+		int tileY = player.getTileY();
+		int ladderUpID = ObjectRegistry.getObjectID("ladderup");
+
+		if (client.achievementsLoaded()) {
+			client.achievements().SPELUNKER.markCompleted(client);
+		}
+
+		client.changeLevelCheck(LevelIdentifier.CAVE_IDENTIFIER, (destinationLevel) -> {
+			destinationLevel.regionManager.ensureTilesAreLoaded(tileX, tileY, tileX, tileY);
+			if (destinationLevel.getObjectID(tileX, tileY) != ladderUpID) {
+				GameMessage error = destinationLevel.preventsLadderPlacement(tileX, tileY);
+				if (error != null) {
+					client.sendChatMessage(error);
+					return new TeleportResult(false, (Point)null);
+				}
+			}
+
+			destinationLevel.regionManager.ensureTileIsLoaded(tileX, tileY);
+			if (destinationLevel.getObjectID(tileX, tileY) != ladderUpID) {
+				LadderDownObjectEntity.clearAndPlaceLadder(
+						sourceLevel.getServer(),
+						destinationLevel,
+						tileX,
+						tileY,
+						ladderUpID,
+						true
+				);
+			}
+
+			Point destination = PortalObjectEntity.getTeleportDestinationAroundObject(
+					destinationLevel,
+					player,
+					tileX,
+					tileY,
+					true
+			);
+			if (destination == null) {
+				destination = new Point(tileX * 32 + 16, tileY * 32 + 16);
+			}
+
+			player.buffManager.removeBuff(DeepHoleHiddenBuff.stringID, true);
+			client.newStats.ladders_used.increment(1);
+
+			LadderDownObjectEntity portal = new LadderDownObjectEntity(
+					"deepholetemporary",
+					sourceLevel,
+					tileX,
+					tileY,
+					LevelIdentifier.CAVE_IDENTIFIER,
+					ObjectRegistry.getObjectID("ladderdown"),
+					ladderUpID
+			);
+			portal.runClearMobs(destinationLevel, tileX, tileY);
+			return new TeleportResult(true, destination);
+		}, true);
 	}
 
 	private static void playStrikeSound(PlayerMob player) {

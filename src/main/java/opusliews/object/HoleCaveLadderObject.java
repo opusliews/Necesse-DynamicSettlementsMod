@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Rectangle;
 import java.util.List;
 import necesse.engine.gameLoop.tickManager.TickManager;
+import necesse.engine.localization.Localization;
 import necesse.engine.registries.TileRegistry;
 import necesse.entity.mobs.PlayerMob;
 import necesse.gfx.camera.GameCamera;
@@ -69,6 +70,21 @@ public class HoleCaveLadderObject extends GameObject {
 		int tileID = level.getTileID(x, y);
 		return tileID == TileRegistry.getTileID(ShallowHoleTile.stringID)
 				|| tileID == TileRegistry.getTileID(DeepHoleTile.stringID);
+	}
+
+	@Override
+	public boolean canInteract(Level level, int x, int y, PlayerMob player) {
+		return true;
+	}
+
+	@Override
+	public String getInteractTip(Level level, int x, int y, PlayerMob perspective, boolean debug) {
+		return Localization.translate("controls", "usetip");
+	}
+
+	@Override
+	public void interact(Level level, int x, int y, PlayerMob player) {
+		super.interact(level, x, y, player);
 	}
 
 	@Override

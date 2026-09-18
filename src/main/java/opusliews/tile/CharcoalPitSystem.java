@@ -46,6 +46,10 @@ public final class CharcoalPitSystem {
 
 
 		if (tileID == TileRegistry.getTileID(ShallowHoleTile.stringID)) {
+			if (hasHoleCaveLadder(level, tileX, tileY)) {
+				return false;
+			}
+
 			if (hasBlockingHoleObject(level, tileX, tileY)) {
 				return true;
 			}
