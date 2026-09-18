@@ -16,6 +16,7 @@ import necesse.level.gameTile.DirtTile;
 import necesse.level.gameTile.GameTile;
 import necesse.level.maps.Level;
 import necesse.level.maps.regionSystem.SimulatePriorityList;
+import opusliews.deephole.DeepHoleSystem;
 
 public class ShallowHoleTile extends DirtTile {
 	public static final String stringID = "shallowholetile";
@@ -142,6 +143,13 @@ public class ShallowHoleTile extends DirtTile {
 		int alignmentCorrection = mob.getSwimMaskOffset() - Math.round(swimSinkOffset / 2.0F);
 		int localY = Math.round(mob.getY() - mob.getTileY() * 32.0F);
 		int maskYOffset = localY - maskReferenceSpriteTop + alignmentCorrection + drawYOffset;
+
+		// Deep-hole falling moves the player draw position downward. The mask itself must
+		// stay anchored to the hole in world space, so bake the opposite movement into
+		// the actual mask texture offset.
+		if (mob instanceof PlayerMob && DeepHoleSystem.isOccupied((PlayerMob)mob)) {
+			maskYOffset += DeepHoleSystem.getDrawYOffset((PlayerMob)mob);
+		}
 
 		return new MaskShaderOptions(mobMaskTexture, 0, drawYOffset, 0, maskYOffset);
 	}

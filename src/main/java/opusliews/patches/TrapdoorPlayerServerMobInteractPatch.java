@@ -6,11 +6,12 @@ import necesse.entity.mobs.Mob;
 import necesse.entity.mobs.PlayerMob;
 import net.bytebuddy.asm.Advice;
 import opusliews.trapdoor.TrapdoorSystem;
+import opusliews.deephole.DeepHoleSystem;
 
 @ModMethodPatch(target = PlayerMob.class, name = "runServerItemMobInteract", arguments = {PacketPlayerItemMobInteract.class, Mob.class})
 public class TrapdoorPlayerServerMobInteractPatch {
 	@Advice.OnMethodEnter(skipOn = Advice.OnNonDefaultValue.class)
 	public static boolean onEnter(@Advice.This PlayerMob player) {
-		return TrapdoorSystem.isHidden(player);
+		return TrapdoorSystem.isHidden(player) || DeepHoleSystem.isDigging(player);
 	}
 }

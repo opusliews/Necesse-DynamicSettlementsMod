@@ -9,6 +9,7 @@ import necesse.level.gameObject.ObjectHoverHitbox;
 import necesse.level.maps.LevelObject;
 import net.bytebuddy.asm.Advice;
 import opusliews.logging.Logging;
+import opusliews.deephole.DeepHoleSystem;
 import opusliews.object.TrapdoorObject;
 import opusliews.trapdoor.TrapdoorSystem;
 
@@ -22,6 +23,10 @@ public class TrapdoorPlayerInteractPatch {
 			@Advice.Argument(2) boolean onlyItemInteract
 	) {
 		if (player.getLevel() == null) return false;
+
+		if (DeepHoleSystem.tryClientInteract(player, levelX, levelY)) return true;
+		if (DeepHoleSystem.isDigging(player)) return true;
+
 		boolean hidden = TrapdoorSystem.isHidden(player);
 		if (onlyItemInteract) return hidden;
 

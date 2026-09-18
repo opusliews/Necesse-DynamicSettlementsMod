@@ -6,10 +6,18 @@ import necesse.entity.mobs.buffs.ActiveBuff;
 import necesse.level.maps.Level;
 import opusliews.buff.TrapdoorHiddenBuff;
 import opusliews.object.TrapdoorObject;
+import opusliews.buff.DeepHoleHiddenBuff;
 
 public class TrapdoorSystem {
-	public static boolean isHidden(PlayerMob player) {
+	public static boolean isTrapdoorHidden(PlayerMob player) {
 		return player != null && player.buffManager.hasBuff(TrapdoorHiddenBuff.stringID);
+	}
+
+	public static boolean isHidden(PlayerMob player) {
+		return player != null && (
+				player.buffManager.hasBuff(TrapdoorHiddenBuff.stringID)
+						|| player.buffManager.hasBuff(DeepHoleHiddenBuff.stringID)
+		);
 	}
 
 	public static void enterTrapdoor(Level level, int tileX, int tileY, PlayerMob player) {
@@ -33,7 +41,7 @@ public class TrapdoorSystem {
 	}
 
 	public static void exitTrapdoor(Level level, int tileX, int tileY, PlayerMob player) {
-		if (player == null || !isHidden(player)) return;
+		if (player == null || !isTrapdoorHidden(player)) return;
 		if (player.getTileX() != tileX || player.getTileY() != tileY) return;
 		if (level.getObjectID(tileX, tileY) != ObjectRegistry.getObjectID(TrapdoorObject.closedStringID)) return;
 
@@ -44,7 +52,7 @@ public class TrapdoorSystem {
 
 	public static void revealHiddenPlayerAt(Level level, int tileX, int tileY) {
 		level.entityManager.players.streamInRegionsInTileRange(tileX * 32 + 16, tileY * 32 + 16, 1)
-				.filter(TrapdoorSystem::isHidden)
+				.filter(TrapdoorSystem::isTrapdoorHidden)
 				.filter(player -> player.getTileX() == tileX && player.getTileY() == tileY)
 				.forEach(player -> player.buffManager.removeBuff(TrapdoorHiddenBuff.stringID, true));
 	}

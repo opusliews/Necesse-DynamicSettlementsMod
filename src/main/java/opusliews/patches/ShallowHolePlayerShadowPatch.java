@@ -1,10 +1,10 @@
 package opusliews.patches;
 
 import necesse.engine.modLoader.annotations.ModMethodPatch;
-import necesse.engine.util.GameMath;
 import necesse.entity.mobs.Mob;
 import necesse.gfx.camera.GameCamera;
 import necesse.gfx.drawables.OrderableDrawables;
+import necesse.level.gameTile.GameTile;
 import necesse.level.maps.Level;
 import necesse.level.maps.light.GameLight;
 import net.bytebuddy.asm.Advice;
@@ -34,14 +34,15 @@ public class ShallowHolePlayerShadowPatch {
 			return false;
 		}
 
-		int tileX = GameMath.getTileCoordinate(x);
-		int tileY = GameMath.getTileCoordinate(y);
+		int tileX = mob.getTileX();
+		int tileY = mob.getTileY();
 
-		if (!(level.getTile(tileX, tileY) instanceof ShallowHoleTile)) {
-			return false;
+		GameTile tile = level.getTile(tileX, tileY);
+
+		if (tile instanceof ShallowHoleTile) {
+			return ((ShallowHoleTile)tile).isMobInSinkingArea(mob);
 		}
 
-		ShallowHoleTile holeTile = (ShallowHoleTile)level.getTile(tileX, tileY);
-		return holeTile.isMobInSinkingArea(mob);
+		return false;
 	}
 }

@@ -28,6 +28,8 @@ import opusliews.jobs.CharcoalCleanupLevelJob;
 import opusliews.jobs.CharcoalProductionLevelJob;
 import opusliews.buff.MalignanceGogglesBuff;
 import opusliews.buff.TrapdoorHiddenBuff;
+import opusliews.buff.DeepHoleHiddenBuff;
+import opusliews.buff.DeepHoleDiggingBuff;
 import opusliews.container.BlueprintWorkstationContainer;
 import opusliews.container.CrudeWorkbenchContainer;
 import opusliews.crafting.AnvilCraftingFeature;
@@ -71,6 +73,7 @@ public class DynamicSettlements {
 	public static GameSound stoneTapSound;
 	public static GameSound clayDigSound;
 	public static GameSound clayDigFastSound;
+	public static GameSound rockSlideSound;
 
 	public void preInit() {
 		boolean settlementBuildersLoaded = ModLoader.getEnabledMods().stream()
@@ -175,6 +178,8 @@ public class DynamicSettlements {
 		// Registrations
 		BuffRegistry.registerBuff(MalignanceGogglesItem.buffStringID, new MalignanceGogglesBuff());
 		BuffRegistry.registerBuff(TrapdoorHiddenBuff.stringID, new TrapdoorHiddenBuff());
+		BuffRegistry.registerBuff(DeepHoleHiddenBuff.stringID, new DeepHoleHiddenBuff());
+		BuffRegistry.registerBuff(DeepHoleDiggingBuff.stringID, new DeepHoleDiggingBuff());
 		SettlerRegistry.registerSettler("builder", new BuilderSettler());
 		MobRegistry.registerMob("builderhuman",
 				BuilderHumanMob.class, true);
@@ -187,6 +192,7 @@ public class DynamicSettlements {
 		ItemRegistry.registerItem(FirestarterItem.stringID, new FirestarterItem(), 8.0F, true);
 		ItemRegistry.registerItem(CrudeAxeItem.stringID, new CrudeAxeItem(), 6.0F, true);
 		TileRegistry.registerTile(ShallowHoleTile.stringID, new ShallowHoleTile(), 0.0F, false);
+		TileRegistry.registerTile(DeepHoleTile.stringID, new DeepHoleTile(), 0.0F, false);
 		TileRegistry.registerTile(UnfiredBrickPitTile.stringID, new UnfiredBrickPitTile(), 0.0F, false);
 		TileRegistry.registerTile(UnfiredBrickLogPitTile.stringID, new UnfiredBrickLogPitTile(), 0.0F, false);
 		TileRegistry.registerTile(BurningUnfiredBrickPitTile.stringID, new BurningUnfiredBrickPitTile(), 0.0F, false);
@@ -318,6 +324,7 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketSettlementSleepSettingsSync.class);
 		PacketRegistry.registerPacket(PacketSettlementSleepSettingsUpdate.class);
 		PacketRegistry.registerPacket(PacketDigShallowHole.class);
+		PacketRegistry.registerPacket(PacketDeepHoleInteract.class);
 		PacketRegistry.registerPacket(PacketCharcoalPitInteract.class);
 		PacketRegistry.registerPacket(PacketFirestarterUse.class);
 		PacketRegistry.registerPacket(PacketPlaceLog.class);
@@ -344,5 +351,6 @@ public class DynamicSettlements {
 		stoneTapSound = GameSound.fromFile("StoneTap");
 		clayDigSound = GameSound.fromFile("ClayDig");
 		clayDigFastSound = GameSound.fromFile("ClayDigFast");
+		rockSlideSound = GameSound.fromFile("RockSlide");
 	}
 }
