@@ -187,6 +187,9 @@ public class DynamicSettlements {
 		ItemRegistry.registerItem(FirestarterItem.stringID, new FirestarterItem(), 8.0F, true);
 		ItemRegistry.registerItem(CrudeAxeItem.stringID, new CrudeAxeItem(), 6.0F, true);
 		TileRegistry.registerTile(ShallowHoleTile.stringID, new ShallowHoleTile(), 0.0F, false);
+		TileRegistry.registerTile(UnfiredBrickPitTile.stringID, new UnfiredBrickPitTile(), 0.0F, false);
+		TileRegistry.registerTile(UnfiredBrickLogPitTile.stringID, new UnfiredBrickLogPitTile(), 0.0F, false);
+		TileRegistry.registerTile(BurningUnfiredBrickPitTile.stringID, new BurningUnfiredBrickPitTile(), 0.0F, false);
 		TileRegistry.registerTile(CharcoalPitTile.stringID, new CharcoalPitTile(), 0.0F, false);
 		TileRegistry.registerTile(CoveredCharcoalPitTile.stringID, new CoveredCharcoalPitTile(), 0.0F, false);
 		TileRegistry.registerTile(BurningCharcoalPitTile.stringID, new BurningCharcoalPitTile(), 0.0F, false);

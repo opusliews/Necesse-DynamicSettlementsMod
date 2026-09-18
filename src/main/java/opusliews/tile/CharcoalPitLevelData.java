@@ -25,6 +25,7 @@ public class CharcoalPitLevelData extends LevelData {
 
 	private final Map<Long, List<StoredLog>> pitLogs = new HashMap<>();
 	private final Map<Long, Long> burnEndWorldTimes = new HashMap<>();
+	private final Map<Long, Long> brickBurnEndWorldTimes = new HashMap<>();
 	private final Map<Long, ProductionRecoveryState> productionRecoveryStates = new HashMap<>();
 	private final Map<Long, Integer> pendingCleanupPickupIDs = new HashMap<>();
 	private int produceUntilUnitsStocked;
@@ -154,13 +155,34 @@ public class CharcoalPitLevelData extends LevelData {
 		burnEndWorldTimes.remove(getKey(tileX, tileY));
 	}
 
+	public void startBrickBurn(int tileX, int tileY, long burnEndWorldTime) {
+		brickBurnEndWorldTimes.put(getKey(tileX, tileY), burnEndWorldTime);
+	}
+
+	public void removeBrickBurn(int tileX, int tileY) {
+		brickBurnEndWorldTimes.remove(getKey(tileX, tileY));
+	}
+
+	public long getBrickBurnEndWorldTime(int tileX, int tileY) {
+		return brickBurnEndWorldTimes.getOrDefault(getKey(tileX, tileY), 0L);
+	}
+
 	@Override
 	public void tick() {
-		if (!isServer() || burnEndWorldTimes.isEmpty()) {
+		if (!isServer() || (burnEndWorldTimes.isEmpty() && brickBurnEndWorldTimes.isEmpty())) {
 			return;
 		}
 
 		long currentWorldTime = level.getWorldEntity().getWorldTime();
+		tickCharcoalBurns(currentWorldTime);
+		tickBrickBurns(currentWorldTime);
+	}
+
+	private void tickCharcoalBurns(long currentWorldTime) {
+		if (burnEndWorldTimes.isEmpty()) {
+			return;
+		}
+
 		int burningTileID = TileRegistry.getTileID(BurningCharcoalPitTile.stringID);
 		Iterator<Map.Entry<Long, Long>> iterator = burnEndWorldTimes.entrySet().iterator();
 
@@ -201,6 +223,43 @@ public class CharcoalPitLevelData extends LevelData {
 		}
 	}
 
+	private void tickBrickBurns(long currentWorldTime) {
+		if (brickBurnEndWorldTimes.isEmpty()) {
+			return;
+		}
+
+		int burningTileID = TileRegistry.getTileID(BurningUnfiredBrickPitTile.stringID);
+		Iterator<Map.Entry<Long, Long>> iterator = brickBurnEndWorldTimes.entrySet().iterator();
+
+		while (iterator.hasNext()) {
+			Map.Entry<Long, Long> entry = iterator.next();
+			int tileX = (int)(entry.getKey() >> 32);
+			int tileY = (int)(long)entry.getKey();
+
+			if (!level.isTileWithinBounds(tileX, tileY) || level.getTileID(tileX, tileY) != burningTileID) {
+				iterator.remove();
+				pitLogs.remove(entry.getKey());
+				continue;
+			}
+
+			if (currentWorldTime < entry.getValue()) {
+				continue;
+			}
+
+			iterator.remove();
+			pitLogs.remove(entry.getKey());
+			level.setTile(tileX, tileY, TileRegistry.getTileID(ShallowHoleTile.stringID));
+			level.sendTileUpdatePacket(tileX, tileY);
+			level.getLevelTile(tileX, tileY).checkAround();
+			level.getLevelObject(tileX, tileY).checkAround();
+
+			InventoryItem bricks = new InventoryItem("brick", 8);
+			ItemPickupEntity pickup = bricks.getPickupEntity(level, tileX * 32.0F + 16.0F, tileY * 32.0F + 16.0F);
+			level.entityManager.pickups.add(pickup);
+			Logging.logMessage("[BrickFiring] Burn completed at " + tileX + "," + tileY + "; spawned 8 bricks");
+		}
+	}
+
 	@Override
 	public void addSaveData(SaveData save) {
 		super.addSaveData(save);
@@ -217,6 +276,11 @@ public class CharcoalPitLevelData extends LevelData {
 			Long burnEndWorldTime = burnEndWorldTimes.get(entry.getKey());
 			if (burnEndWorldTime != null) {
 				pit.addLong("burnEndWorldTime", burnEndWorldTime);
+			}
+
+			Long brickBurnEndWorldTime = brickBurnEndWorldTimes.get(entry.getKey());
+			if (brickBurnEndWorldTime != null) {
+				pit.addLong("brickBurnEndWorldTime", brickBurnEndWorldTime);
 			}
 
 			for (StoredLog log : entry.getValue()) {
@@ -252,6 +316,7 @@ public class CharcoalPitLevelData extends LevelData {
 		super.applyLoadData(save);
 		pitLogs.clear();
 		burnEndWorldTimes.clear();
+		brickBurnEndWorldTimes.clear();
 		productionRecoveryStates.clear();
 		pendingCleanupPickupIDs.clear();
 		produceUntilUnitsStocked = Math.max(0, save.getInt("produceUntilUnitsStocked", 0, false));
@@ -278,6 +343,11 @@ public class CharcoalPitLevelData extends LevelData {
 				long burnEndWorldTime = pit.getLong("burnEndWorldTime", 0L, false);
 				if (burnEndWorldTime > 0L) {
 					burnEndWorldTimes.put(key, burnEndWorldTime);
+				}
+
+				long brickBurnEndWorldTime = pit.getLong("brickBurnEndWorldTime", 0L, false);
+				if (brickBurnEndWorldTime > 0L) {
+					brickBurnEndWorldTimes.put(key, brickBurnEndWorldTime);
 				}
 			}
 		}
@@ -309,8 +379,18 @@ public class CharcoalPitLevelData extends LevelData {
 			return;
 		}
 
+		recoverBrickFiringState();
 		recoverProductionJobs();
 		recoverCleanupJobs();
+	}
+
+	private void recoverBrickFiringState() {
+		if (brickBurnEndWorldTimes.isEmpty()) {
+			return;
+		}
+
+		long currentWorldTime = level.getWorldEntity().getWorldTime();
+		tickBrickBurns(currentWorldTime);
 	}
 
 	private void recoverProductionJobs() {

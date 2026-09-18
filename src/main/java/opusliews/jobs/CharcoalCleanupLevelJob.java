@@ -67,7 +67,8 @@ public class CharcoalCleanupLevelJob extends TileLevelJob {
 	@Override
 	public boolean isValid() {
 		return super.isValid()
-				&& getLevel().getTileID(tileX, tileY) == TileRegistry.getTileID(ShallowHoleTile.stringID);
+				&& getLevel().getTileID(tileX, tileY) == TileRegistry.getTileID(ShallowHoleTile.stringID)
+				&& getLevel().getObjectID(tileX, tileY) == 0;
 	}
 
 	private JobSequence getJobSequence(EntityJobWorker worker, JobTypeHandler.TypePriority priority) {
@@ -438,8 +439,11 @@ public class CharcoalCleanupLevelJob extends TileLevelJob {
 				return ActiveJobResult.PERFORMING;
 			}
 
-			if (getLevel().getTileID(tileX, tileY) != TileRegistry.getTileID(ShallowHoleTile.stringID)) {
-				Logging.logMessage("[CharcoalCleanup] Hole fill failed because tile is no longer shallow hole at " + tileX + "," + tileY + ", tileID=" + getLevel().getTileID(tileX, tileY));
+			if (getLevel().getTileID(tileX, tileY) != TileRegistry.getTileID(ShallowHoleTile.stringID)
+					|| getLevel().getObjectID(tileX, tileY) != 0) {
+				Logging.logMessage("[CharcoalCleanup] Hole fill failed because the shallow hole is no longer empty at "
+						+ tileX + "," + tileY + ", tileID=" + getLevel().getTileID(tileX, tileY)
+						+ ", objectID=" + getLevel().getObjectID(tileX, tileY));
 				return ActiveJobResult.FAILED;
 			}
 

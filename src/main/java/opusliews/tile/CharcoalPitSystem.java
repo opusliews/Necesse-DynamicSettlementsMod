@@ -19,6 +19,9 @@ import java.util.*;
 
 public final class CharcoalPitSystem {
 	private static final int requiredLogs = 32;
+	private static final int requiredUnfiredBricks = 8;
+	private static final int requiredBrickFiringLogs = 16;
+	private static final String unfiredBrickStringID = "unfiredbrick";
 	private static final int interactRange = 100;
 
 	private CharcoalPitSystem() {
@@ -45,7 +48,13 @@ public final class CharcoalPitSystem {
 				return false;
 			}
 
-			allowedAction = isDirtPile(selected) || isLog(selected);
+			allowedAction = isDirtPile(selected) || isLog(selected) || isUnfiredBrick(selected);
+		} else if (tileID == TileRegistry.getTileID(UnfiredBrickPitTile.stringID)) {
+			allowedAction = isShovel(selected) || isLog(selected);
+		} else if (tileID == TileRegistry.getTileID(UnfiredBrickLogPitTile.stringID)) {
+			allowedAction = isShovel(selected) || isTorch(selected) || isFirestarter(selected);
+		} else if (tileID == TileRegistry.getTileID(BurningUnfiredBrickPitTile.stringID)) {
+			return true;
 		} else if (tileID == TileRegistry.getTileID(CharcoalPitTile.stringID)) {
 			allowedAction = isDirtPile(selected) || isShovel(selected) || isTorch(selected);
 		} else if (tileID == TileRegistry.getTileID(CoveredCharcoalPitTile.stringID)) {
@@ -83,6 +92,27 @@ public final class CharcoalPitSystem {
 				fillHoleWithDirt(level, player, selected, tileX, tileY);
 			} else if (isLog(selected)) {
 				fillHoleWithLogs(level, player, selected, tileX, tileY);
+			} else if (isUnfiredBrick(selected)) {
+				fillHoleWithUnfiredBricks(level, player, tileX, tileY);
+			}
+			return;
+		}
+
+		if (tileID == TileRegistry.getTileID(UnfiredBrickPitTile.stringID)) {
+			if (isShovel(selected) && isShovelInRange(level, player, selected, tileX, tileY)) {
+				extractUnfiredBricks(level, tileX, tileY);
+			} else if (isLog(selected)) {
+				fillUnfiredBrickPitWithLogs(level, player, selected, tileX, tileY);
+			}
+			return;
+		}
+
+		if (tileID == TileRegistry.getTileID(UnfiredBrickLogPitTile.stringID)) {
+			if (isShovel(selected) && isShovelInRange(level, player, selected, tileX, tileY)) {
+				extractUnfiredBrickLogPit(level, tileX, tileY);
+			} else if ((isTorch(selected) && isTorchInRange(level, player, selected, tileX, tileY))
+					|| (isFirestarter(selected) && isWithinRange(player, tileX, tileY))) {
+				igniteUnfiredBrickPit(level, tileX, tileY);
 			}
 			return;
 		}
@@ -116,6 +146,12 @@ public final class CharcoalPitSystem {
 				|| objectID == ObjectRegistry.getObjectID(TrapdoorObject.closedStringID);
 	}
 
+	public static boolean isBurningUnfiredBrickPit(Level level, int tileX, int tileY) {
+		return level != null
+				&& level.isTileWithinBounds(tileX, tileY)
+				&& level.getTileID(tileX, tileY) == TileRegistry.getTileID(BurningUnfiredBrickPitTile.stringID);
+	}
+
 	public static boolean isPitTile(Level level, int tileX, int tileY) {
 		if (level == null || !level.isTileWithinBounds(tileX, tileY)) {
 			return false;
@@ -123,9 +159,107 @@ public final class CharcoalPitSystem {
 
 		int tileID = level.getTileID(tileX, tileY);
 		return tileID == TileRegistry.getTileID(ShallowHoleTile.stringID)
+				|| tileID == TileRegistry.getTileID(UnfiredBrickPitTile.stringID)
+				|| tileID == TileRegistry.getTileID(UnfiredBrickLogPitTile.stringID)
+				|| tileID == TileRegistry.getTileID(BurningUnfiredBrickPitTile.stringID)
 				|| tileID == TileRegistry.getTileID(CharcoalPitTile.stringID)
 				|| tileID == TileRegistry.getTileID(CoveredCharcoalPitTile.stringID)
 				|| tileID == TileRegistry.getTileID(BurningCharcoalPitTile.stringID);
+	}
+
+	private static void fillHoleWithUnfiredBricks(Level level, PlayerMob player, int tileX, int tileY) {
+		Inventory inventory = player.getInv().main;
+		if (countItem(inventory, unfiredBrickStringID) < requiredUnfiredBricks) {
+			return;
+		}
+
+		CharcoalPitLevelData data = CharcoalPitLevelData.get(level, false);
+		if (data != null) {
+			data.clearPendingCleanup(tileX, tileY);
+		}
+
+		removeItem(inventory, unfiredBrickStringID, requiredUnfiredBricks);
+		setTile(level, tileX, tileY, TileRegistry.getTileID(UnfiredBrickPitTile.stringID));
+	}
+
+	private static void extractUnfiredBricks(Level level, int tileX, int tileY) {
+		setTile(level, tileX, tileY, TileRegistry.getTileID(ShallowHoleTile.stringID));
+		dropItem(level, tileX, tileY, new InventoryItem(unfiredBrickStringID, requiredUnfiredBricks));
+	}
+
+	private static void fillUnfiredBrickPitWithLogs(
+			Level level,
+			PlayerMob player,
+			InventoryItem selected,
+			int tileX,
+			int tileY
+	) {
+		List<StoredLog> removedLogs = removeLogs(player, selected.item.getStringID(), requiredBrickFiringLogs);
+		if (removedLogs == null) {
+			return;
+		}
+
+		CharcoalPitLevelData.get(level, true).setLogs(tileX, tileY, removedLogs);
+		setTile(level, tileX, tileY, TileRegistry.getTileID(UnfiredBrickLogPitTile.stringID));
+	}
+
+	private static void extractUnfiredBrickLogPit(Level level, int tileX, int tileY) {
+		CharcoalPitLevelData data = CharcoalPitLevelData.get(level, false);
+		List<StoredLog> logs = data == null ? new ArrayList<>() : data.removeLogs(tileX, tileY);
+		if (data != null) {
+			data.removeBrickBurn(tileX, tileY);
+		}
+
+		setTile(level, tileX, tileY, TileRegistry.getTileID(ShallowHoleTile.stringID));
+		dropItem(level, tileX, tileY, new InventoryItem(unfiredBrickStringID, requiredUnfiredBricks));
+		for (StoredLog log : logs) {
+			dropItem(level, tileX, tileY, new InventoryItem(log.itemStringID, log.amount));
+		}
+	}
+
+	private static void igniteUnfiredBrickPit(Level level, int tileX, int tileY) {
+		CharcoalPitLevelData data = CharcoalPitLevelData.get(level, false);
+		if (data == null) {
+			return;
+		}
+
+		int storedLogAmount = 0;
+		for (StoredLog log : data.getLogs(tileX, tileY)) {
+			storedLogAmount += Math.max(0, log.amount);
+		}
+		if (storedLogAmount < requiredBrickFiringLogs) {
+			return;
+		}
+
+		long fullDayDuration = (long)level.getWorldEntity().getDayTimeMax() * 1000L;
+		long burnEndWorldTime = level.getWorldEntity().getWorldTime() + 5000;//fullDayDuration;
+		data.startBrickBurn(tileX, tileY, burnEndWorldTime);
+		setTile(level, tileX, tileY, TileRegistry.getTileID(BurningUnfiredBrickPitTile.stringID));
+	}
+
+	private static int countItem(Inventory inventory, String itemStringID) {
+		int amount = 0;
+		for (int slot = 0; slot < inventory.getSize(); slot++) {
+			InventoryItem inventoryItem = inventory.getItem(slot);
+			if (inventoryItem != null && itemStringID.equals(inventoryItem.item.getStringID())) {
+				amount += inventoryItem.getAmount();
+			}
+		}
+		return amount;
+	}
+
+	private static void removeItem(Inventory inventory, String itemStringID, int amount) {
+		int remaining = amount;
+		for (int slot = 0; slot < inventory.getSize() && remaining > 0; slot++) {
+			InventoryItem inventoryItem = inventory.getItem(slot);
+			if (inventoryItem == null || !itemStringID.equals(inventoryItem.item.getStringID())) {
+				continue;
+			}
+
+			int take = Math.min(remaining, inventoryItem.getAmount());
+			inventory.setAmount(slot, inventoryItem.getAmount() - take);
+			remaining -= take;
+		}
 	}
 
 	private static void fillHoleWithDirt(Level level, PlayerMob player, InventoryItem selected, int tileX, int tileY) {
@@ -135,6 +269,8 @@ public final class CharcoalPitSystem {
 		if (data != null) {
 			data.removeLogs(tileX, tileY);
 			data.removeBurn(tileX, tileY);
+			data.removeBrickBurn(tileX, tileY);
+			data.clearPendingCleanup(tileX, tileY);
 		}
 	}
 
@@ -144,7 +280,9 @@ public final class CharcoalPitSystem {
 			return;
 		}
 
-		CharcoalPitLevelData.get(level, true).setLogs(tileX, tileY, removedLogs);
+		CharcoalPitLevelData data = CharcoalPitLevelData.get(level, true);
+		data.clearPendingCleanup(tileX, tileY);
+		data.setLogs(tileX, tileY, removedLogs);
 		setTile(level, tileX, tileY, TileRegistry.getTileID(CharcoalPitTile.stringID));
 	}
 
@@ -252,6 +390,10 @@ public final class CharcoalPitSystem {
 
 	private static boolean isLog(InventoryItem item) {
 		return item != null && item.item.isGlobalIngredient("anylog");
+	}
+
+	private static boolean isUnfiredBrick(InventoryItem item) {
+		return item != null && unfiredBrickStringID.equals(item.item.getStringID());
 	}
 
 	private static boolean isDirtPile(InventoryItem item) {
