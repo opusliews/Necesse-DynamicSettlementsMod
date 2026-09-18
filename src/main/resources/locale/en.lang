@@ -52,6 +52,7 @@ charcoal=Charcoal
 firestarter=Firestarter
 crudeaxe=Crude Axe
 trapdoor=Trapdoor
+holecaveladder=Cave Ladder
 sharpenedstone=Sharpened Stone
 unfiredbrick=Unfired Brick
 brick=Brick
@@ -64,6 +65,7 @@ builderjobrequestbulletin=Builder Job Request Bulletin
 warningbell=Warning Bell
 trapdoor=Trapdoor
 closedtrapdoor=Trapdoor
+holecaveladder=Cave Ladder
 anvilcraftingtaskboard=Anvil Crafting Tasks
 
 [controls]

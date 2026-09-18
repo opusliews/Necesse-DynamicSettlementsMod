@@ -55,6 +55,7 @@ import opusliews.object.BuilderJobRequestBulletinObject;
 import opusliews.object.PlacedLogRegistry;
 import opusliews.object.WarningBellObject;
 import opusliews.object.TrapdoorObject;
+import opusliews.object.HoleCaveLadderObject;
 import opusliews.settler.BuilderRequestLevelData;
 import opusliews.settler.BuilderSettler;
 import opusliews.sleep.SettlementSleepSettingsLevelData;
@@ -210,6 +211,7 @@ public class DynamicSettlements {
 				new WarningBellObject(), 60.0F, true);
 		ObjectRegistry.registerObject(TrapdoorObject.openStringID, new TrapdoorObject(false), 20.0F, true);
 		ObjectRegistry.registerObject(TrapdoorObject.closedStringID, new TrapdoorObject(true), 0.0F, false);
+		ObjectRegistry.registerObject(HoleCaveLadderObject.stringID, new HoleCaveLadderObject(), 10.0F, true);
 		PlacedLogRegistry.register();
 
 		GameObject clayRock = ObjectRegistry.getObject("clayrock");

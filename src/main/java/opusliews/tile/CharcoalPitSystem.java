@@ -13,6 +13,7 @@ import opusliews.item.DirtPileItem;
 import opusliews.item.FirestarterItem;
 import opusliews.network.PacketCharcoalPitInteract;
 import opusliews.object.TrapdoorObject;
+import opusliews.object.HoleCaveLadderObject;
 import opusliews.tile.CharcoalPitLevelData.StoredLog;
 
 import java.util.*;
@@ -43,9 +44,10 @@ public final class CharcoalPitSystem {
 		int tileID = level.getTileID(tileX, tileY);
 		boolean allowedAction = false;
 
+
 		if (tileID == TileRegistry.getTileID(ShallowHoleTile.stringID)) {
-			if (hasTrapdoor(level, tileX, tileY)) {
-				return false;
+			if (hasBlockingHoleObject(level, tileX, tileY)) {
+				return true;
 			}
 
 			allowedAction = isDirtPile(selected) || isLog(selected) || isUnfiredBrick(selected);
@@ -84,7 +86,7 @@ public final class CharcoalPitSystem {
 
 		int tileID = level.getTileID(tileX, tileY);
 		if (tileID == TileRegistry.getTileID(ShallowHoleTile.stringID)) {
-			if (hasTrapdoor(level, tileX, tileY)) {
+			if (hasBlockingHoleObject(level, tileX, tileY)) {
 				return;
 			}
 
@@ -146,6 +148,16 @@ public final class CharcoalPitSystem {
 				|| objectID == ObjectRegistry.getObjectID(TrapdoorObject.closedStringID);
 	}
 
+	public static boolean hasHoleCaveLadder(Level level, int tileX, int tileY) {
+		return level != null
+				&& level.isTileWithinBounds(tileX, tileY)
+				&& level.getObjectID(tileX, tileY) == ObjectRegistry.getObjectID(HoleCaveLadderObject.stringID);
+	}
+
+	public static boolean hasBlockingHoleObject(Level level, int tileX, int tileY) {
+		return hasTrapdoor(level, tileX, tileY) || hasHoleCaveLadder(level, tileX, tileY);
+	}
+
 	public static boolean isBurningUnfiredBrickPit(Level level, int tileX, int tileY) {
 		return level != null
 				&& level.isTileWithinBounds(tileX, tileY)
@@ -159,6 +171,7 @@ public final class CharcoalPitSystem {
 
 		int tileID = level.getTileID(tileX, tileY);
 		return tileID == TileRegistry.getTileID(ShallowHoleTile.stringID)
+				|| tileID == TileRegistry.getTileID(DeepHoleTile.stringID)
 				|| tileID == TileRegistry.getTileID(UnfiredBrickPitTile.stringID)
 				|| tileID == TileRegistry.getTileID(UnfiredBrickLogPitTile.stringID)
 				|| tileID == TileRegistry.getTileID(BurningUnfiredBrickPitTile.stringID)
@@ -232,7 +245,7 @@ public final class CharcoalPitSystem {
 		}
 
 		long fullDayDuration = (long)level.getWorldEntity().getDayTimeMax() * 1000L;
-		long burnEndWorldTime = level.getWorldEntity().getWorldTime() + 5000;//fullDayDuration;
+		long burnEndWorldTime = level.getWorldEntity().getWorldTime() + fullDayDuration;
 		data.startBrickBurn(tileX, tileY, burnEndWorldTime);
 		setTile(level, tileX, tileY, TileRegistry.getTileID(BurningUnfiredBrickPitTile.stringID));
 	}

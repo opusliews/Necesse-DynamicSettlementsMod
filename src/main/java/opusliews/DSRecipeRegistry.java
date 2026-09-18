@@ -10,6 +10,7 @@ import opusliews.item.CrudeAxeItem;
 import opusliews.item.FirestarterItem;
 import opusliews.item.SharpenedStoneItem;
 import opusliews.object.BuilderJobRequestBulletinObject;
+import opusliews.object.HoleCaveLadderObject;
 import opusliews.object.TrapdoorObject;
 import opusliews.object.WarningBellObject;
 
@@ -145,8 +146,12 @@ public class DSRecipeRegistry {
 		register(clockworkmechanismStringID, 1, RecipeTechRegistry.IRON_ANVIL, ingredient("ironbar", 2));
 		register(magicfocusStringID, 1, RecipeTechRegistry.ALCHEMY, ingredient("goldbar", 1), ingredient("manapotion", 1));
 		register("clothscraps", 4, RecipeTechRegistry.WORKSTATION, ingredient("wool", 1));
+
+		// Tools
 		register(TrapdoorObject.openStringID, 1, CrudeWorkbenchFeature.tech, ingredient("dsanyplank", 4));
 		register(TrapdoorObject.openStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("dsanyplank", 4));
+		register(HoleCaveLadderObject.stringID, 1, CrudeWorkbenchFeature.tech, ingredient(woodenshaftStringID, 32));
+		register(HoleCaveLadderObject.stringID, 1, RecipeTechRegistry.WORKSTATION, ingredient(woodenshaftStringID, 32));
 
 		// Previously-added crafting materials
 		register(stringStringID, 1, CrudeWorkbenchFeature.tech, ingredient("grass", 4));
