@@ -26,6 +26,7 @@ import necesse.inventory.lootTable.LootTable;
 import necesse.level.gameObject.GameObject;
 import necesse.level.maps.Level;
 import necesse.level.maps.light.GameLight;
+import opusliews.deephole.DeepHoleSystem;
 
 public class HoleCaveLadderUpObject extends GameObject {
 	public static final String stringID = "holecaveladderup";
@@ -93,6 +94,18 @@ public class HoleCaveLadderUpObject extends GameObject {
 	}
 
 	@Override
+	public boolean onDamaged(Level level, int layerID, int x, int y, int damage, Attacker attacker, ServerClient client, boolean showEffect, int mouseX, int mouseY) {
+		if (DeepHoleSystem.isShaftTransitionAt(level, x, y)) return false;
+		return super.onDamaged(level, layerID, x, y, damage, attacker, client, showEffect, mouseX, mouseY);
+	}
+
+	@Override
+	public void doExplosionDamage(Level level, int layerID, int tileX, int tileY, int damage, float toolTier, Attacker attacker, ServerClient client) {
+		if (DeepHoleSystem.isShaftTransitionAt(level, tileX, tileY)) return;
+		super.doExplosionDamage(level, layerID, tileX, tileY, damage, toolTier, attacker, client);
+	}
+
+	@Override
 	public boolean canInteract(Level level, int x, int y, PlayerMob player) {
 		return true;
 	}
@@ -119,6 +132,7 @@ public class HoleCaveLadderUpObject extends GameObject {
 					surface.regionManager.ensureTileIsLoaded(portal.destinationTileX, portal.destinationTileY);
 					if (surface.getObjectID(portal.destinationTileX, portal.destinationTileY) == ObjectRegistry.getObjectID(HoleCaveLadderObject.stringID)) {
 						surface.setObject(portal.destinationTileX, portal.destinationTileY, 0);
+						surface.replaceObjectEntity(portal.destinationTileX, portal.destinationTileY);
 						level.getServer().network.sendToClientsWithTile(
 								new PacketChangeObject(surface, 0, portal.destinationTileX, portal.destinationTileY, 0),
 								surface,

@@ -108,7 +108,7 @@ public final class CharcoalPitSystem {
 		}
 
 		if (tileID == TileRegistry.getTileID(DeepHoleTile.stringID)) {
-			if (isDirtPile(selected) && !DeepHoleSystem.isTransitionAt(level, tileX, tileY)) {
+			if (isDirtPile(selected) && !DeepHoleSystem.isShaftTransitionAt(level, tileX, tileY)) {
 				boolean returnedLadder = DeepHoleSystem.fillDeepHole(level, tileX, tileY);
 				if (returnedLadder) {
 					dropItem(level, tileX, tileY, new InventoryItem(HoleCaveLadderObject.stringID, 1));

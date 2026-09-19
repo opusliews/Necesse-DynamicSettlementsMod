@@ -106,10 +106,30 @@ public final class DeepHoleSystem {
 				.anyMatch(player -> player.getTileX() == tileX && player.getTileY() == tileY && isTransitioning(player));
 	}
 
+	public static boolean isShaftTransitionAt(Level level, int tileX, int tileY) {
+		if (isTransitionAt(level, tileX, tileY)) return true;
+		if (level == null || !level.isServer()) return false;
+
+		LevelIdentifier linkedIdentifier;
+		if (level.getIdentifier().equals(LevelIdentifier.SURFACE_IDENTIFIER)) {
+			linkedIdentifier = LevelIdentifier.CAVE_IDENTIFIER;
+		}
+		else if (level.getIdentifier().equals(LevelIdentifier.CAVE_IDENTIFIER)) {
+			linkedIdentifier = LevelIdentifier.SURFACE_IDENTIFIER;
+		}
+		else {
+			return false;
+		}
+
+		if (!level.getServer().world.levelExists(linkedIdentifier)) return false;
+		Level linkedLevel = level.getServer().world.getLevel(linkedIdentifier);
+		return isTransitionAt(linkedLevel, tileX, tileY);
+	}
+
 	public static boolean fillDeepHole(Level surfaceLevel, int tileX, int tileY) {
 		if (surfaceLevel == null || !surfaceLevel.isServer()) return false;
 		if (surfaceLevel.getTileID(tileX, tileY) != TileRegistry.getTileID(DeepHoleTile.stringID)) return false;
-		if (isTransitionAt(surfaceLevel, tileX, tileY)) return false;
+		if (isShaftTransitionAt(surfaceLevel, tileX, tileY)) return false;
 
 		int surfaceObjectID = surfaceLevel.getObjectID(tileX, tileY);
 		int customLadderID = ObjectRegistry.getObjectID(HoleCaveLadderObject.stringID);
@@ -237,15 +257,11 @@ public final class DeepHoleSystem {
 		if (tileX != player.getTileX() || tileY != player.getTileY()) return false;
 		if (!isPlayerInSinkingArea(level, tileX, tileY, player)) return false;
 
-		boolean canEnter = !isOccupied(player)
-				&& level.getTileID(tileX, tileY) == TileRegistry.getTileID(ShallowHoleTile.stringID)
+		boolean canEnter = level.getTileID(tileX, tileY) == TileRegistry.getTileID(ShallowHoleTile.stringID)
 				&& isDiggableHoleObject(level, tileX, tileY);
-		boolean canExit = isOccupied(player)
-				&& level.getTileID(tileX, tileY) == TileRegistry.getTileID(DeepHoleTile.stringID);
+		if (!canEnter) return false;
 
-		if (!canEnter && !canExit) return false;
-
-		level.getClient().network.sendPacket(new PacketDeepHoleInteract(tileX, tileY, canEnter));
+		level.getClient().network.sendPacket(new PacketDeepHoleInteract(tileX, tileY, true));
 		return true;
 	}
 
@@ -310,6 +326,7 @@ public final class DeepHoleSystem {
 	}
 
 	private static boolean startDigging(Level level, int tileX, int tileY, PlayerMob player) {
+		if (isTransitionAt(level, tileX, tileY)) return false;
 		if (level.getTileID(tileX, tileY) != TileRegistry.getTileID(ShallowHoleTile.stringID)) return false;
 		if (!isDiggableHoleObject(level, tileX, tileY)) return false;
 
@@ -432,7 +449,11 @@ public final class DeepHoleSystem {
 	public static boolean tryStartSafeLadderDescent(PlayerMob player, int tileX, int tileY) {
 		Level level = player == null ? null : player.getLevel();
 		if (level == null || !level.isServer() || isTransitioning(player)) return false;
+		if (!level.isTileWithinBounds(tileX, tileY)) return false;
 		if (level.getTileID(tileX, tileY) != TileRegistry.getTileID(DeepHoleTile.stringID)) return false;
+
+		LevelObject ladder = level.getLevelObject(tileX, tileY);
+		if (!ladder.isInInteractRange(player) || !ladder.canInteract(player)) return false;
 		if (!ensureCustomHoleLadder(level, tileX, tileY)) return false;
 
 		startSafeLadderDescent(level, tileX, tileY, player);
