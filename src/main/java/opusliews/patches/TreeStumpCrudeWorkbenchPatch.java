@@ -2,6 +2,7 @@ package opusliews.patches;
 
 import necesse.engine.modLoader.annotations.ModMethodPatch;
 import necesse.entity.mobs.PlayerMob;
+import necesse.engine.network.Packet;
 import necesse.inventory.InventoryItem;
 import necesse.inventory.container.object.CraftingStationContainer;
 import necesse.level.gameObject.TreeStumpObject;
@@ -34,12 +35,15 @@ public class TreeStumpCrudeWorkbenchPatch {
 		}
 
 		if (level.isServer() && player.isServerClient()) {
+			Packet tempInventoryContent = player.getInv().getTempInventoryPacket(1);
+
 			CraftingStationContainer.openAndSendContainer(
 					DynamicSettlements.crudeWorkbenchContainerID,
 					player.getServerClient(),
 					level,
 					tileX,
-					tileY
+					tileY,
+					tempInventoryContent
 			);
 		}
 

@@ -34,6 +34,7 @@ import opusliews.buff.DeepHoleCaveFallBuff;
 import opusliews.buff.DeepHoleLadderDescentBuff;
 import opusliews.container.BlueprintWorkstationContainer;
 import opusliews.container.CrudeWorkbenchContainer;
+import opusliews.forms.CrudeWorkbenchContainerForm;
 import opusliews.crafting.AnvilCraftingFeature;
 import opusliews.crafting.AnvilCraftingTasksFeature;
 import opusliews.damage.DamageRepairLevelData;
@@ -227,7 +228,7 @@ public class DynamicSettlements {
 		clayRock.toolTier = 0.0F;
 
 		crudeWorkbenchContainerID = ContainerRegistry.registerSettlementDependantLOContainer(
-				(client, uniqueSeed, settlement, levelObject, content) -> new CraftingStationContainerForm(
+				(client, uniqueSeed, settlement, levelObject, content) -> new CrudeWorkbenchContainerForm(
 						client,
 						new CrudeWorkbenchContainer(client.getClient(), uniqueSeed, settlement, levelObject, new PacketReader(content))
 				),
@@ -344,6 +345,7 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketCharcoalProductionSettingsUpdate.class);
 		PacketRegistry.registerPacket(PacketCharcoalProductionSettingsSync.class);
 		PacketRegistry.registerPacket(PacketClayDiggingSound.class);
+		PacketRegistry.registerPacket(PacketCrudeWorkbenchOutput.class);
 
 		AnvilCraftingFeature.register();
 		AnvilCraftingTasksFeature.register();
