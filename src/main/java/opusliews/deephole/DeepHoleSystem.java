@@ -28,9 +28,11 @@ import opusliews.buff.DeepHoleCaveFallBuff;
 import opusliews.buff.DeepHoleDiggingBuff;
 import opusliews.buff.DeepHoleHiddenBuff;
 import opusliews.buff.DeepHoleLadderDescentBuff;
+import opusliews.item.DirtPileItem;
 import opusliews.logging.Logging;
 import opusliews.network.PacketDeepHoleInteract;
 import opusliews.network.PacketHoleCaveLadderInteract;
+import opusliews.object.DeepHoleCeilingLightObject;
 import opusliews.object.HoleCaveLadderObject;
 import opusliews.object.HoleCaveLadderUpObject;
 import opusliews.tile.DeepHoleTile;
@@ -104,6 +106,59 @@ public final class DeepHoleSystem {
 				.anyMatch(player -> player.getTileX() == tileX && player.getTileY() == tileY && isTransitioning(player));
 	}
 
+	public static boolean fillDeepHole(Level surfaceLevel, int tileX, int tileY) {
+		if (surfaceLevel == null || !surfaceLevel.isServer()) return false;
+		if (surfaceLevel.getTileID(tileX, tileY) != TileRegistry.getTileID(DeepHoleTile.stringID)) return false;
+		if (isTransitionAt(surfaceLevel, tileX, tileY)) return false;
+
+		int surfaceObjectID = surfaceLevel.getObjectID(tileX, tileY);
+		int customLadderID = ObjectRegistry.getObjectID(HoleCaveLadderObject.stringID);
+		int legacyLadderID = ObjectRegistry.getObjectID("ladderdown");
+		boolean hadLadder = surfaceObjectID == customLadderID || surfaceObjectID == legacyLadderID;
+
+		if (hadLadder) {
+			surfaceLevel.setObject(tileX, tileY, 0);
+			surfaceLevel.replaceObjectEntity(tileX, tileY);
+			surfaceLevel.getServer().network.sendToClientsWithTile(
+					new PacketChangeObject(surfaceLevel, 0, tileX, tileY, 0),
+					surfaceLevel,
+					tileX,
+					tileY
+			);
+		}
+
+		removeCaveShaftObject(surfaceLevel, tileX, tileY);
+
+		surfaceLevel.setTile(tileX, tileY, TileRegistry.dirtID);
+		surfaceLevel.sendTileUpdatePacket(tileX, tileY);
+		surfaceLevel.getLevelTile(tileX, tileY).checkAround();
+		surfaceLevel.getLevelObject(tileX, tileY).checkAround();
+		return hadLadder;
+	}
+
+	private static void removeCaveShaftObject(Level surfaceLevel, int tileX, int tileY) {
+		if (!surfaceLevel.getServer().world.levelExists(LevelIdentifier.CAVE_IDENTIFIER)) return;
+
+		Level caveLevel = surfaceLevel.getServer().world.getLevel(LevelIdentifier.CAVE_IDENTIFIER);
+		caveLevel.regionManager.ensureTileIsLoaded(tileX, tileY);
+
+		int objectID = caveLevel.getObjectID(tileX, tileY);
+		int ladderID = ObjectRegistry.getObjectID(HoleCaveLadderUpObject.stringID);
+		int lightID = ObjectRegistry.getObjectID(DeepHoleCeilingLightObject.stringID);
+		int legacyLadderID = ObjectRegistry.getObjectID("ladderup");
+		if (objectID != ladderID && objectID != lightID && objectID != legacyLadderID) return;
+
+		caveLevel.setObject(tileX, tileY, 0);
+		caveLevel.replaceObjectEntity(tileX, tileY);
+		caveLevel.getServer().network.sendToClientsWithTile(
+				new PacketChangeObject(caveLevel, 0, tileX, tileY, 0),
+				caveLevel,
+				tileX,
+				tileY
+		);
+		caveLevel.getLevelObject(tileX, tileY).checkAround();
+	}
+
 	public static boolean isFullyHidden(PlayerMob player) {
 		return (isOccupied(player) && getFallProgress(player) >= 1.0F)
 				|| (isLadderDescending(player) && getLadderDescentProgress(player) >= 1.0F);
@@ -144,6 +199,9 @@ public final class DeepHoleSystem {
 	public static boolean tryClientLadderInteract(PlayerMob player, int levelX, int levelY) {
 		Level level = player.getLevel();
 		if (level == null || !level.isClient() || isTransitioning(player)) return false;
+
+		InventoryItem selected = player.getSelectedItem();
+		if (selected != null && DirtPileItem.stringID.equals(selected.item.getStringID())) return false;
 
 		int tileX = GameMath.getTileCoordinate(levelX);
 		int tileY = GameMath.getTileCoordinate(levelY);
@@ -545,6 +603,15 @@ public final class DeepHoleSystem {
 
 		client.changeLevelCheck(LevelIdentifier.CAVE_IDENTIFIER, (destinationLevel) -> {
 			destinationLevel.regionManager.ensureTilesAreLoaded(tileX, tileY, tileX, tileY);
+
+			LadderDownObjectEntity.clearAndPlaceLadder(
+					sourceLevel.getServer(),
+					destinationLevel,
+					tileX,
+					tileY,
+					ObjectRegistry.getObjectID(DeepHoleCeilingLightObject.stringID),
+					true
+			);
 
 			Point destination = PortalObjectEntity.getTeleportDestinationAroundObject(
 					destinationLevel,

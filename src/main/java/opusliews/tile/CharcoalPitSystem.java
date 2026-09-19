@@ -11,6 +11,7 @@ import necesse.inventory.item.toolItem.shovelToolItem.ShovelToolItem;
 import necesse.level.maps.Level;
 import opusliews.item.DirtPileItem;
 import opusliews.item.FirestarterItem;
+import opusliews.deephole.DeepHoleSystem;
 import opusliews.network.PacketCharcoalPitInteract;
 import opusliews.object.TrapdoorObject;
 import opusliews.object.HoleCaveLadderObject;
@@ -55,6 +56,8 @@ public final class CharcoalPitSystem {
 			}
 
 			allowedAction = isDirtPile(selected) || isLog(selected) || isUnfiredBrick(selected);
+		} else if (tileID == TileRegistry.getTileID(DeepHoleTile.stringID)) {
+			allowedAction = isDirtPile(selected);
 		} else if (tileID == TileRegistry.getTileID(UnfiredBrickPitTile.stringID)) {
 			allowedAction = isShovel(selected) || isLog(selected);
 		} else if (tileID == TileRegistry.getTileID(UnfiredBrickLogPitTile.stringID)) {
@@ -100,6 +103,19 @@ public final class CharcoalPitSystem {
 				fillHoleWithLogs(level, player, selected, tileX, tileY);
 			} else if (isUnfiredBrick(selected)) {
 				fillHoleWithUnfiredBricks(level, player, tileX, tileY);
+			}
+			return;
+		}
+
+		if (tileID == TileRegistry.getTileID(DeepHoleTile.stringID)) {
+			if (isDirtPile(selected) && !DeepHoleSystem.isTransitionAt(level, tileX, tileY)) {
+				boolean returnedLadder = DeepHoleSystem.fillDeepHole(level, tileX, tileY);
+				if (returnedLadder) {
+					dropItem(level, tileX, tileY, new InventoryItem(HoleCaveLadderObject.stringID, 1));
+				}
+				if (level.getTileID(tileX, tileY) == TileRegistry.dirtID) {
+					selected.setAmount(selected.getAmount() - 1);
+				}
 			}
 			return;
 		}
