@@ -30,6 +30,8 @@ import opusliews.buff.MalignanceGogglesBuff;
 import opusliews.buff.TrapdoorHiddenBuff;
 import opusliews.buff.DeepHoleHiddenBuff;
 import opusliews.buff.DeepHoleDiggingBuff;
+import opusliews.buff.DeepHoleCaveFallBuff;
+import opusliews.buff.DeepHoleLadderDescentBuff;
 import opusliews.container.BlueprintWorkstationContainer;
 import opusliews.container.CrudeWorkbenchContainer;
 import opusliews.crafting.AnvilCraftingFeature;
@@ -56,6 +58,7 @@ import opusliews.object.PlacedLogRegistry;
 import opusliews.object.WarningBellObject;
 import opusliews.object.TrapdoorObject;
 import opusliews.object.HoleCaveLadderObject;
+import opusliews.object.HoleCaveLadderUpObject;
 import opusliews.settler.BuilderRequestLevelData;
 import opusliews.settler.BuilderSettler;
 import opusliews.sleep.SettlementSleepSettingsLevelData;
@@ -181,6 +184,8 @@ public class DynamicSettlements {
 		BuffRegistry.registerBuff(TrapdoorHiddenBuff.stringID, new TrapdoorHiddenBuff());
 		BuffRegistry.registerBuff(DeepHoleHiddenBuff.stringID, new DeepHoleHiddenBuff());
 		BuffRegistry.registerBuff(DeepHoleDiggingBuff.stringID, new DeepHoleDiggingBuff());
+		BuffRegistry.registerBuff(DeepHoleCaveFallBuff.stringID, new DeepHoleCaveFallBuff());
+		BuffRegistry.registerBuff(DeepHoleLadderDescentBuff.stringID, new DeepHoleLadderDescentBuff());
 		SettlerRegistry.registerSettler("builder", new BuilderSettler());
 		MobRegistry.registerMob("builderhuman",
 				BuilderHumanMob.class, true);
@@ -212,6 +217,7 @@ public class DynamicSettlements {
 		ObjectRegistry.registerObject(TrapdoorObject.openStringID, new TrapdoorObject(false), 20.0F, true);
 		ObjectRegistry.registerObject(TrapdoorObject.closedStringID, new TrapdoorObject(true), 0.0F, false);
 		ObjectRegistry.registerObject(HoleCaveLadderObject.stringID, new HoleCaveLadderObject(), 10.0F, true);
+		ObjectRegistry.registerObject(HoleCaveLadderUpObject.stringID, new HoleCaveLadderUpObject(), 0.0F, false);
 		PlacedLogRegistry.register();
 
 		GameObject clayRock = ObjectRegistry.getObject("clayrock");
@@ -327,6 +333,7 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketSettlementSleepSettingsUpdate.class);
 		PacketRegistry.registerPacket(PacketDigShallowHole.class);
 		PacketRegistry.registerPacket(PacketDeepHoleInteract.class);
+		PacketRegistry.registerPacket(PacketHoleCaveLadderInteract.class);
 		PacketRegistry.registerPacket(PacketCharcoalPitInteract.class);
 		PacketRegistry.registerPacket(PacketFirestarterUse.class);
 		PacketRegistry.registerPacket(PacketPlaceLog.class);

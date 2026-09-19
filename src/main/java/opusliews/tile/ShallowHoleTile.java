@@ -147,7 +147,7 @@ public class ShallowHoleTile extends DirtTile {
 		// Deep-hole falling moves the player draw position downward. The mask itself must
 		// stay anchored to the hole in world space, so bake the opposite movement into
 		// the actual mask texture offset.
-		if (mob instanceof PlayerMob && DeepHoleSystem.isOccupied((PlayerMob)mob)) {
+		if (mob instanceof PlayerMob && DeepHoleSystem.usesSurfaceHoleMaskOffset((PlayerMob)mob)) {
 			maskYOffset += DeepHoleSystem.getDrawYOffset((PlayerMob)mob);
 		}
 

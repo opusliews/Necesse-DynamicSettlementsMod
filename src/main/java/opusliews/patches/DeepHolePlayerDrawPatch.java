@@ -31,7 +31,7 @@ public class DeepHolePlayerDrawPatch {
 			@Advice.This PlayerMob player,
 			@Advice.Argument(value = 5, readOnly = false) int drawY
 	) {
-		if (!DeepHoleSystem.isOccupied(player) || DeepHoleSystem.isFullyHidden(player)) return;
+		if (!DeepHoleSystem.hasDrawYOffset(player) || DeepHoleSystem.isFullyHidden(player)) return;
 		drawY += DeepHoleSystem.getDrawYOffset(player);
 	}
 }

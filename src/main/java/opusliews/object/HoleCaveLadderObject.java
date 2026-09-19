@@ -6,6 +6,8 @@ import java.util.List;
 import necesse.engine.gameLoop.tickManager.TickManager;
 import necesse.engine.localization.Localization;
 import necesse.engine.registries.TileRegistry;
+import necesse.engine.network.server.ServerClient;
+import necesse.entity.mobs.Attacker;
 import necesse.entity.mobs.PlayerMob;
 import necesse.gfx.camera.GameCamera;
 import necesse.gfx.drawOptions.DrawOptions;
@@ -15,6 +17,7 @@ import necesse.inventory.item.toolItem.ToolType;
 import necesse.level.gameObject.GameObject;
 import necesse.level.maps.Level;
 import necesse.level.maps.light.GameLight;
+import opusliews.deephole.DeepHoleSystem;
 import opusliews.tile.DeepHoleTile;
 import opusliews.tile.ShallowHoleTile;
 
@@ -56,12 +59,25 @@ public class HoleCaveLadderObject extends GameObject {
 	@Override
 	public String canPlace(Level level, int layerID, int x, int y, int rotation, boolean byPlayer, boolean ignoreOtherLayers) {
 		if (layerID != 0) return "wrongtile";
+		if (DeepHoleSystem.isTransitionAt(level, x, y)) return "tilecovered";
 		if (level.getObjectID(x, y) != 0) return "tilecovered";
 
 		int tileID = level.getTileID(x, y);
 		int shallowHoleID = TileRegistry.getTileID(ShallowHoleTile.stringID);
 		int deepHoleID = TileRegistry.getTileID(DeepHoleTile.stringID);
 		return tileID == shallowHoleID || tileID == deepHoleID ? null : "wrongtile";
+	}
+
+	@Override
+	public boolean onDamaged(Level level, int layerID, int x, int y, int damage, Attacker attacker, ServerClient client, boolean showEffect, int mouseX, int mouseY) {
+		if (DeepHoleSystem.isTransitionAt(level, x, y)) return false;
+		return super.onDamaged(level, layerID, x, y, damage, attacker, client, showEffect, mouseX, mouseY);
+	}
+
+	@Override
+	public void doExplosionDamage(Level level, int layerID, int tileX, int tileY, int damage, float toolTier, Attacker attacker, ServerClient client) {
+		if (DeepHoleSystem.isTransitionAt(level, tileX, tileY)) return;
+		super.doExplosionDamage(level, layerID, tileX, tileY, damage, toolTier, attacker, client);
 	}
 
 	@Override
@@ -84,6 +100,7 @@ public class HoleCaveLadderObject extends GameObject {
 
 	@Override
 	public void interact(Level level, int x, int y, PlayerMob player) {
+		if (level.isServer() && DeepHoleSystem.tryStartSafeLadderDescent(player, x, y)) return;
 		super.interact(level, x, y, player);
 	}
 

@@ -24,8 +24,9 @@ public class TrapdoorPlayerInteractPatch {
 	) {
 		if (player.getLevel() == null) return false;
 
+		if (DeepHoleSystem.tryClientLadderInteract(player, levelX, levelY)) return true;
 		if (DeepHoleSystem.tryClientInteract(player, levelX, levelY)) return true;
-		if (DeepHoleSystem.isDigging(player)) return true;
+		if (DeepHoleSystem.isTransitioning(player)) return true;
 
 		boolean hidden = TrapdoorSystem.isHidden(player);
 		if (onlyItemInteract) return hidden;

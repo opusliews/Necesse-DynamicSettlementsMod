@@ -11,7 +11,7 @@ public class TrapdoorPlayerMovementPatch {
 	@Advice.OnMethodEnter
 	public static void onEnter(@Advice.This PlayerMob player) {
 		DeepHoleSystem.tick(player);
-		if (!TrapdoorSystem.isHidden(player) && !DeepHoleSystem.isDigging(player)) return;
+		if (!TrapdoorSystem.isHidden(player) && !DeepHoleSystem.isTransitioning(player)) return;
 		player.moveX = 0.0F;
 		player.moveY = 0.0F;
 		player.dx = 0.0F;

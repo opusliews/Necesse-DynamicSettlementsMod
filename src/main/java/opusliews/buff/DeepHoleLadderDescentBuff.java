@@ -1,0 +1,24 @@
+package opusliews.buff;
+
+import necesse.entity.mobs.buffs.ActiveBuff;
+import necesse.entity.mobs.buffs.BuffEventSubscriber;
+import necesse.entity.mobs.buffs.BuffModifiers;
+import necesse.entity.mobs.buffs.staticBuffs.Buff;
+
+public class DeepHoleLadderDescentBuff extends Buff {
+	public static final String stringID = "deepholeladderdescent";
+
+	public DeepHoleLadderDescentBuff() {
+		this.shouldSave = true;
+		this.isVisible = false;
+		this.canCancel = false;
+		this.isImportant = true;
+	}
+
+	@Override
+	public void init(ActiveBuff buff, BuffEventSubscriber eventSubscriber) {
+		buff.setModifier(BuffModifiers.UNTARGETABLE, true);
+		buff.setModifier(BuffModifiers.SUMMON_DAMAGE, -1.0F);
+		buff.setMaxModifier(BuffModifiers.KNOCKBACK_INCOMING_MOD, 0.0F);
+	}
+}

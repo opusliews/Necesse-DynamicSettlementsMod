@@ -11,7 +11,7 @@ import opusliews.deephole.DeepHoleSystem;
 public class TrapdoorPlayerAttackPatch {
 	@Advice.OnMethodEnter(skipOn = Advice.OnNonDefaultValue.class)
 	public static boolean onEnter(@Advice.This PlayerMob player) {
-		return TrapdoorSystem.isHidden(player) || DeepHoleSystem.isDigging(player);
+		return TrapdoorSystem.isHidden(player) || DeepHoleSystem.isTransitioning(player);
 	}
 
 	@Advice.OnMethodExit
