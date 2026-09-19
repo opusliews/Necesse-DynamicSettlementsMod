@@ -34,7 +34,11 @@ public class VanillaRecipeRework {
 	}
 
 	public static void apply(ArrayList recipes) {
-		recipes.removeIf(value -> value instanceof Recipe && "woodaxe".equals(((Recipe)value).resultStringID));
+		recipes.removeIf(value -> {
+			if (!(value instanceof Recipe)) return false;
+			String resultID = ((Recipe)value).resultStringID;
+			return "woodaxe".equals(resultID) || "ladderdown".equals(resultID);
+		});
 
 		Set<String> registeredGlobalIngredients = getRegisteredGlobalIngredientIDs();
 

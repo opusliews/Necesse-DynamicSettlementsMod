@@ -1,8 +1,5 @@
 package opusliews.object;
 
-import java.awt.Color;
-import java.util.ArrayList;
-import java.util.List;
 import necesse.engine.gameLoop.tickManager.TickManager;
 import necesse.engine.localization.message.GameMessage;
 import necesse.engine.localization.message.LocalMessage;
@@ -30,6 +27,12 @@ import necesse.level.maps.light.GameLight;
 import opusliews.deephole.DeepHoleSystem;
 import opusliews.tile.DeepHoleTile;
 
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
+
+import static opusliews.charcoal.CharcoalProductionZone.cardinalOffsets;
+
 public class HoleCaveLadderUpObject extends GameObject {
 	public static final String stringID = "holecaveladderup";
 
@@ -37,7 +40,10 @@ public class HoleCaveLadderUpObject extends GameObject {
 
 	public HoleCaveLadderUpObject() {
 		this.mapColor = new Color(138, 109, 37);
-		this.toolType = ToolType.ALL;
+		this.toolType = ToolType.AXE;
+		this.toolTier = 0.0F;
+		this.objectHealth = 40;
+		this.drawDamage = true;
 		this.isLightTransparent = true;
 		this.lightLevel = 75;
 	}
@@ -96,6 +102,7 @@ public class HoleCaveLadderUpObject extends GameObject {
 
 		String error = super.canPlace(level, layerID, x, y, rotation, byPlayer, ignoreOtherLayers);
 		if (error != null) return error;
+		if (hasAdjacentShaftEntrance(level, x, y)) return "tilecovered";
 
 		if (level.isServer()) {
 			Level surface = level.getServer().world.getLevel(LevelIdentifier.SURFACE_IDENTIFIER);
@@ -138,6 +145,26 @@ public class HoleCaveLadderUpObject extends GameObject {
 				x,
 				y
 		);
+	}
+
+	private static boolean hasAdjacentShaftEntrance(Level level, int tileX, int tileY) {
+		int customLadderUpID = ObjectRegistry.getObjectID(HoleCaveLadderUpObject.stringID);
+		int vanillaLadderUpID = ObjectRegistry.getObjectID("ladderup");
+		int ceilingLightID = ObjectRegistry.getObjectID(DeepHoleCeilingLightObject.stringID);
+
+		for (int[] offset : cardinalOffsets) {
+			int checkX = tileX + offset[0];
+			int checkY = tileY + offset[1];
+
+			if (!level.isTileWithinBounds(checkX, checkY)) {
+				continue;
+			}
+
+			int objectID = level.getObjectID(checkX, checkY);
+			if (objectID == customLadderUpID || objectID == vanillaLadderUpID || objectID == ceilingLightID) return true;
+		}
+
+		return false;
 	}
 
 	@Override

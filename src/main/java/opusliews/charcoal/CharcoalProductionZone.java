@@ -23,7 +23,7 @@ import opusliews.tile.CharcoalPitSystem;
 public class CharcoalProductionZone extends SettlementTileTickZone {
 	public static final String stringID = "charcoalproduction";
 	public static final EventVariable hideZones = new EventVariable(false);
-	private static final int[][] cardinalOffsets = {
+	public static final int[][] cardinalOffsets = {
 		{0, -1},
 		{1, 0},
 		{0, 1},

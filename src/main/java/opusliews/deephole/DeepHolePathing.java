@@ -2,6 +2,7 @@ package opusliews.deephole;
 
 import java.awt.Point;
 import java.awt.Rectangle;
+import necesse.engine.registries.ObjectRegistry;
 import necesse.engine.registries.TileRegistry;
 import necesse.engine.util.GameMath;
 import necesse.engine.util.MovedRectangle;
@@ -17,7 +18,7 @@ public final class DeepHolePathing {
 
 	public static boolean shouldBlockDeepHole(Level level, Mob mob, int tileX, int tileY) {
 		if (level == null || mob == null || mob instanceof PlayerMob || mob.isBoss()) return false;
-		return level.getTileID(tileX, tileY) == TileRegistry.getTileID(DeepHoleTile.stringID);
+		return isDangerousDeepHole(level, tileX, tileY);
 	}
 
 	public static boolean pathTargetContainsDeepHole(TilePathfinding finder, Point targetTile) {
@@ -29,7 +30,7 @@ public final class DeepHolePathing {
 			int tileX = targetTile.x + offsets.x + x;
 			for (int y = 0; y < offsets.height; y++) {
 				int tileY = targetTile.y + offsets.y + y;
-				if (isDeepHole(finder.level, tileX, tileY)) return true;
+				if (isDangerousDeepHole(finder.level, tileX, tileY)) return true;
 			}
 		}
 
@@ -52,8 +53,8 @@ public final class DeepHolePathing {
 				? fromTile.y + offsets.y + offsetTile.y
 				: fromTile.y + offsets.y + offsetTile.y + offsets.height - 1;
 
-		return isDeepHole(finder.level, xCheck, fromTile.y)
-				&& isDeepHole(finder.level, fromTile.x, yCheck);
+		return isDangerousDeepHole(finder.level, xCheck, fromTile.y)
+				&& isDangerousDeepHole(finder.level, fromTile.x, yCheck);
 	}
 
 	public static boolean directMovementCrossesDeepHole(Mob mob, int targetX, int targetY) {
@@ -70,7 +71,7 @@ public final class DeepHolePathing {
 
 		for (int tileX = minTileX; tileX <= maxTileX; tileX++) {
 			for (int tileY = minTileY; tileY <= maxTileY; tileY++) {
-				if (!isDeepHole(level, tileX, tileY)) continue;
+				if (!isDangerousDeepHole(level, tileX, tileY)) continue;
 				Rectangle holeBounds = new Rectangle(tileX * 32, tileY * 32, 32, 32);
 				if (movement.intersects(holeBounds)) return true;
 			}
@@ -79,8 +80,12 @@ public final class DeepHolePathing {
 		return false;
 	}
 
-	private static boolean isDeepHole(Level level, int tileX, int tileY) {
-		return level.isTileWithinBounds(tileX, tileY)
-				&& level.getTileID(tileX, tileY) == TileRegistry.getTileID(DeepHoleTile.stringID);
+	private static boolean isDangerousDeepHole(Level level, int tileX, int tileY) {
+		if (!level.isTileWithinBounds(tileX, tileY)) return false;
+		if (level.getTileID(tileX, tileY) != TileRegistry.getTileID(DeepHoleTile.stringID)) return false;
+
+		int objectID = level.getObjectID(tileX, tileY);
+		return objectID != ObjectRegistry.getObjectID("holecaveladder")
+				&& objectID != ObjectRegistry.getObjectID("ladderdown");
 	}
 }

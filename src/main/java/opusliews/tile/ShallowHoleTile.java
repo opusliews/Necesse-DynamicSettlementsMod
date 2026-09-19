@@ -63,6 +63,10 @@ public class ShallowHoleTile extends DirtTile {
 		return isMobInSinkingArea(player);
 	}
 
+	public boolean shouldMobSinkVisually(Mob mob) {
+		return isMobInSinkingArea(mob);
+	}
+
 	@Override
 	public boolean canBePlacedOn(Level level, int tileX, int tileY, GameTile placing) {
 		return false;

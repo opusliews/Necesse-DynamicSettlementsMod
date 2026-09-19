@@ -22,7 +22,7 @@ public class ShallowHolePlayerMaskPatch {
 		if (level.getTile(mob.getTileX(), mob.getTileY()) instanceof ShallowHoleTile) {
 			ShallowHoleTile holeTile = (ShallowHoleTile)level.getTile(mob.getTileX(), mob.getTileY());
 
-			if (holeTile.isMobInSinkingArea(mob)) {
+			if (holeTile.shouldMobSinkVisually(mob)) {
 				result = holeTile.getMobMaskOptions(mob);
 			}
 		}

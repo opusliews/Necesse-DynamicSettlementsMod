@@ -11,6 +11,8 @@ import necesse.level.gameObject.GameObject;
 import necesse.level.gameObject.TreeObject;
 import necesse.level.gameObject.TreeStumpObject;
 import necesse.level.maps.Level;
+import opusliews.object.HoleCaveLadderObject;
+import opusliews.object.HoleCaveLadderUpObject;
 import opusliews.object.PlacedLogObject;
 import opusliews.object.TrapdoorObject;
 
@@ -35,7 +37,11 @@ public class CrudeAxeItem extends CustomAxeToolItem {
 		}
 
 		GameObject object = level.getObject(layerID, tileX, tileY);
-		return object.getClass() == TreeObject.class || object instanceof PlacedLogObject || object instanceof TrapdoorObject;
+		return object.getClass() == TreeObject.class
+				|| object instanceof PlacedLogObject
+				|| object instanceof TrapdoorObject
+				|| object instanceof HoleCaveLadderObject
+				|| object instanceof HoleCaveLadderUpObject;
 	}
 
 	@Override

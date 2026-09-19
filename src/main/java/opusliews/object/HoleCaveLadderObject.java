@@ -32,11 +32,10 @@ public class HoleCaveLadderObject extends GameObject {
 
 	public HoleCaveLadderObject() {
 		super();
-		this.toolType = ToolType.ALL;
+		this.toolType = ToolType.AXE;
 		this.toolTier = 0.0F;
 		this.objectHealth = 40;
 		this.drawDamage = true;
-		this.attackThrough = true;
 		this.isLightTransparent = true;
 		this.collision = new Rectangle(0, 0, 0, 0);
 		this.mapColor = new Color(138, 109, 37);

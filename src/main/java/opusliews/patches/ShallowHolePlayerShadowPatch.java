@@ -40,7 +40,7 @@ public class ShallowHolePlayerShadowPatch {
 		GameTile tile = level.getTile(tileX, tileY);
 
 		if (tile instanceof ShallowHoleTile) {
-			return ((ShallowHoleTile)tile).isMobInSinkingArea(mob);
+			return ((ShallowHoleTile)tile).shouldMobSinkVisually(mob);
 		}
 
 		return false;
