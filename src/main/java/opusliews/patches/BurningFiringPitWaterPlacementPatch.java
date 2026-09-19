@@ -16,7 +16,7 @@ import opusliews.tile.CharcoalPitSystem;
 		name = "canPlace",
 		arguments = {Level.class, int.class, int.class, PlayerMob.class, Line2D.class, InventoryItem.class, GNDItemMap.class}
 )
-public class BurningBrickPitWaterPlacementPatch {
+public class BurningFiringPitWaterPlacementPatch {
 	@Advice.OnMethodExit
 	public static void onExit(
 			@Advice.Argument(0) Level level,
@@ -26,7 +26,7 @@ public class BurningBrickPitWaterPlacementPatch {
 	) {
 		int tileX = necesse.engine.util.GameMath.getTileCoordinate(levelX);
 		int tileY = necesse.engine.util.GameMath.getTileCoordinate(levelY);
-		if (CharcoalPitSystem.isBurningUnfiredBrickPit(level, tileX, tileY)) {
+		if (CharcoalPitSystem.isBurningFiringPit(level, tileX, tileY)) {
 			result = "wrongtile";
 		}
 	}

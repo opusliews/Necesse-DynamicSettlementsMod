@@ -54,10 +54,7 @@ public final class CharcoalPitSystem {
 					|| isTorch(selected) || isFirestarter(selected);
 		} else if (tileID == TileRegistry.getTileID(FiringPitLogTile.stringID)) {
 			allowedAction = isShovel(selected) || isTorch(selected) || isFirestarter(selected);
-		} else if (tileID == TileRegistry.getTileID(UnfiredBrickPitTile.stringID)
-				|| tileID == TileRegistry.getTileID(UnfiredBrickLogPitTile.stringID)) {
-			allowedAction = isShovel(selected) || isTorch(selected) || isFirestarter(selected);
-		} else if (tileID == TileRegistry.getTileID(BurningUnfiredBrickPitTile.stringID)) {
+		} else if (tileID == TileRegistry.getTileID(BurningFiringPitTile.stringID)) {
 			return true;
 		} else if (tileID == TileRegistry.getTileID(CharcoalPitTile.stringID)) {
 			allowedAction = isDirtPile(selected) || isShovel(selected) || isTorch(selected);
@@ -127,12 +124,6 @@ public final class CharcoalPitSystem {
 			return;
 		}
 
-		if (tileID == TileRegistry.getTileID(UnfiredBrickPitTile.stringID)
-				|| tileID == TileRegistry.getTileID(UnfiredBrickLogPitTile.stringID)) {
-			migrateLegacyBrickPit(level, tileX, tileY, tileID == TileRegistry.getTileID(UnfiredBrickLogPitTile.stringID));
-			tryServerInteract(player, tileX, tileY);
-			return;
-		}
 
 		if (tileID == TileRegistry.getTileID(CharcoalPitTile.stringID)) {
 			if (isShovel(selected) && isShovelInRange(level, player, selected, tileX, tileY)) {
@@ -173,10 +164,10 @@ public final class CharcoalPitSystem {
 		return hasTrapdoor(level, tileX, tileY) || hasHoleCaveLadder(level, tileX, tileY);
 	}
 
-	public static boolean isBurningUnfiredBrickPit(Level level, int tileX, int tileY) {
+	public static boolean isBurningFiringPit(Level level, int tileX, int tileY) {
 		return level != null
 				&& level.isTileWithinBounds(tileX, tileY)
-				&& level.getTileID(tileX, tileY) == TileRegistry.getTileID(BurningUnfiredBrickPitTile.stringID);
+				&& level.getTileID(tileX, tileY) == TileRegistry.getTileID(BurningFiringPitTile.stringID);
 	}
 
 	public static boolean isPitTile(Level level, int tileX, int tileY) {
@@ -187,9 +178,7 @@ public final class CharcoalPitSystem {
 				|| tileID == TileRegistry.getTileID(DeepHoleTile.stringID)
 				|| getFiringPitCount(tileID) > 0
 				|| tileID == TileRegistry.getTileID(FiringPitLogTile.stringID)
-				|| tileID == TileRegistry.getTileID(UnfiredBrickPitTile.stringID)
-				|| tileID == TileRegistry.getTileID(UnfiredBrickLogPitTile.stringID)
-				|| tileID == TileRegistry.getTileID(BurningUnfiredBrickPitTile.stringID)
+				|| tileID == TileRegistry.getTileID(BurningFiringPitTile.stringID)
 				|| tileID == TileRegistry.getTileID(CharcoalPitTile.stringID)
 				|| tileID == TileRegistry.getTileID(CoveredCharcoalPitTile.stringID)
 				|| tileID == TileRegistry.getTileID(BurningCharcoalPitTile.stringID);
@@ -209,7 +198,7 @@ public final class CharcoalPitSystem {
 		if (level.getTileID(tileX, tileY) == TileRegistry.getTileID(ShallowHoleTile.stringID)) {
 			data.removeFiringItems(tileX, tileY);
 			data.removeLogs(tileX, tileY);
-			data.removeBrickBurn(tileX, tileY);
+			data.removeFiringBurn(tileX, tileY);
 		}
 		List<StoredFiringItem> items = data.getFiringItems(tileX, tileY);
 		if (items.size() >= FiringPitTile.maxItems) return;
@@ -248,7 +237,7 @@ public final class CharcoalPitSystem {
 		CharcoalPitLevelData data = CharcoalPitLevelData.get(level, false);
 		List<StoredLog> logs = data == null ? new ArrayList<>() : data.removeLogs(tileX, tileY);
 		List<StoredFiringItem> items = data == null ? new ArrayList<>() : data.removeFiringItems(tileX, tileY);
-		if (data != null) data.removeBrickBurn(tileX, tileY);
+		if (data != null) data.removeFiringBurn(tileX, tileY);
 
 		setTile(level, tileX, tileY, TileRegistry.getTileID(ShallowHoleTile.stringID));
 		for (StoredFiringItem item : items) dropItem(level, tileX, tileY, new InventoryItem(item.itemStringID, 1));
@@ -264,21 +253,8 @@ public final class CharcoalPitSystem {
 		if (storedLogAmount < requiredBrickFiringLogs) return;
 
 		long fullDayDuration = (long)level.getWorldEntity().getDayTimeMax() * 1000L;
-		data.startBrickBurn(tileX, tileY, level.getWorldEntity().getWorldTime() + 5000);//fullDayDuration);
-		setTile(level, tileX, tileY, TileRegistry.getTileID(BurningUnfiredBrickPitTile.stringID));
-	}
-
-	private static void migrateLegacyBrickPit(Level level, int tileX, int tileY, boolean hasLogs) {
-		CharcoalPitLevelData data = CharcoalPitLevelData.get(level, true);
-		if (data.getFiringItems(tileX, tileY).isEmpty()) {
-			List<StoredFiringItem> items = new ArrayList<>();
-			for (int i = 0; i < FiringPitTile.maxItems; i++) items.add(new StoredFiringItem("unfiredbrick"));
-			data.setFiringItems(tileX, tileY, items);
-		}
-		if (!hasLogs) data.removeLogs(tileX, tileY);
-		setTile(level, tileX, tileY, TileRegistry.getTileID(
-				hasLogs ? FiringPitLogTile.stringID : FiringPitTile.getStringID(FiringPitTile.maxItems)
-		));
+		data.startFiringBurn(tileX, tileY, level.getWorldEntity().getWorldTime() + fullDayDuration);
+		setTile(level, tileX, tileY, TileRegistry.getTileID(BurningFiringPitTile.stringID));
 	}
 
 
@@ -289,7 +265,7 @@ public final class CharcoalPitSystem {
 		if (data != null) {
 			data.removeLogs(tileX, tileY);
 			data.removeBurn(tileX, tileY);
-			data.removeBrickBurn(tileX, tileY);
+			data.removeFiringBurn(tileX, tileY);
 			data.removeFiringItems(tileX, tileY);
 			data.clearPendingCleanup(tileX, tileY);
 		}

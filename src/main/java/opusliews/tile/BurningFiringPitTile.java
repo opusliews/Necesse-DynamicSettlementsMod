@@ -1,27 +1,18 @@
 package opusliews.tile;
 
 import java.awt.Color;
-import java.util.List;
-
-import necesse.engine.gameLoop.tickManager.TickManager;
 import necesse.engine.sound.SoundEffect;
 import necesse.engine.sound.SoundManager;
 import necesse.engine.util.GameRandom;
-import necesse.engine.util.GameUtils;
 import necesse.entity.particle.Particle;
 import necesse.entity.particle.ParticleOption;
 import necesse.gfx.GameResources;
-import necesse.gfx.camera.GameCamera;
-import necesse.gfx.drawOptions.DrawOptions;
-import necesse.gfx.drawables.LevelTileLiquidDrawOptions;
-import necesse.gfx.drawables.LevelTileTerrainDrawOptions;
-import necesse.gfx.drawables.OrderableDrawables;
 import necesse.level.maps.Level;
 
-public class BurningUnfiredBrickPitTile extends UnfiredBrickLogPitTile {
-	public static final String stringID = "burningunfiredbrickpittile";
+public class BurningFiringPitTile extends FiringPitLogTile {
+	public static final String stringID = "burningfiringpittile";
 
-	public BurningUnfiredBrickPitTile() {
+	public BurningFiringPitTile() {
 		super();
 		mapColor = new Color(82, 61, 48);
 		lightLevel = 90;
@@ -30,15 +21,18 @@ public class BurningUnfiredBrickPitTile extends UnfiredBrickLogPitTile {
 	}
 
 	@Override
+	protected String getHoleTexturePath() {
+		return "tiles/firingpitburning";
+	}
+
+	@Override
 	public void tickEffect(Level level, int tileX, int tileY) {
-		if (!level.isClient()) {
-			return;
-		}
+		if (!level.isClient()) return;
 
 		for (int i = 0; i < 4; i++) {
 			if (GameRandom.globalRandom.getChance(0.55F)) {
 				ParticleOption particle = level.entityManager.addParticle(
-						tileX * 32.0F + GameRandom.globalRandom.getFloatBetween(0.0F,32.0F),
+						tileX * 32.0F + GameRandom.globalRandom.getFloatBetween(0.0F, 32.0F),
 						tileY * 32.0F + GameRandom.globalRandom.getFloatBetween(0.0F, 32.0F),
 						GameRandom.globalRandom.getChance(0.75F) ? Particle.GType.CRITICAL : Particle.GType.COSMETIC
 				)
@@ -77,6 +71,6 @@ public class BurningUnfiredBrickPitTile extends UnfiredBrickLogPitTile {
 						SoundEffect.effect(tileX * 32.0F + 16.0F, tileY * 32.0F + 16.0F).volume(0.35F)
 				);
 			}
-			}
+		}
 	}
 }

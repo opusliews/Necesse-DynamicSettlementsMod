@@ -202,13 +202,11 @@ public class DynamicSettlements {
 		ItemRegistry.registerItem(CrudeAxeItem.stringID, new CrudeAxeItem(), 6.0F, true);
 		TileRegistry.registerTile(ShallowHoleTile.stringID, new ShallowHoleTile(), 0.0F, false);
 		TileRegistry.registerTile(DeepHoleTile.stringID, new DeepHoleTile(), 0.0F, false);
-		TileRegistry.registerTile(UnfiredBrickPitTile.stringID, new UnfiredBrickPitTile(), 0.0F, false);
-		TileRegistry.registerTile(UnfiredBrickLogPitTile.stringID, new UnfiredBrickLogPitTile(), 0.0F, false);
 		for (int itemCount = 1; itemCount <= FiringPitTile.maxItems; itemCount++) {
 			TileRegistry.registerTile(FiringPitTile.getStringID(itemCount), new FiringPitTile(itemCount), 0.0F, false);
 		}
 		TileRegistry.registerTile(FiringPitLogTile.stringID, new FiringPitLogTile(), 0.0F, false);
-		TileRegistry.registerTile(BurningUnfiredBrickPitTile.stringID, new BurningUnfiredBrickPitTile(), 0.0F, false);
+		TileRegistry.registerTile(BurningFiringPitTile.stringID, new BurningFiringPitTile(), 0.0F, false);
 		TileRegistry.registerTile(CharcoalPitTile.stringID, new CharcoalPitTile(), 0.0F, false);
 		TileRegistry.registerTile(CoveredCharcoalPitTile.stringID, new CoveredCharcoalPitTile(), 0.0F, false);
 		TileRegistry.registerTile(BurningCharcoalPitTile.stringID, new BurningCharcoalPitTile(), 0.0F, false);

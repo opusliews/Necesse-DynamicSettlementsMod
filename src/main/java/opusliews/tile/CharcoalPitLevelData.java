@@ -31,7 +31,7 @@ public class CharcoalPitLevelData extends LevelData {
 	private final Map<Long, List<StoredLog>> pitLogs = new HashMap<>();
 	private final Map<Long, List<StoredFiringItem>> pitFiringItems = new HashMap<>();
 	private final Map<Long, Long> burnEndWorldTimes = new HashMap<>();
-	private final Map<Long, Long> brickBurnEndWorldTimes = new HashMap<>();
+	private final Map<Long, Long> firingBurnEndWorldTimes = new HashMap<>();
 	private final Map<Long, ProductionRecoveryState> productionRecoveryStates = new HashMap<>();
 	private final Map<Long, Integer> pendingCleanupPickupIDs = new HashMap<>();
 	private int produceUntilUnitsStocked;
@@ -179,27 +179,27 @@ public class CharcoalPitLevelData extends LevelData {
 		burnEndWorldTimes.remove(getKey(tileX, tileY));
 	}
 
-	public void startBrickBurn(int tileX, int tileY, long burnEndWorldTime) {
-		brickBurnEndWorldTimes.put(getKey(tileX, tileY), burnEndWorldTime);
+	public void startFiringBurn(int tileX, int tileY, long burnEndWorldTime) {
+		firingBurnEndWorldTimes.put(getKey(tileX, tileY), burnEndWorldTime);
 	}
 
-	public void removeBrickBurn(int tileX, int tileY) {
-		brickBurnEndWorldTimes.remove(getKey(tileX, tileY));
+	public void removeFiringBurn(int tileX, int tileY) {
+		firingBurnEndWorldTimes.remove(getKey(tileX, tileY));
 	}
 
-	public long getBrickBurnEndWorldTime(int tileX, int tileY) {
-		return brickBurnEndWorldTimes.getOrDefault(getKey(tileX, tileY), 0L);
+	public long getFiringBurnEndWorldTime(int tileX, int tileY) {
+		return firingBurnEndWorldTimes.getOrDefault(getKey(tileX, tileY), 0L);
 	}
 
 	@Override
 	public void tick() {
-		if (!isServer() || (burnEndWorldTimes.isEmpty() && brickBurnEndWorldTimes.isEmpty())) {
+		if (!isServer() || (burnEndWorldTimes.isEmpty() && firingBurnEndWorldTimes.isEmpty())) {
 			return;
 		}
 
 		long currentWorldTime = level.getWorldEntity().getWorldTime();
 		tickCharcoalBurns(currentWorldTime);
-		tickBrickBurns(currentWorldTime);
+		tickFiringBurns(currentWorldTime);
 	}
 
 	private void tickCharcoalBurns(long currentWorldTime) {
@@ -247,11 +247,11 @@ public class CharcoalPitLevelData extends LevelData {
 		}
 	}
 
-	private void tickBrickBurns(long currentWorldTime) {
-		if (brickBurnEndWorldTimes.isEmpty()) return;
+	private void tickFiringBurns(long currentWorldTime) {
+		if (firingBurnEndWorldTimes.isEmpty()) return;
 
-		int burningTileID = TileRegistry.getTileID(BurningUnfiredBrickPitTile.stringID);
-		Iterator<Map.Entry<Long, Long>> iterator = brickBurnEndWorldTimes.entrySet().iterator();
+		int burningTileID = TileRegistry.getTileID(BurningFiringPitTile.stringID);
+		Iterator<Map.Entry<Long, Long>> iterator = firingBurnEndWorldTimes.entrySet().iterator();
 
 		while (iterator.hasNext()) {
 			Map.Entry<Long, Long> entry = iterator.next();
@@ -276,10 +276,7 @@ public class CharcoalPitLevelData extends LevelData {
 			level.getLevelObject(tileX, tileY).checkAround();
 
 			int firedCount = 0;
-			if (firingItems == null || firingItems.isEmpty()) {
-				firingItems = new ArrayList<>();
-				for (int i = 0; i < 8; i++) firingItems.add(new StoredFiringItem("unfiredbrick"));
-			}
+			if (firingItems == null || firingItems.isEmpty()) continue;
 			Map<String, Integer> firedAmounts = new LinkedHashMap<>();
 			for (StoredFiringItem stored : firingItems) {
 				if (!(ItemRegistry.getItem(stored.itemStringID) instanceof FireableMatItem)) continue;
@@ -305,7 +302,7 @@ public class CharcoalPitLevelData extends LevelData {
 		Set<Long> pitKeys = new HashSet<>(pitLogs.keySet());
 		pitKeys.addAll(pitFiringItems.keySet());
 		pitKeys.addAll(burnEndWorldTimes.keySet());
-		pitKeys.addAll(brickBurnEndWorldTimes.keySet());
+		pitKeys.addAll(firingBurnEndWorldTimes.keySet());
 		for (Long pitKey : pitKeys) {
 			List<StoredLog> savedLogs = pitLogs.getOrDefault(pitKey, new ArrayList<>());
 			int tileX = (int)(pitKey >> 32);
@@ -319,9 +316,9 @@ public class CharcoalPitLevelData extends LevelData {
 				pit.addLong("burnEndWorldTime", burnEndWorldTime);
 			}
 
-			Long brickBurnEndWorldTime = brickBurnEndWorldTimes.get(pitKey);
-			if (brickBurnEndWorldTime != null) {
-				pit.addLong("brickBurnEndWorldTime", brickBurnEndWorldTime);
+			Long firingBurnEndWorldTime = firingBurnEndWorldTimes.get(pitKey);
+			if (firingBurnEndWorldTime != null) {
+				pit.addLong("firingBurnEndWorldTime", firingBurnEndWorldTime);
 			}
 
 			for (StoredLog log : savedLogs) {
@@ -367,7 +364,7 @@ public class CharcoalPitLevelData extends LevelData {
 		pitLogs.clear();
 		pitFiringItems.clear();
 		burnEndWorldTimes.clear();
-		brickBurnEndWorldTimes.clear();
+		firingBurnEndWorldTimes.clear();
 		productionRecoveryStates.clear();
 		pendingCleanupPickupIDs.clear();
 		produceUntilUnitsStocked = Math.max(0, save.getInt("produceUntilUnitsStocked", 0, false));
@@ -400,8 +397,8 @@ public class CharcoalPitLevelData extends LevelData {
 			long burnEndWorldTime = pit.getLong("burnEndWorldTime", 0L, false);
 			if (burnEndWorldTime > 0L) burnEndWorldTimes.put(key, burnEndWorldTime);
 
-			long brickBurnEndWorldTime = pit.getLong("brickBurnEndWorldTime", 0L, false);
-			if (brickBurnEndWorldTime > 0L) brickBurnEndWorldTimes.put(key, brickBurnEndWorldTime);
+			long firingBurnEndWorldTime = pit.getLong("firingBurnEndWorldTime", 0L, false);
+			if (firingBurnEndWorldTime > 0L) firingBurnEndWorldTimes.put(key, firingBurnEndWorldTime);
 		}
 
 		for (LoadData stateSave : save.getLoadDataByName("CHARCOAL_PRODUCTION_RECOVERY")) {
@@ -431,18 +428,18 @@ public class CharcoalPitLevelData extends LevelData {
 			return;
 		}
 
-		recoverBrickFiringState();
+		recoverFiringState();
 		recoverProductionJobs();
 		recoverCleanupJobs();
 	}
 
-	private void recoverBrickFiringState() {
-		if (brickBurnEndWorldTimes.isEmpty()) {
+	private void recoverFiringState() {
+		if (firingBurnEndWorldTimes.isEmpty()) {
 			return;
 		}
 
 		long currentWorldTime = level.getWorldEntity().getWorldTime();
-		tickBrickBurns(currentWorldTime);
+		tickFiringBurns(currentWorldTime);
 	}
 
 	private void recoverProductionJobs() {
