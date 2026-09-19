@@ -57,6 +57,22 @@ holecaveladder=Cave Ladder
 sharpenedstone=Sharpened Stone
 unfiredbrick=Unfired Brick
 brick=Brick
+unfiredingotmold=Unfired Ingot Mold
+ingotmold=Ingot Mold
+unfiredpickaxeheadmold=Unfired Pickaxe Head Mold
+pickaxeheadmold=Pickaxe Head Mold
+unfiredaxeheadmold=Unfired Axe Head Mold
+axeheadmold=Axe Head Mold
+unfiredshovelheadmold=Unfired Shovel Head Mold
+shovelheadmold=Shovel Head Mold
+unfiredsickleblademold=Unfired Sickle Blade Mold
+sickleblademold=Sickle Blade Mold
+unfiredscytheblademold=Unfired Scythe Blade Mold
+scytheblademold=Scythe Blade Mold
+unfiredshearsblademold=Unfired Shears Blade Mold
+shearsblademold=Shears Blade Mold
+unfiredswordblademold=Unfired Sword Blade Mold
+swordblademold=Sword Blade Mold
 
 [object]
 placedlog=Log

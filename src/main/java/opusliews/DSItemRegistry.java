@@ -94,6 +94,22 @@ public class DSItemRegistry {
 	public static final String magicfocusStringID = "magicfocus";
 	public static final String unfiredBrickStringID = "unfiredbrick";
 	public static final String brickStringID = "brick";
+	public static final String unfiredIngotMoldStringID = "unfiredingotmold";
+	public static final String ingotMoldStringID = "ingotmold";
+	public static final String unfiredPickaxeHeadMoldStringID = "unfiredpickaxeheadmold";
+	public static final String pickaxeHeadMoldStringID = "pickaxeheadmold";
+	public static final String unfiredAxeHeadMoldStringID = "unfiredaxeheadmold";
+	public static final String axeHeadMoldStringID = "axeheadmold";
+	public static final String unfiredShovelHeadMoldStringID = "unfiredshovelheadmold";
+	public static final String shovelHeadMoldStringID = "shovelheadmold";
+	public static final String unfiredSickleBladeMoldStringID = "unfiredsickleblademold";
+	public static final String sickleBladeMoldStringID = "sickleblademold";
+	public static final String unfiredScytheBladeMoldStringID = "unfiredscytheblademold";
+	public static final String scytheBladeMoldStringID = "scytheblademold";
+	public static final String unfiredShearsBladeMoldStringID = "unfiredshearsblademold";
+	public static final String shearsBladeMoldStringID = "shearsblademold";
+	public static final String unfiredSwordBladeMoldStringID = "unfiredswordblademold";
+	public static final String swordBladeMoldStringID = "swordblademold";
 
 	public static void registerItems() {
 		registerGlobalGroups();
@@ -186,6 +202,22 @@ public class DSItemRegistry {
 		registerMaterial(magicfocusStringID, new CraftingMaterialItem("Magic Focus", 500, Item.Rarity.NORMAL), 5.0F, "focus", "magic", "magic");
 		registerMaterial(unfiredBrickStringID, new MatItem(500, Item.Rarity.NORMAL), 1.0F, null, null, null);
 		registerMaterial(brickStringID, new MatItem(500, Item.Rarity.NORMAL), 2.0F, null, null, null);
+		registerMaterial(unfiredIngotMoldStringID, new MatItem(500, Item.Rarity.NORMAL), 1.0F, null, null, null);
+		registerMaterial(ingotMoldStringID, new MatItem(500, Item.Rarity.NORMAL), 2.0F, null, null, null);
+		registerMaterial(unfiredPickaxeHeadMoldStringID, new MatItem(500, Item.Rarity.NORMAL), 1.0F, null, null, null);
+		registerMaterial(pickaxeHeadMoldStringID, new MatItem(500, Item.Rarity.NORMAL), 2.0F, null, null, null);
+		registerMaterial(unfiredAxeHeadMoldStringID, new MatItem(500, Item.Rarity.NORMAL), 1.0F, null, null, null);
+		registerMaterial(axeHeadMoldStringID, new MatItem(500, Item.Rarity.NORMAL), 2.0F, null, null, null);
+		registerMaterial(unfiredShovelHeadMoldStringID, new MatItem(500, Item.Rarity.NORMAL), 1.0F, null, null, null);
+		registerMaterial(shovelHeadMoldStringID, new MatItem(500, Item.Rarity.NORMAL), 2.0F, null, null, null);
+		registerMaterial(unfiredSickleBladeMoldStringID, new MatItem(500, Item.Rarity.NORMAL), 1.0F, null, null, null);
+		registerMaterial(sickleBladeMoldStringID, new MatItem(500, Item.Rarity.NORMAL), 2.0F, null, null, null);
+		registerMaterial(unfiredScytheBladeMoldStringID, new MatItem(500, Item.Rarity.NORMAL), 1.0F, null, null, null);
+		registerMaterial(scytheBladeMoldStringID, new MatItem(500, Item.Rarity.NORMAL), 2.0F, null, null, null);
+		registerMaterial(unfiredShearsBladeMoldStringID, new MatItem(500, Item.Rarity.NORMAL), 1.0F, null, null, null);
+		registerMaterial(shearsBladeMoldStringID, new MatItem(500, Item.Rarity.NORMAL), 2.0F, null, null, null);
+		registerMaterial(unfiredSwordBladeMoldStringID, new MatItem(500, Item.Rarity.NORMAL), 1.0F, null, null, null);
+		registerMaterial(swordBladeMoldStringID, new MatItem(500, Item.Rarity.NORMAL), 2.0F, null, null, null);
 	}
 
 	private static void registerGlobalGroups() {
