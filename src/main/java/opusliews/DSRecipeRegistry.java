@@ -46,6 +46,30 @@ public class DSRecipeRegistry {
 
 		register(unfiredBrickStringID, 1, CrudeWorkbenchFeature.tech, ingredient("clay", 1));
 		register(unfiredBrickStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("clay", 1));
+
+		register(unfiredIngotMoldStringID, 1, CrudeWorkbenchFeature.tech, ingredient("clay", 1));
+		register(unfiredIngotMoldStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("clay", 1));
+
+		register(unfiredPickaxeHeadMoldStringID, 1, CrudeWorkbenchFeature.tech, ingredient("clay", 1));
+		register(unfiredPickaxeHeadMoldStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("clay", 1));
+
+		register(unfiredAxeHeadMoldStringID, 1, CrudeWorkbenchFeature.tech, ingredient("clay", 1));
+		register(unfiredAxeHeadMoldStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("clay", 1));
+
+		register(unfiredShovelHeadMoldStringID, 1, CrudeWorkbenchFeature.tech, ingredient("clay", 1));
+		register(unfiredShovelHeadMoldStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("clay", 1));
+
+		register(unfiredSickleBladeMoldStringID, 1, CrudeWorkbenchFeature.tech, ingredient("clay", 1));
+		register(unfiredSickleBladeMoldStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("clay", 1));
+
+		register(unfiredScytheBladeMoldStringID, 1, CrudeWorkbenchFeature.tech, ingredient("clay", 1));
+		register(unfiredScytheBladeMoldStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("clay", 1));
+
+		register(unfiredShearsBladeMoldStringID, 1, CrudeWorkbenchFeature.tech, ingredient("clay", 1));
+		register(unfiredShearsBladeMoldStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("clay", 1));
+
+		register(unfiredSwordBladeMoldStringID, 1, CrudeWorkbenchFeature.tech, ingredient("clay", 1));
+		register(unfiredSwordBladeMoldStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("clay", 1));
 	}
 
 	private static void registerExistingModRecipes() {
@@ -146,18 +170,17 @@ public class DSRecipeRegistry {
 		register(clockworkmechanismStringID, 1, RecipeTechRegistry.IRON_ANVIL, ingredient("ironbar", 2));
 		register(magicfocusStringID, 1, RecipeTechRegistry.ALCHEMY, ingredient("goldbar", 1), ingredient("manapotion", 1));
 		register("clothscraps", 4, RecipeTechRegistry.WORKSTATION, ingredient("wool", 1));
+		register(stringStringID, 1, CrudeWorkbenchFeature.tech, ingredient("grass", 4));
+		register(stringStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("grass", 4));
+		register(groundFiremoneStringID, 5, RecipeTechRegistry.GRAIN_MILL, ingredient("firemone", 1));
+		register(waxStringID, 1, RecipeTechRegistry.COOKING_POT, ingredient(honeycombFragmentStringID, 1));
+
 
 		// Tools
 		register(TrapdoorObject.openStringID, 1, CrudeWorkbenchFeature.tech, ingredient("dsanyplank", 4));
 		register(TrapdoorObject.openStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("dsanyplank", 4));
 		register(HoleCaveLadderObject.stringID, 1, CrudeWorkbenchFeature.tech, ingredient(woodenshaftStringID, 32));
 		register(HoleCaveLadderObject.stringID, 1, RecipeTechRegistry.WORKSTATION, ingredient(woodenshaftStringID, 32));
-
-		// Previously-added crafting materials
-		register(stringStringID, 1, CrudeWorkbenchFeature.tech, ingredient("grass", 4));
-		register(stringStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("grass", 4));
-		register(groundFiremoneStringID, 5, RecipeTechRegistry.GRAIN_MILL, ingredient("firemone", 1));
-		register(waxStringID, 1, RecipeTechRegistry.COOKING_POT, ingredient(honeycombFragmentStringID, 1));
 	}
 
 	private static Ingredient ingredient(String stringID, int amount) {

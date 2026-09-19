@@ -65,6 +65,7 @@ import opusliews.settler.BuilderRequestLevelData;
 import opusliews.settler.BuilderSettler;
 import opusliews.sleep.SettlementSleepSettingsLevelData;
 import opusliews.tile.*;
+import opusliews.tile.FiringPitLogTile;
 import necesse.level.maps.levelData.settlementData.zones.SettlementWorkZoneRegistry;
 
 import java.util.ArrayList;
@@ -203,6 +204,10 @@ public class DynamicSettlements {
 		TileRegistry.registerTile(DeepHoleTile.stringID, new DeepHoleTile(), 0.0F, false);
 		TileRegistry.registerTile(UnfiredBrickPitTile.stringID, new UnfiredBrickPitTile(), 0.0F, false);
 		TileRegistry.registerTile(UnfiredBrickLogPitTile.stringID, new UnfiredBrickLogPitTile(), 0.0F, false);
+		for (int itemCount = 1; itemCount <= FiringPitTile.maxItems; itemCount++) {
+			TileRegistry.registerTile(FiringPitTile.getStringID(itemCount), new FiringPitTile(itemCount), 0.0F, false);
+		}
+		TileRegistry.registerTile(FiringPitLogTile.stringID, new FiringPitLogTile(), 0.0F, false);
 		TileRegistry.registerTile(BurningUnfiredBrickPitTile.stringID, new BurningUnfiredBrickPitTile(), 0.0F, false);
 		TileRegistry.registerTile(CharcoalPitTile.stringID, new CharcoalPitTile(), 0.0F, false);
 		TileRegistry.registerTile(CoveredCharcoalPitTile.stringID, new CoveredCharcoalPitTile(), 0.0F, false);
