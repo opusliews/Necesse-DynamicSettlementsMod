@@ -9,6 +9,7 @@ import necesse.engine.localization.message.LocalMessage;
 import necesse.engine.network.packet.PacketChangeObject;
 import necesse.engine.network.server.ServerClient;
 import necesse.engine.registries.ObjectRegistry;
+import necesse.engine.registries.TileRegistry;
 import necesse.engine.util.LevelIdentifier;
 import necesse.entity.mobs.Attacker;
 import necesse.entity.mobs.PlayerMob;
@@ -27,6 +28,7 @@ import necesse.level.gameObject.GameObject;
 import necesse.level.maps.Level;
 import necesse.level.maps.light.GameLight;
 import opusliews.deephole.DeepHoleSystem;
+import opusliews.tile.DeepHoleTile;
 
 public class HoleCaveLadderUpObject extends GameObject {
 	public static final String stringID = "holecaveladderup";
@@ -90,7 +92,52 @@ public class HoleCaveLadderUpObject extends GameObject {
 
 	@Override
 	public String canPlace(Level level, int layerID, int x, int y, int rotation, boolean byPlayer, boolean ignoreOtherLayers) {
-		return level.getIdentifier().equals(LevelIdentifier.CAVE_IDENTIFIER) ? super.canPlace(level, layerID, x, y, rotation, byPlayer, ignoreOtherLayers) : "invalidlevel";
+		if (!level.getIdentifier().equals(LevelIdentifier.CAVE_IDENTIFIER)) return "invalidlevel";
+
+		String error = super.canPlace(level, layerID, x, y, rotation, byPlayer, ignoreOtherLayers);
+		if (error != null) return error;
+
+		if (level.isServer()) {
+			Level surface = level.getServer().world.getLevel(LevelIdentifier.SURFACE_IDENTIFIER);
+			if (surface == null) return "invalidlevel";
+
+			surface.regionManager.ensureTileIsLoaded(x, y);
+			if (DeepHoleSystem.isShaftTransitionAt(surface, x, y)) return "tilecovered";
+			if (surface.preventsLadderPlacement(x, y) != null) return "tilecovered";
+		}
+
+		return null;
+	}
+
+	@Override
+	public void placeObject(Level level, int layerID, int x, int y, int rotation, boolean byPlayer) {
+		super.placeObject(level, layerID, x, y, rotation, byPlayer);
+		if (!level.isServer() || layerID != 0) return;
+
+		Level surface = level.getServer().world.getLevel(LevelIdentifier.SURFACE_IDENTIFIER);
+		if (surface == null) return;
+
+		surface.regionManager.ensureTileIsLoaded(x, y);
+		int deepHoleID = TileRegistry.getTileID(DeepHoleTile.stringID);
+		int ladderID = ObjectRegistry.getObjectID(HoleCaveLadderObject.stringID);
+
+		if (surface.getTileID(x, y) == deepHoleID && surface.getObjectID(x, y) == ladderID) return;
+
+		if (surface.getObjectID(x, y) != 0) {
+			surface.entityManager.destroyObjectOverride(0, x, y);
+		}
+
+		surface.setTile(x, y, deepHoleID);
+		surface.sendTileUpdatePacket(x, y);
+
+		GameObject ladder = ObjectRegistry.getObject(ladderID);
+		ladder.placeObject(surface, x, y, 0, true);
+		level.getServer().network.sendToClientsWithTile(
+				new PacketChangeObject(surface, 0, x, y, ladderID),
+				surface,
+				x,
+				y
+		);
 	}
 
 	@Override

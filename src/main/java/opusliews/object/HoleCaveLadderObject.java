@@ -2,10 +2,14 @@ package opusliews.object;
 
 import java.awt.Color;
 import java.awt.Rectangle;
+import java.util.ArrayList;
 import java.util.List;
 import necesse.engine.gameLoop.tickManager.TickManager;
 import necesse.engine.localization.Localization;
+import necesse.engine.registries.ObjectRegistry;
 import necesse.engine.registries.TileRegistry;
+import necesse.engine.util.LevelIdentifier;
+import necesse.engine.network.packet.PacketChangeObject;
 import necesse.engine.network.server.ServerClient;
 import necesse.entity.mobs.Attacker;
 import necesse.entity.mobs.PlayerMob;
@@ -57,6 +61,16 @@ public class HoleCaveLadderObject extends GameObject {
 	}
 
 	@Override
+	public ArrayList getPlaceOptions(Level level, int levelX, int levelY, PlayerMob playerMob, int playerDir, boolean offsetMultiTile) {
+		ArrayList placeOptions = super.getPlaceOptions(level, levelX, levelY, playerMob, playerDir, offsetMultiTile);
+		int ladderUpID = ObjectRegistry.getObjectID(HoleCaveLadderUpObject.stringID);
+		if (ladderUpID != -1) {
+			placeOptions.addAll(ObjectRegistry.getObject(ladderUpID).getPlaceOptions(level, levelX, levelY, playerMob, playerDir, offsetMultiTile));
+		}
+		return placeOptions;
+	}
+
+	@Override
 	public String canPlace(Level level, int layerID, int x, int y, int rotation, boolean byPlayer, boolean ignoreOtherLayers) {
 		if (layerID != 0) return "wrongtile";
 		if (DeepHoleSystem.isShaftTransitionAt(level, x, y)) return "tilecovered";
@@ -86,6 +100,32 @@ public class HoleCaveLadderObject extends GameObject {
 		int tileID = level.getTileID(x, y);
 		return tileID == TileRegistry.getTileID(ShallowHoleTile.stringID)
 				|| tileID == TileRegistry.getTileID(DeepHoleTile.stringID);
+	}
+
+	@Override
+	public void onDestroyed(Level level, int layerID, int x, int y, Attacker attacker, ServerClient client, ArrayList itemsDropped) {
+		if (level.isServer() && level.getTileID(x, y) == TileRegistry.getTileID(DeepHoleTile.stringID)) {
+			Level cave = level.getServer().world.getLevel(LevelIdentifier.CAVE_IDENTIFIER);
+			if (cave != null) {
+				cave.regionManager.ensureTileIsLoaded(x, y);
+				int objectID = cave.getObjectID(x, y);
+				int customLadderUpID = ObjectRegistry.getObjectID(HoleCaveLadderUpObject.stringID);
+				int vanillaLadderUpID = ObjectRegistry.getObjectID("ladderup");
+
+				if (objectID == customLadderUpID || objectID == vanillaLadderUpID) {
+					cave.setObject(x, y, 0);
+					cave.replaceObjectEntity(x, y);
+					level.getServer().network.sendToClientsWithTile(
+							new PacketChangeObject(cave, 0, x, y, 0),
+							cave,
+							x,
+							y
+					);
+				}
+			}
+		}
+
+		super.onDestroyed(level, layerID, x, y, attacker, client, itemsDropped);
 	}
 
 	@Override
