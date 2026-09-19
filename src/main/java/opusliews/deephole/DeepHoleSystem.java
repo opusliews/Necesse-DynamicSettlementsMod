@@ -37,6 +37,7 @@ import opusliews.object.HoleCaveLadderObject;
 import opusliews.object.HoleCaveLadderUpObject;
 import opusliews.tile.DeepHoleTile;
 import opusliews.tile.ShallowHoleTile;
+import opusliews.tile.ShallowHoleSystem;
 
 import static opusliews.DynamicSettlements.rockSlideSound;
 
@@ -110,20 +111,17 @@ public final class DeepHoleSystem {
 		if (isTransitionAt(level, tileX, tileY)) return true;
 		if (level == null || !level.isServer()) return false;
 
-		LevelIdentifier linkedIdentifier;
-		if (level.getIdentifier().equals(LevelIdentifier.SURFACE_IDENTIFIER)) {
-			linkedIdentifier = LevelIdentifier.CAVE_IDENTIFIER;
-		}
-		else if (level.getIdentifier().equals(LevelIdentifier.CAVE_IDENTIFIER)) {
-			linkedIdentifier = LevelIdentifier.SURFACE_IDENTIFIER;
-		}
-		else {
-			return false;
+		LevelIdentifier upper = getUpperLevelIdentifier(level);
+		if (upper != null && level.getServer().world.levelExists(upper)) {
+			if (isTransitionAt(level.getServer().world.getLevel(upper), tileX, tileY)) return true;
 		}
 
-		if (!level.getServer().world.levelExists(linkedIdentifier)) return false;
-		Level linkedLevel = level.getServer().world.getLevel(linkedIdentifier);
-		return isTransitionAt(linkedLevel, tileX, tileY);
+		LevelIdentifier lower = getLowerLevelIdentifier(level);
+		if (lower != null && level.getServer().world.levelExists(lower)) {
+			if (isTransitionAt(level.getServer().world.getLevel(lower), tileX, tileY)) return true;
+		}
+
+		return false;
 	}
 
 	public static boolean fillDeepHole(Level surfaceLevel, int tileX, int tileY) {
@@ -133,7 +131,7 @@ public final class DeepHoleSystem {
 
 		int surfaceObjectID = surfaceLevel.getObjectID(tileX, tileY);
 		int customLadderID = ObjectRegistry.getObjectID(HoleCaveLadderObject.stringID);
-		int legacyLadderID = ObjectRegistry.getObjectID("ladderdown");
+		int legacyLadderID = ObjectRegistry.getObjectID(surfaceLevel.isBasicCaveLevel() ? "deepladderdown" : "ladderdown");
 		boolean hadLadder = surfaceObjectID == customLadderID || surfaceObjectID == legacyLadderID;
 
 		if (hadLadder) {
@@ -147,36 +145,39 @@ public final class DeepHoleSystem {
 			);
 		}
 
-		removeCaveShaftObject(surfaceLevel, tileX, tileY);
+		removeLowerShaftObject(surfaceLevel, tileX, tileY);
 
-		surfaceLevel.setTile(tileX, tileY, TileRegistry.dirtID);
+		surfaceLevel.setTile(tileX, tileY, ShallowHoleSystem.getFillTileID(surfaceLevel, tileX, tileY));
 		surfaceLevel.sendTileUpdatePacket(tileX, tileY);
 		surfaceLevel.getLevelTile(tileX, tileY).checkAround();
 		surfaceLevel.getLevelObject(tileX, tileY).checkAround();
 		return hadLadder;
 	}
 
-	private static void removeCaveShaftObject(Level surfaceLevel, int tileX, int tileY) {
-		if (!surfaceLevel.getServer().world.levelExists(LevelIdentifier.CAVE_IDENTIFIER)) return;
+	private static void removeLowerShaftObject(Level sourceLevel, int tileX, int tileY) {
+		LevelIdentifier lowerIdentifier = getLowerLevelIdentifier(sourceLevel);
+		if (lowerIdentifier == null || !sourceLevel.getServer().world.levelExists(lowerIdentifier)) return;
 
-		Level caveLevel = surfaceLevel.getServer().world.getLevel(LevelIdentifier.CAVE_IDENTIFIER);
-		caveLevel.regionManager.ensureTileIsLoaded(tileX, tileY);
+		Level lowerLevel = sourceLevel.getServer().world.getLevel(lowerIdentifier);
+		lowerLevel.regionManager.ensureTileIsLoaded(tileX, tileY);
 
-		int objectID = caveLevel.getObjectID(tileX, tileY);
+		int objectID = lowerLevel.getObjectID(tileX, tileY);
 		int ladderID = ObjectRegistry.getObjectID(HoleCaveLadderUpObject.stringID);
 		int lightID = ObjectRegistry.getObjectID(DeepHoleCeilingLightObject.stringID);
-		int legacyLadderID = ObjectRegistry.getObjectID("ladderup");
+		int legacyLadderID = lowerIdentifier.equals(LevelIdentifier.CAVE_IDENTIFIER)
+				? ObjectRegistry.getObjectID("ladderup")
+				: ObjectRegistry.getObjectID("deepcaveladder");
 		if (objectID != ladderID && objectID != lightID && objectID != legacyLadderID) return;
 
-		caveLevel.setObject(tileX, tileY, 0);
-		caveLevel.replaceObjectEntity(tileX, tileY);
-		caveLevel.getServer().network.sendToClientsWithTile(
-				new PacketChangeObject(caveLevel, 0, tileX, tileY, 0),
-				caveLevel,
+		lowerLevel.setObject(tileX, tileY, 0);
+		lowerLevel.replaceObjectEntity(tileX, tileY);
+		lowerLevel.getServer().network.sendToClientsWithTile(
+				new PacketChangeObject(lowerLevel, 0, tileX, tileY, 0),
+				lowerLevel,
 				tileX,
 				tileY
 		);
-		caveLevel.getLevelObject(tileX, tileY).checkAround();
+		lowerLevel.getLevelObject(tileX, tileY).checkAround();
 	}
 
 	public static boolean isFullyHidden(PlayerMob player) {
@@ -550,13 +551,19 @@ public final class DeepHoleSystem {
 		int tileX = player.getTileX();
 		int tileY = player.getTileY();
 		int ladderUpID = ObjectRegistry.getObjectID(HoleCaveLadderUpObject.stringID);
-		int vanillaLadderUpID = ObjectRegistry.getObjectID("ladderup");
+		int vanillaLadderUpID = ObjectRegistry.getObjectID(sourceLevel.isBasicCaveLevel() ? "deepcaveladder" : "ladderup");
 
 		if (client.achievementsLoaded()) {
 			client.achievements().SPELUNKER.markCompleted(client);
 		}
 
-		client.changeLevelCheck(LevelIdentifier.CAVE_IDENTIFIER, (destinationLevel) -> {
+		LevelIdentifier destinationIdentifier = getLowerLevelIdentifier(sourceLevel);
+		if (destinationIdentifier == null) {
+			player.buffManager.removeBuff(DeepHoleLadderDescentBuff.stringID, true);
+			return;
+		}
+
+		client.changeLevelCheck(destinationIdentifier, (destinationLevel) -> {
 			destinationLevel.regionManager.ensureTilesAreLoaded(tileX, tileY, tileX, tileY);
 			int existingObjectID = destinationLevel.getObjectID(tileX, tileY);
 			if (existingObjectID != ladderUpID && existingObjectID != vanillaLadderUpID) {
@@ -599,7 +606,7 @@ public final class DeepHoleSystem {
 					sourceLevel,
 					tileX,
 					tileY,
-					LevelIdentifier.CAVE_IDENTIFIER,
+					destinationIdentifier,
 					ObjectRegistry.getObjectID(HoleCaveLadderObject.stringID),
 					ladderUpID
 			);
@@ -622,7 +629,13 @@ public final class DeepHoleSystem {
 			client.achievements().SPELUNKER.markCompleted(client);
 		}
 
-		client.changeLevelCheck(LevelIdentifier.CAVE_IDENTIFIER, (destinationLevel) -> {
+		LevelIdentifier destinationIdentifier = getLowerLevelIdentifier(sourceLevel);
+		if (destinationIdentifier == null) {
+			player.buffManager.removeBuff(DeepHoleHiddenBuff.stringID, true);
+			return;
+		}
+
+		client.changeLevelCheck(destinationIdentifier, (destinationLevel) -> {
 			destinationLevel.regionManager.ensureTilesAreLoaded(tileX, tileY, tileX, tileY);
 
 			LadderDownObjectEntity.clearAndPlaceLadder(
@@ -655,7 +668,7 @@ public final class DeepHoleSystem {
 					"deepholetemporary",
 					tileX,
 					tileY,
-					LevelIdentifier.CAVE_IDENTIFIER,
+					destinationIdentifier,
 					tileX,
 					tileY
 			);
@@ -760,6 +773,20 @@ public final class DeepHoleSystem {
 		);
 	}
 
+	public static LevelIdentifier getLowerLevelIdentifier(Level level) {
+		if (level == null) return null;
+		if (level.isSurfaceLevel()) return LevelIdentifier.CAVE_IDENTIFIER;
+		if (level.isBasicCaveLevel()) return LevelIdentifier.DEEP_CAVE_IDENTIFIER;
+		return null;
+	}
+
+	public static LevelIdentifier getUpperLevelIdentifier(Level level) {
+		if (level == null) return null;
+		if (level.isBasicCaveLevel()) return LevelIdentifier.SURFACE_IDENTIFIER;
+		if (level.isDeepCaveLevel()) return LevelIdentifier.CAVE_IDENTIFIER;
+		return null;
+	}
+
 	private static boolean isDiggableHoleObject(Level level, int tileX, int tileY) {
 		int objectID = level.getObjectID(tileX, tileY);
 		return objectID == 0 || objectID == ObjectRegistry.getObjectID(HoleCaveLadderObject.stringID);
@@ -771,15 +798,16 @@ public final class DeepHoleSystem {
 
 	private static boolean hasSafeHoleLadder(Level level, int tileX, int tileY) {
 		int objectID = level.getObjectID(tileX, tileY);
-		return objectID == ObjectRegistry.getObjectID(HoleCaveLadderObject.stringID)
-				|| objectID == ObjectRegistry.getObjectID("ladderdown");
+		int legacyLadderID = ObjectRegistry.getObjectID(level.isBasicCaveLevel() ? "deepladderdown" : "ladderdown");
+		return objectID == ObjectRegistry.getObjectID(HoleCaveLadderObject.stringID) || objectID == legacyLadderID;
 	}
 
 	private static boolean ensureCustomHoleLadder(Level level, int tileX, int tileY) {
 		int customLadderID = ObjectRegistry.getObjectID(HoleCaveLadderObject.stringID);
 		int objectID = level.getObjectID(tileX, tileY);
 		if (objectID == customLadderID) return true;
-		if (objectID != ObjectRegistry.getObjectID("ladderdown")) return false;
+		int legacyLadderID = ObjectRegistry.getObjectID(level.isBasicCaveLevel() ? "deepladderdown" : "ladderdown");
+		if (objectID != legacyLadderID) return false;
 
 		level.setObject(tileX, tileY, customLadderID);
 		level.replaceObjectEntity(tileX, tileY);

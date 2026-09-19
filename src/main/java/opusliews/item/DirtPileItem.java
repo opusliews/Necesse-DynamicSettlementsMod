@@ -15,6 +15,7 @@ import necesse.inventory.item.ItemInteractAction;
 import necesse.inventory.item.matItem.MatItem;
 import necesse.level.maps.Level;
 import opusliews.tile.ShallowHoleTile;
+import opusliews.tile.ShallowHoleSystem;
 
 public class DirtPileItem extends MatItem implements ItemInteractAction {
 	public static final String stringID = "dirtpile";
@@ -69,7 +70,7 @@ public class DirtPileItem extends MatItem implements ItemInteractAction {
 
 		int tileX = GameMath.getTileCoordinate(x);
 		int tileY = GameMath.getTileCoordinate(y);
-		level.setTile(tileX, tileY, TileRegistry.dirtID);
+		level.setTile(tileX, tileY, ShallowHoleSystem.getFillTileID(level, tileX, tileY));
 
 		if (level.isServer()) {
 			level.sendTileUpdatePacket(tileX, tileY);

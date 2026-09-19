@@ -98,19 +98,21 @@ public class HoleCaveLadderUpObject extends GameObject {
 
 	@Override
 	public String canPlace(Level level, int layerID, int x, int y, int rotation, boolean byPlayer, boolean ignoreOtherLayers) {
-		if (!level.getIdentifier().equals(LevelIdentifier.CAVE_IDENTIFIER)) return "invalidlevel";
+		if (!level.isBasicCaveLevel() && !level.isDeepCaveLevel()) return "invalidlevel";
 
 		String error = super.canPlace(level, layerID, x, y, rotation, byPlayer, ignoreOtherLayers);
 		if (error != null) return error;
 		if (hasAdjacentShaftEntrance(level, x, y)) return "tilecovered";
 
 		if (level.isServer()) {
-			Level surface = level.getServer().world.getLevel(LevelIdentifier.SURFACE_IDENTIFIER);
-			if (surface == null) return "invalidlevel";
+			LevelIdentifier upperIdentifier = DeepHoleSystem.getUpperLevelIdentifier(level);
+			if (upperIdentifier == null) return "invalidlevel";
+			Level upper = level.getServer().world.getLevel(upperIdentifier);
+			if (upper == null) return "invalidlevel";
 
-			surface.regionManager.ensureTileIsLoaded(x, y);
-			if (DeepHoleSystem.isShaftTransitionAt(surface, x, y)) return "tilecovered";
-			if (surface.preventsLadderPlacement(x, y) != null) return "tilecovered";
+			upper.regionManager.ensureTileIsLoaded(x, y);
+			if (DeepHoleSystem.isShaftTransitionAt(upper, x, y)) return "tilecovered";
+			if (upper.preventsLadderPlacement(x, y) != null) return "tilecovered";
 		}
 
 		return null;
@@ -121,35 +123,30 @@ public class HoleCaveLadderUpObject extends GameObject {
 		super.placeObject(level, layerID, x, y, rotation, byPlayer);
 		if (!level.isServer() || layerID != 0) return;
 
-		Level surface = level.getServer().world.getLevel(LevelIdentifier.SURFACE_IDENTIFIER);
-		if (surface == null) return;
+		LevelIdentifier upperIdentifier = DeepHoleSystem.getUpperLevelIdentifier(level);
+		if (upperIdentifier == null) return;
+		Level upper = level.getServer().world.getLevel(upperIdentifier);
+		if (upper == null) return;
 
-		surface.regionManager.ensureTileIsLoaded(x, y);
+		upper.regionManager.ensureTileIsLoaded(x, y);
 		int deepHoleID = TileRegistry.getTileID(DeepHoleTile.stringID);
 		int ladderID = ObjectRegistry.getObjectID(HoleCaveLadderObject.stringID);
 
-		if (surface.getTileID(x, y) == deepHoleID && surface.getObjectID(x, y) == ladderID) return;
+		if (upper.getTileID(x, y) == deepHoleID && upper.getObjectID(x, y) == ladderID) return;
 
-		if (surface.getObjectID(x, y) != 0) {
-			surface.entityManager.destroyObjectOverride(0, x, y);
-		}
-
-		surface.setTile(x, y, deepHoleID);
-		surface.sendTileUpdatePacket(x, y);
+		if (upper.getObjectID(x, y) != 0) upper.entityManager.destroyObjectOverride(0, x, y);
+		upper.setTile(x, y, deepHoleID);
+		upper.sendTileUpdatePacket(x, y);
 
 		GameObject ladder = ObjectRegistry.getObject(ladderID);
-		ladder.placeObject(surface, x, y, 0, true);
-		level.getServer().network.sendToClientsWithTile(
-				new PacketChangeObject(surface, 0, x, y, ladderID),
-				surface,
-				x,
-				y
-		);
+		ladder.placeObject(upper, x, y, 0, true);
+		level.getServer().network.sendToClientsWithTile(new PacketChangeObject(upper, 0, x, y, ladderID), upper, x, y);
 	}
 
 	private static boolean hasAdjacentShaftEntrance(Level level, int tileX, int tileY) {
 		int customLadderUpID = ObjectRegistry.getObjectID(HoleCaveLadderUpObject.stringID);
 		int vanillaLadderUpID = ObjectRegistry.getObjectID("ladderup");
+		int vanillaDeepLadderID = ObjectRegistry.getObjectID("deepcaveladder");
 		int ceilingLightID = ObjectRegistry.getObjectID(DeepHoleCeilingLightObject.stringID);
 
 		for (int[] offset : cardinalOffsets) {
@@ -161,7 +158,7 @@ public class HoleCaveLadderUpObject extends GameObject {
 			}
 
 			int objectID = level.getObjectID(checkX, checkY);
-			if (objectID == customLadderUpID || objectID == vanillaLadderUpID || objectID == ceilingLightID) return true;
+			if (objectID == customLadderUpID || objectID == vanillaLadderUpID || objectID == vanillaDeepLadderID || objectID == ceilingLightID) return true;
 		}
 
 		return false;
@@ -213,6 +210,11 @@ public class HoleCaveLadderUpObject extends GameObject {
 								portal.destinationTileX,
 								portal.destinationTileY
 						);
+
+						if (surface.isBasicCaveLevel() && surface.getTileID(portal.destinationTileX, portal.destinationTileY) == TileRegistry.getTileID(DeepHoleTile.stringID)) {
+							surface.setTile(portal.destinationTileX, portal.destinationTileY, TileRegistry.dirtID);
+							surface.sendTileUpdatePacket(portal.destinationTileX, portal.destinationTileY);
+						}
 					}
 				}
 			}
@@ -222,14 +224,17 @@ public class HoleCaveLadderUpObject extends GameObject {
 
 	@Override
 	public ObjectEntity getNewObjectEntity(Level level, int x, int y) {
+		LevelIdentifier upperIdentifier = DeepHoleSystem.getUpperLevelIdentifier(level);
+		if (upperIdentifier == null) upperIdentifier = LevelIdentifier.SURFACE_IDENTIFIER;
 		return new LadderUpObjectEntity(
 				stringID,
 				level,
 				x,
 				y,
-				LevelIdentifier.SURFACE_IDENTIFIER,
+				upperIdentifier,
 				ObjectRegistry.getObjectID(HoleCaveLadderObject.stringID),
 				texture == null ? null : new GameSprite(texture, 0, 0, 32)
 		);
 	}
+
 }

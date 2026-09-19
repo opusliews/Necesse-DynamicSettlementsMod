@@ -14,6 +14,7 @@ import opusliews.item.BlueprintItem;
 import opusliews.item.InspectionGlassItem;
 import opusliews.item.MalignanceGogglesItem;
 import opusliews.item.ProjectEraserItem;
+import opusliews.item.TreasureShovelItem;
 
 public class DSItemRegistry {
 	public static final String featherStringID = "feather";
@@ -105,6 +106,7 @@ public class DSItemRegistry {
 		ItemRegistry.registerItem("projecteraser", new ProjectEraserItem(), 30.0F, true);
 		ItemRegistry.registerItem("inspectionglass", new InspectionGlassItem(), 20.0F, true);
 		ItemRegistry.registerItem("malignancegoggles", new MalignanceGogglesItem(), 100.0F, true);
+		ItemRegistry.registerItem(TreasureShovelItem.stringID, new TreasureShovelItem(), 200.0F, true);
 
 		registerMaterial(featherStringID, new MatItem(500, Item.Rarity.NORMAL), 3.0F, "ingredient", "organic", "feather");
 		registerMaterial(groundFiremoneStringID, new MatItem(500, Item.Rarity.NORMAL), 8.0F, "ingredient", "organic", "firemone");

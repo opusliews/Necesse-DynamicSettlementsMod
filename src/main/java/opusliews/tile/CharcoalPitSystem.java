@@ -113,7 +113,7 @@ public final class CharcoalPitSystem {
 				if (returnedLadder) {
 					dropItem(level, tileX, tileY, new InventoryItem(HoleCaveLadderObject.stringID, 1));
 				}
-				if (level.getTileID(tileX, tileY) == TileRegistry.dirtID) {
+				if (level.getTileID(tileX, tileY) != TileRegistry.getTileID(DeepHoleTile.stringID)) {
 					selected.setAmount(selected.getAmount() - 1);
 				}
 			}
@@ -297,7 +297,7 @@ public final class CharcoalPitSystem {
 
 	private static void fillHoleWithDirt(Level level, PlayerMob player, InventoryItem selected, int tileX, int tileY) {
 		selected.setAmount(selected.getAmount() - 1);
-		setTile(level, tileX, tileY, TileRegistry.dirtID);
+		setTile(level, tileX, tileY, ShallowHoleSystem.getFillTileID(level, tileX, tileY));
 		CharcoalPitLevelData data = CharcoalPitLevelData.get(level, false);
 		if (data != null) {
 			data.removeLogs(tileX, tileY);

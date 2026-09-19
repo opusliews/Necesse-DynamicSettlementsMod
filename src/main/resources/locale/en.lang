@@ -51,6 +51,7 @@ dirtpile=Pile of Dirt
 charcoal=Charcoal
 firestarter=Firestarter
 crudeaxe=Crude Axe
+treasureshovel=Treasure Shovel
 trapdoor=Trapdoor
 holecaveladder=Cave Ladder
 sharpenedstone=Sharpened Stone
@@ -107,6 +108,7 @@ inspectionglasstip=While selected in the hotbar, shows reinforcement levels when
 malignancegogglestip=While equipped, reveals tiles where hostile mobs can spawn
 shallowholedig=\n\nClick [input=mouse2] on a raw dirt tile [item=dirttile] to dig a hole on the ground.\n
 dirtpiletip=\n\nClick [input=mouse2] on a shallow hole [item=shallowholetile] to fill it with dirt, or\n[input=mouse2] on a charcoal pit to cover it with dirt.
+treasureshovel=Can dig holes in caves.\n
 
 
 [misc]

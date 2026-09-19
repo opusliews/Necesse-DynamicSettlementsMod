@@ -86,6 +86,7 @@ public final class DeepHolePathing {
 
 		int objectID = level.getObjectID(tileX, tileY);
 		return objectID != ObjectRegistry.getObjectID("holecaveladder")
-				&& objectID != ObjectRegistry.getObjectID("ladderdown");
+				&& objectID != ObjectRegistry.getObjectID("ladderdown")
+				&& objectID != ObjectRegistry.getObjectID("deepladderdown");
 	}
 }

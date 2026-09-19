@@ -511,7 +511,7 @@ public class CharcoalPitLevelData extends LevelData {
 		if (tileID == TileRegistry.getTileID(ShallowHoleTile.stringID)
 				|| tileID == TileRegistry.getTileID(CharcoalPitTile.stringID)
 				|| tileID == TileRegistry.getTileID(CoveredCharcoalPitTile.stringID)) {
-			level.setTile(tileX, tileY, TileRegistry.dirtID);
+			level.setTile(tileX, tileY, ShallowHoleSystem.getFillTileID(level, tileX, tileY));
 			level.sendTileUpdatePacket(tileX, tileY);
 			level.getLevelTile(tileX, tileY).checkAround();
 			level.getLevelObject(tileX, tileY).checkAround();

@@ -104,22 +104,18 @@ public class HoleCaveLadderObject extends GameObject {
 	@Override
 	public void onDestroyed(Level level, int layerID, int x, int y, Attacker attacker, ServerClient client, ArrayList itemsDropped) {
 		if (level.isServer() && level.getTileID(x, y) == TileRegistry.getTileID(DeepHoleTile.stringID)) {
-			Level cave = level.getServer().world.getLevel(LevelIdentifier.CAVE_IDENTIFIER);
-			if (cave != null) {
-				cave.regionManager.ensureTileIsLoaded(x, y);
-				int objectID = cave.getObjectID(x, y);
+			LevelIdentifier lowerIdentifier = DeepHoleSystem.getLowerLevelIdentifier(level);
+			if (lowerIdentifier != null && level.getServer().world.levelExists(lowerIdentifier)) {
+				Level lower = level.getServer().world.getLevel(lowerIdentifier);
+				lower.regionManager.ensureTileIsLoaded(x, y);
+				int objectID = lower.getObjectID(x, y);
 				int customLadderUpID = ObjectRegistry.getObjectID(HoleCaveLadderUpObject.stringID);
-				int vanillaLadderUpID = ObjectRegistry.getObjectID("ladderup");
+				int legacyLadderUpID = ObjectRegistry.getObjectID(level.isBasicCaveLevel() ? "deepcaveladder" : "ladderup");
 
-				if (objectID == customLadderUpID || objectID == vanillaLadderUpID) {
-					cave.setObject(x, y, 0);
-					cave.replaceObjectEntity(x, y);
-					level.getServer().network.sendToClientsWithTile(
-							new PacketChangeObject(cave, 0, x, y, 0),
-							cave,
-							x,
-							y
-					);
+				if (objectID == customLadderUpID || objectID == legacyLadderUpID) {
+					lower.setObject(x, y, 0);
+					lower.replaceObjectEntity(x, y);
+					level.getServer().network.sendToClientsWithTile(new PacketChangeObject(lower, 0, x, y, 0), lower, x, y);
 				}
 			}
 		}
