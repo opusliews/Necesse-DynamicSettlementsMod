@@ -1,5 +1,6 @@
 package opusliews.object;
 
+import necesse.engine.localization.Localization;
 import necesse.entity.mobs.friendly.human.HumanMob;
 import necesse.entity.mobs.friendly.human.humanShop.BlacksmithHumanMob;
 import necesse.level.maps.Level;
@@ -30,7 +31,7 @@ public class AnvilObjectEntity extends DynamicCraftingStationObjectEntity {
 
 	@Override
 	public String getSettlerCraftingActivityText() {
-		return "Working at anvil";
+		return Localization.translate("activities", "anvilcrafting");
 	}
 
 	@Override

@@ -1,5 +1,6 @@
 package opusliews.object;
 
+import necesse.engine.localization.Localization;
 import java.awt.Point;
 import java.util.ArrayList;
 import necesse.engine.localization.message.GameMessage;
@@ -311,7 +312,7 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 	}
 
 	public String getSettlerCraftingActivityText() {
-		return "Working at crafting station";
+		return Localization.translate("activities", "craftingstation");
 	}
 
 	public String getSettlerCraftingWorkItemStringID() {

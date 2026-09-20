@@ -1,5 +1,6 @@
 package opusliews.crafting;
 
+import necesse.engine.localization.Localization;
 import java.awt.Color;
 import java.awt.Point;
 import java.awt.Rectangle;
@@ -41,7 +42,7 @@ public class CraftingStorageSelectTool extends SelectTileGameTool {
 			boolean input,
 			Runnable finished
 	) {
-		super(level, new StaticMessage(input ? "Set input storages" : "Set output storages"), true);
+		super(level, new StaticMessage(Localization.translate("ui", input ? "craftingselectinputstorages" : "craftingselectoutputstorages")), true);
 		this.container = container;
 		this.input = input;
 		this.finished = finished;
@@ -97,10 +98,10 @@ public class CraftingStorageSelectTool extends SelectTileGameTool {
 		if (tooltip != null) {
 			if (Input.lastInputIsController) {
 				tooltips.add(new InputTooltip(ControllerInput.MENU_SELECT, tooltip.translate()));
-				tooltips.add(new InputTooltip(ControllerInput.MENU_BACK, "Done"));
+				tooltips.add(new InputTooltip(ControllerInput.MENU_BACK, Localization.translate("ui", "donebutton")));
 			} else {
 				tooltips.add(new InputTooltip(-100, tooltip.translate()));
-				tooltips.add(new InputTooltip(-99, "Done"));
+				tooltips.add(new InputTooltip(-99, Localization.translate("ui", "donebutton")));
 			}
 		}
 
@@ -148,17 +149,17 @@ public class CraftingStorageSelectTool extends SelectTileGameTool {
 		lastHoverBounds = null;
 
 		if (!container.stationEntity.isWithinStorageLinkRange(pos.tileX, pos.tileY)) {
-			return new StaticMessage("Storage must be within " + STORAGE_LINK_RADIUS + " tiles of the crafting station");
+			return new StaticMessage(Localization.translate("ui", "craftingstoragerange", "radius", STORAGE_LINK_RADIUS));
 		}
 
 		LevelObject master = getMaster(pos);
-		if (master == null) return new StaticMessage("Must be a storage container");
+		if (master == null) return new StaticMessage(Localization.translate("ui", "craftingstoragerequired"));
 
 		Point target = new Point(master.tileX, master.tileY);
 		lastHoverBounds = master.getMultiTile().getTileRectangle(master.tileX, master.tileY);
 
 		if (!container.stationEntity.isWithinStorageLinkRange(target.x, target.y)) {
-			return new StaticMessage("Storage must be within " + STORAGE_LINK_RADIUS + " tiles of the crafting station");
+			return new StaticMessage(Localization.translate("ui", "craftingstoragerange", "radius", STORAGE_LINK_RADIUS));
 		}
 
 		boolean alreadyLinked = input
@@ -168,16 +169,16 @@ public class CraftingStorageSelectTool extends SelectTileGameTool {
 
 		ObjectEntity objectEntity = master.getObjectEntity();
 		if (!(objectEntity instanceof OEInventory) || objectEntity == container.stationEntity) {
-			return new StaticMessage("Must be a storage container");
+			return new StaticMessage(Localization.translate("ui", "craftingstoragerequired"));
 		}
 
 		OEInventory inventory = (OEInventory)objectEntity;
 		if (inventory.getInventory() == null || inventory.getSettlementStorage() == null) {
-			return new StaticMessage("Must be a storage container");
+			return new StaticMessage(Localization.translate("ui", "craftingstoragerequired"));
 		}
 
 		if (input && container.stationEntity.isStorageInputForOtherStation(target)) {
-			return new StaticMessage("This container is already linked as another crafting station input");
+			return new StaticMessage(Localization.translate("ui", "craftingstorageinputused"));
 		}
 
 		return null;

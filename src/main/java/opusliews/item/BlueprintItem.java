@@ -102,14 +102,14 @@ public class BlueprintItem extends Item implements ItemInteractAction, Placeable
 
 	public String getBlueprintName(InventoryItem item) {
 		if (!hasBlueprint(item)) {
-			return "Empty Blueprint";
+			return Localization.translate("ui", "blueprintemptyname");
 		}
 
 		String name = item.getGndData().getString(blueprintNameKey);
 
 		return name == null || name.isEmpty()
-			? "Empty Blueprint"
-			: "Blueprint: " + name;
+			? Localization.translate("ui", "blueprintemptyname")
+			: Localization.translate("ui", "blueprintnamed", "name", name);
 	}
 
 	@Override
@@ -475,7 +475,7 @@ public class BlueprintItem extends Item implements ItemInteractAction, Placeable
 					(name, blueprintData) -> {
 						if (!slot.isStillValid(attackerMob, item)) {
 							mainGame.getClient().setMessage(
-									"Blueprint item is no longer available.",
+									Localization.translate("misc", "blueprintitemunavailable"),
 									Color.RED
 							);
 							return;
@@ -488,7 +488,7 @@ public class BlueprintItem extends Item implements ItemInteractAction, Placeable
 								|| hasBlueprint(currentItem)
 						) {
 							mainGame.getClient().setMessage(
-									"Blueprint item is no longer available.",
+									Localization.translate("misc", "blueprintitemunavailable"),
 									Color.RED
 							);
 							return;

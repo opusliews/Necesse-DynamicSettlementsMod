@@ -1,5 +1,6 @@
 package opusliews.crafting;
 
+import necesse.engine.localization.Localization;
 import necesse.inventory.InventoryItem;
 import necesse.inventory.InventoryItemsRemoved;
 import necesse.inventory.InventoryRange;
@@ -49,7 +50,7 @@ public final class CraftingTaskLogic {
 
 	public static String getStationCraftingProblem(CraftingTaskBoardObjectEntity board, Recipe recipe) {
 		DynamicCraftingStationObjectEntity station = getStationEntity(board);
-		return station == null ? "Board is not linked to a valid crafting station" : station.getSettlerCraftingProblem(recipe);
+		return station == null ? Localization.translate("ui", "craftingboardinvalidstation") : station.getSettlerCraftingProblem(recipe);
 	}
 
 	public static CraftingStoragePool getStoragePool(CraftingTaskBoardObjectEntity board) {
@@ -125,8 +126,8 @@ public final class CraftingTaskLogic {
 
 	public static CraftResult craftOne(CraftingTaskBoardObjectEntity board, Recipe recipe) {
 		CraftingStoragePool pool = getStoragePool(board);
-		if (!pool.hasInputs()) return CraftResult.problem("Input storage is not linked");
-		if (!pool.hasOutputs()) return CraftResult.problem("Output storage is not linked");
+		if (!pool.hasInputs()) return CraftResult.problem(Localization.translate("ui", "craftinginputnotlinked"));
+		if (!pool.hasOutputs()) return CraftResult.problem(Localization.translate("ui", "craftingoutputnotlinked"));
 
 		String stationProblem = getStationCraftingProblem(board, recipe);
 		if (stationProblem != null) return CraftResult.problem(stationProblem);
@@ -136,7 +137,7 @@ public final class CraftingTaskLogic {
 
 		InventoryItem expectedResult = recipe.resultItem.copy(recipe.resultAmount);
 		if (!pool.canFitResultAfterIngredients(recipe, expectedResult)) {
-			return CraftResult.problem("Output storage is full");
+			return CraftResult.problem(Localization.translate("ui", "craftingoutputfull"));
 		}
 
 		ArrayList<InventoryItemsRemoved> usedItems = new ArrayList<>();
@@ -150,12 +151,12 @@ public final class CraftingTaskLogic {
 		InventoryItem result = event.resultItem;
 		if (!pool.canFitResult(result)) {
 			revertUsedItems(usedItems);
-			return CraftResult.problem("Output storage is full");
+			return CraftResult.problem(Localization.translate("ui", "craftingoutputfull"));
 		}
 
 		if (!pool.addResultOrdered(result)) {
 			revertUsedItems(usedItems);
-			return CraftResult.problem("Output storage is full");
+			return CraftResult.problem(Localization.translate("ui", "craftingoutputfull"));
 		}
 
 		return CraftResult.success(result);
@@ -191,9 +192,9 @@ public final class CraftingTaskLogic {
 		public static CraftResult missing(List<String> missing) {
 			ArrayList<String> problems = new ArrayList<>();
 			if (missing.isEmpty()) {
-				problems.add("Missing ingredients");
+				problems.add(Localization.translate("ui", "craftingmissingingredients"));
 			} else {
-				problems.add("Missing ingredients: " + String.join(", ", missing));
+				problems.add(Localization.translate("ui", "craftingmissingingredientslist", "ingredients", String.join(", ", missing)));
 			}
 			return new CraftResult(false, null, problems);
 		}

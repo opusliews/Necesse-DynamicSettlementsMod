@@ -1,5 +1,6 @@
 package opusliews.crafting;
 
+import necesse.engine.localization.Localization;
 import java.awt.Color;
 import java.awt.Point;
 import necesse.engine.input.Input;
@@ -28,7 +29,7 @@ public class CraftingTaskBoardSelectTool extends SelectTileGameTool {
 			Level level,
 			Runnable finished
 	) {
-		super(level, new StaticMessage("Select task board"), true);
+		super(level, new StaticMessage(Localization.translate("ui", "craftingselecttaskboard")), true);
 		this.container = container;
 		this.finished = finished;
 	}
@@ -66,10 +67,10 @@ public class CraftingTaskBoardSelectTool extends SelectTileGameTool {
 		if (tooltip != null) {
 			if (Input.lastInputIsController) {
 				tooltips.add(new InputTooltip(ControllerInput.MENU_SELECT, tooltip.translate()));
-				tooltips.add(new InputTooltip(ControllerInput.MENU_BACK, "Done"));
+				tooltips.add(new InputTooltip(ControllerInput.MENU_BACK, Localization.translate("ui", "donebutton")));
 			} else {
 				tooltips.add(new InputTooltip(-100, tooltip.translate()));
-				tooltips.add(new InputTooltip(-99, "Done"));
+				tooltips.add(new InputTooltip(-99, Localization.translate("ui", "donebutton")));
 			}
 		}
 
@@ -104,7 +105,7 @@ public class CraftingTaskBoardSelectTool extends SelectTileGameTool {
 				return null;
 			}
 
-			return new StaticMessage("Must be an Crafting Task Board");
+			return new StaticMessage(Localization.translate("ui", "craftingtaskboardrequired"));
 		}
 
 		Point target = new Point(master.tileX, master.tileY);
@@ -116,12 +117,12 @@ public class CraftingTaskBoardSelectTool extends SelectTileGameTool {
 
 		ObjectEntity entity = master.getObjectEntity();
 		if (!(entity instanceof CraftingTaskBoardObjectEntity)) {
-			return new StaticMessage("Must be an Crafting Task Board");
+			return new StaticMessage(Localization.translate("ui", "craftingtaskboardrequired"));
 		}
 
 		Point owner = ((CraftingTaskBoardObjectEntity)entity).getLinkedStation();
 		if (owner != null && (owner.x != container.stationEntity.tileX || owner.y != container.stationEntity.tileY)) {
-			return new StaticMessage("This board is already linked to another crafting station");
+			return new StaticMessage(Localization.translate("ui", "craftingtaskboardused"));
 		}
 
 		return null;

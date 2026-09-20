@@ -1,5 +1,6 @@
 package opusliews.forms;
 
+import necesse.engine.localization.Localization;
 import necesse.engine.gameLoop.tickManager.TickManager;
 import necesse.engine.input.Control;
 import necesse.engine.input.InputEvent;
@@ -68,7 +69,7 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 		boardForm = (Form)addComponent(new Form("craftingTasks", FORM_WIDTH, 400));
 		FormFlow flow = new FormFlow(10);
 		boardForm.addComponent(flow.nextY(new FormLabel(
-				"Crafting Tasks",
+				Localization.translate("ui", "craftingtaskstitle"),
 				new FontOptions(32),
 				0,
 				boardForm.getWidth() / 2,
@@ -81,7 +82,7 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 				FormInputSize.SIZE_24,
 				ButtonColor.BASE,
 				getInterfaceStyle().container_storage_remove,
-				new GameMessage[]{new StaticMessage("Close")}
+				new GameMessage[]{new StaticMessage(Localization.translate("ui", "closebutton"))}
 		)).onClicked(e -> client.closeContainer(true));
 
 		int contentY = flow.next();
@@ -116,14 +117,14 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 		if (!taskContainer.hasValidLinkedStation()) {
 			FormFlow flow = new FormFlow(60);
 			content.addComponent(flow.nextY(new FormLabel(
-					"This board is not linked to a crafting station",
+					Localization.translate("ui", "craftingboardnotlinked"),
 					new FontOptions(20),
 					0,
 					content.getWidth() / 2,
 					0
 			), 8));
 			content.addComponent(flow.nextY(new FormLabel(
-					"Make the link from a crafting station first",
+					Localization.translate("ui", "craftingboardlinkfirst"),
 					new FontOptions(16),
 					0,
 					content.getWidth() / 2,
@@ -136,11 +137,11 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 		FormFlow flow = new FormFlow(5);
 		int headerY = flow.next(28);
 		FontOptions headerOptions = new FontOptions(20);
-		content.addComponent(new FormLabel("Item", headerOptions, 0, ITEM_WIDTH / 2, headerY + 2));
+		content.addComponent(new FormLabel(Localization.translate("ui", "itemheader"), headerOptions, 0, ITEM_WIDTH / 2, headerY + 2));
 		content.addComponent(new FormBreakLine(FormBreakLine.ALIGN_BEGINNING, ITEM_WIDTH, 0, 0, false));
-		content.addComponent(new FormLabel("Condition", headerOptions, 0, ITEM_WIDTH + CONDITION_WIDTH / 2, headerY + 2));
+		content.addComponent(new FormLabel(Localization.translate("ui", "conditionheader"), headerOptions, 0, ITEM_WIDTH + CONDITION_WIDTH / 2, headerY + 2));
 		content.addComponent(new FormBreakLine(FormBreakLine.ALIGN_BEGINNING, ITEM_WIDTH + CONDITION_WIDTH, 0, 1, false));
-		content.addComponent(new FormLabel("Status", headerOptions, 0, ITEM_WIDTH + CONDITION_WIDTH + STATUS_WIDTH / 2, headerY + 2));
+		content.addComponent(new FormLabel(Localization.translate("ui", "statusheader"), headerOptions, 0, ITEM_WIDTH + CONDITION_WIDTH + STATUS_WIDTH / 2, headerY + 2));
 		content.addComponent(new FormBreakLine(FormBreakLine.ALIGN_BEGINNING, ITEM_WIDTH + CONDITION_WIDTH + STATUS_WIDTH, 0, 1, false));
 		content.addComponent(new FormBreakLine(FormBreakLine.ALIGN_BEGINNING, 4, flow.next(), content.getWidth() - 8, true));
 		flow.next(4);
@@ -157,7 +158,7 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 
 		flow.next(12);
 		FormLocalTextButton addButton = content.addComponent(new FormLocalTextButton(
-				new StaticMessage("Add New Task"),
+				new StaticMessage(Localization.translate("ui", "addnewtask")),
 				content.getWidth() / 2 - 100,
 				flow.next(28),
 				200,
@@ -188,7 +189,7 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 		itemSelectForm.setHeight(420);
 
 		itemSelectForm.addComponent(new FormLabel(
-				"Select Item",
+				Localization.translate("ui", "selectitem"),
 				new FontOptions(20),
 				-1,
 				6,
@@ -204,7 +205,7 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 				100
 		));
 		searchInput.rightClickToClear = true;
-		searchInput.placeHolder = new StaticMessage("Search");
+		searchInput.placeHolder = new StaticMessage(Localization.translate("ui", "search"));
 
 		FormContentBox itemContent = itemSelectForm.addComponent(new FormContentBox(
 				0,
@@ -218,7 +219,7 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 		rebuild.run();
 
 		FormLocalTextButton back = itemSelectForm.addComponent(new FormLocalTextButton(
-				new StaticMessage("Back"),
+				new StaticMessage(Localization.translate("ui", "backbutton")),
 				itemSelectForm.getWidth() / 2 - 100,
 				382,
 				200,
@@ -237,7 +238,7 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 		LevelObject stationObject = taskContainer.getLinkedStation();
 		if (stationObject == null || !(stationObject.object instanceof CraftingStationObject)) {
 			itemContent.addComponent(new FormLabel(
-					"No craftable items found",
+					Localization.translate("ui", "nocraftableitems"),
 					new FontOptions(16),
 					0,
 					itemContent.getWidth() / 2,
@@ -350,7 +351,7 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 
 		if (categories.isEmpty()) {
 			itemContent.addComponent(new FormLabel(
-					searching ? "No matching items" : "No craftable items found",
+					searching ? Localization.translate("ui", "nomatchingitems") : Localization.translate("ui", "nocraftableitems"),
 					new FontOptions(16),
 					0,
 					itemContent.getWidth() / 2,
@@ -408,7 +409,7 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 		flow.next(12);
 
 		FormLocalTextButton back = conditionConfigForm.addComponent(flow.nextY(new FormLocalTextButton(
-				new StaticMessage("Back"),
+				new StaticMessage(Localization.translate("ui", "backbutton")),
 				4,
 				0,
 				conditionConfigForm.getWidth() - 8,
@@ -445,9 +446,12 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 	}
 
 	private String getConditionName(int type, String amount) {
-		return type == CraftingTask.CONDITION_KEEP_STOCKED
-				? "Keep " + amount + " Units Stocked"
-				: "Craft " + amount + " Units";
+		return Localization.translate(
+				"ui",
+				type == CraftingTask.CONDITION_KEEP_STOCKED ? "keepunitsstocked" : "craftunits",
+				"amount",
+				amount
+		);
 	}
 
 	@Override
@@ -547,7 +551,7 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 			FormContentIconButton up = addComponent(new FormContentIconButton(
 					4, 5, FormInputSize.SIZE_16, ButtonColor.BASE,
 					getInterfaceStyle().button_expanded_16,
-					new GameMessage[]{new StaticMessage("Move up")}
+					new GameMessage[]{new StaticMessage(Localization.translate("ui", "moveup"))}
 			));
 			up.mirrorY();
 			up.setActive(index > 0);
@@ -559,7 +563,7 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 			FormContentIconButton down = addComponent(new FormContentIconButton(
 					4, 23, FormInputSize.SIZE_16, ButtonColor.BASE,
 					getInterfaceStyle().button_expanded_16,
-					new GameMessage[]{new StaticMessage("Move down")}
+					new GameMessage[]{new StaticMessage(Localization.translate("ui", "movedown"))}
 			));
 			down.setActive(index < taskContainer.boardEntity.getTaskCount() - 1);
 			down.onClicked(e -> {
@@ -594,16 +598,16 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 					FormInputSize.SIZE_24,
 					ButtonColor.BASE,
 					getInterfaceStyle().button_collapsed_24,
-					new GameMessage[]{new StaticMessage("Change")}
+					new GameMessage[]{new StaticMessage(Localization.translate("ui", "changebutton"))}
 			));
 			change.onClicked(e -> {
 				SelectionFloatMenu menu = new SelectionFloatMenu(change, SelectionFloatMenu.Solid(new FontOptions(12)), 210);
-				menu.add("Craft X Units", () -> {
+				menu.add(Localization.translate("ui", "craftxunits"), () -> {
 					CraftingTask current = taskContainer.boardEntity.getTask(index);
 					if (current != null) taskContainer.updateTask(index, CraftingTask.CONDITION_CRAFT_UNITS, current.amount);
 					menu.remove();
 				});
-				menu.add("Keep X Units Stocked", () -> {
+				menu.add(Localization.translate("ui", "keepxunitsstocked"), () -> {
 					CraftingTask current = taskContainer.boardEntity.getTask(index);
 					if (current != null) taskContainer.updateTask(index, CraftingTask.CONDITION_KEEP_STOCKED, current.amount);
 					menu.remove();
@@ -618,7 +622,7 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 					FormInputSize.SIZE_24,
 					ButtonColor.BASE,
 					getInterfaceStyle().container_storage_config,
-					new GameMessage[]{new StaticMessage("Configure")}
+					new GameMessage[]{new StaticMessage(Localization.translate("ui", "configurebutton"))}
 			));
 			config.onClicked(e -> {
 				setupConditionConfig(index);
@@ -641,19 +645,19 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 			switch (task.status) {
 				case CraftingTask.STATUS_PAUSED:
 					statusIcon = new ButtonIcon(getInterfaceStyle(), "pause_song", new Color(145, 145, 145));
-					statusTooltip = "Paused";
+					statusTooltip = Localization.translate("ui", "statuspaused");
 					break;
 				case CraftingTask.STATUS_PROBLEM:
 					statusIcon = new ButtonIcon(getInterfaceStyle(), "settlement_error_icon", new Color(225, 55, 55));
-					statusTooltip = task.problemDetails.isEmpty() ? "Problem" : String.join("\n", task.problemDetails);
+					statusTooltip = task.problemDetails.isEmpty() ? Localization.translate("ui", "statusproblem") : String.join("\n", task.problemDetails);
 					break;
 				case CraftingTask.STATUS_IN_PROGRESS:
 					statusIcon = new ButtonIcon(getInterfaceStyle(), "rotate_clockwise_32", new Color(70, 145, 235));
-					statusTooltip = "In Progress";
+					statusTooltip = Localization.translate("ui", "statusinprogress");
 					break;
 				default:
 					statusIcon = new ButtonIcon(getInterfaceStyle(), "button_checked_20", new Color(55, 190, 70));
-					statusTooltip = "Finished";
+					statusTooltip = Localization.translate("ui", "statusfinished");
 					break;
 			}
 
@@ -673,7 +677,7 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 					FormInputSize.SIZE_24,
 					ButtonColor.BASE,
 					task.paused ? getInterfaceStyle().play_song : getInterfaceStyle().pause_song,
-					new GameMessage[]{new StaticMessage(task.paused ? "Resume" : "Pause")}
+					new GameMessage[]{new StaticMessage(Localization.translate("ui", task.paused ? "resumebutton" : "pausebutton"))}
 			));
 			pause.onClicked(e -> {
 				CraftingTask current = taskContainer.boardEntity.getTask(index);
@@ -689,7 +693,7 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 					FormInputSize.SIZE_24,
 					ButtonColor.RED,
 					getInterfaceStyle().container_storage_remove,
-					new GameMessage[]{new StaticMessage("Delete")}
+					new GameMessage[]{new StaticMessage(Localization.translate("ui", "deletebutton"))}
 			));
 			delete.onClicked(e -> {
 				taskContainer.deleteTask(index);
@@ -705,13 +709,19 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 			task = current;
 			FontOptions options = conditionLabel.getFontOptions();
 			FairType fairType = new FairType();
-			String prefix = task.conditionType == CraftingTask.CONDITION_KEEP_STOCKED ? "Keep " : "Craft ";
-			String suffix = task.conditionType == CraftingTask.CONDITION_KEEP_STOCKED ? " Units Stocked" : " Units";
-			fairType.append(options, prefix);
+			String prefix = Localization.translate(
+					"ui",
+					task.conditionType == CraftingTask.CONDITION_KEEP_STOCKED ? "keepword" : "craftword"
+			);
+			String suffix = Localization.translate(
+					"ui",
+					task.conditionType == CraftingTask.CONDITION_KEEP_STOCKED ? "unitsstocked" : "units"
+			);
+			fairType.append(options, prefix + " ");
 			fairType.append(createAmountGlyph(-1));
 			fairType.append(new FairAmountGlyph(options));
 			fairType.append(createAmountGlyph(1));
-			fairType.append(options, suffix);
+			fairType.append(options, " " + suffix);
 			conditionLabel.setCustomFairType(fairType);
 		}
 

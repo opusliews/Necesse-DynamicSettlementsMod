@@ -32,7 +32,7 @@ public class GuardFatigueDialoguePatch {
 		}
 
 		result.add(new DialogueForm.PersonalityData(
-				new StaticMessage("Fatigue Lvl " + fatigue),
+				new StaticMessage(Localization.translate("ui", "fatiguelevel", "level", fatigue)),
 				false,
 				new FatigueTooltipSupplier(fatigue)
 		));

@@ -55,7 +55,7 @@ public class NewBlueprintForm extends Form {
 
 		this.addComponent(
 				new FormLocalLabel(
-						new StaticMessage("Blueprint Name"),
+						new StaticMessage(Localization.translate("ui", "blueprintname")),
 						new FontOptions(16),
 						0,
 						72,
@@ -93,7 +93,7 @@ public class NewBlueprintForm extends Form {
 
 		FormLocalTextButton createButton = this.addComponent(
 				new FormLocalTextButton(
-						new StaticMessage("Create Blueprint"),
+						new StaticMessage(Localization.translate("ui", "createblueprint")),
 						30,
 						60,
 						155,
@@ -104,7 +104,7 @@ public class NewBlueprintForm extends Form {
 
 		FormLocalTextButton cancelButton = this.addComponent(
 				new FormLocalTextButton(
-						new StaticMessage("Cancel"),
+						new StaticMessage(Localization.translate("ui", "cancelbutton")),
 						195,
 						60,
 						155,

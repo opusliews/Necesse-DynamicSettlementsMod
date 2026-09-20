@@ -1,5 +1,6 @@
 package opusliews.tile;
 
+import necesse.engine.localization.Localization;
 import necesse.engine.registries.TileRegistry;
 import necesse.engine.util.GameMath;
 import necesse.entity.mobs.PlayerMob;
@@ -38,12 +39,12 @@ public final class ShallowHoleSystem {
 		if (!isHoleInteraction(level, tileX, tileY, player, item)) return false;
 
 		if (level.isDeepCaveLevel()) {
-			level.hudManager.addElement(new ChatBubbleText(player, "That ain't happening"));
+			level.hudManager.addElement(new ChatBubbleText(player, Localization.translate("ui", "deepholecannotdig")));
 			return true;
 		}
 
 		if (level.isBasicCaveLevel() && !TreasureShovelItem.stringID.equals(item.item.getStringID())) {
-			level.hudManager.addElement(new ChatBubbleText(player, "I'm gonna need a better shovel"));
+			level.hudManager.addElement(new ChatBubbleText(player, Localization.translate("ui", "caveholebettershovel")));
 			return true;
 		}
 

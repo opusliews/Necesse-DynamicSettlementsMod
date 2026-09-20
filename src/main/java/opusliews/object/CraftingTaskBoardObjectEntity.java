@@ -1,5 +1,6 @@
 package opusliews.object;
 
+import necesse.engine.localization.Localization;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -460,7 +461,7 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 				status = CraftingTask.STATUS_FINISHED;
 			} else if (getValidLinkedStationObject() == null) {
 				status = CraftingTask.STATUS_PROBLEM;
-				details = Collections.singletonList("Board is not linked to a valid crafting station");
+				details = Collections.singletonList(Localization.translate("ui", "craftingboardinvalidstation"));
 			} else if (task.conditionType == CraftingTask.CONDITION_KEEP_STOCKED
 					&& CraftingTaskLogic.countSettlementStock(this, settlement, task.itemID) >= task.amount) {
 				status = CraftingTask.STATUS_FINISHED;
@@ -468,7 +469,7 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 				necesse.inventory.recipe.Recipe recipe = CraftingTaskLogic.getRecipe(this, task.itemID);
 				if (recipe == null) {
 					status = CraftingTask.STATUS_PROBLEM;
-					details = Collections.singletonList("Recipe is not available at the linked crafting station");
+					details = Collections.singletonList(Localization.translate("ui", "craftingrecipeunavailable"));
 				} else {
 					String stationProblem = CraftingTaskLogic.getStationCraftingProblem(this, recipe);
 					if (stationProblem != null) {
@@ -482,10 +483,10 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 					List<String> missing = CraftingTaskLogic.getMissingIngredients(this, recipe);
 					if (!missing.isEmpty()) {
 						status = CraftingTask.STATUS_PROBLEM;
-						if (missing.size() == 1 && missing.get(0).equals("Input storage is not linked")) {
+						if (missing.size() == 1 && missing.get(0).equals(Localization.translate("ui", "craftinginputnotlinked"))) {
 							details = missing;
 						} else {
-							details = Collections.singletonList("Missing ingredients: " + String.join(", ", missing));
+							details = Collections.singletonList(Localization.translate("ui", "craftingmissingingredientslist", "ingredients", String.join(", ", missing)));
 						}
 					} else if (!CraftingTaskLogic.canFitResult(
 							this,
@@ -495,8 +496,8 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 						status = CraftingTask.STATUS_PROBLEM;
 						details = Collections.singletonList(
 								CraftingTaskLogic.hasOutputStorage(this)
-										? "Output storage is full"
-										: "Output storage is not linked"
+										? Localization.translate("ui", "craftingoutputfull")
+										: Localization.translate("ui", "craftingoutputnotlinked")
 						);
 					} else {
 						status = CraftingTask.STATUS_IN_PROGRESS;

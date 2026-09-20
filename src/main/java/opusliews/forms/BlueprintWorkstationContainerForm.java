@@ -1,5 +1,6 @@
 package opusliews.forms;
 
+import necesse.engine.localization.Localization;
 import necesse.engine.gameLoop.tickManager.TickManager;
 import necesse.engine.localization.message.GameMessage;
 import necesse.engine.localization.message.StaticMessage;
@@ -57,7 +58,7 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 		removeFlowerPotForm = (Form)addComponent(new Form("removeFlowerPot", 400, 120));
 
 		mainForm.addComponent(new FormLabel(
-				"Blueprint Workstation",
+				Localization.translate("ui", "blueprintworkstationtitle"),
 				new FontOptions(20),
 				FormLabel.ALIGN_MID,
 				mainForm.getWidth() / 2,
@@ -73,7 +74,7 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 		));
 
 		renameButton = (FormTextButton)mainForm.addComponent(new FormTextButton(
-				"Rename",
+				Localization.translate("ui", "renamebutton"),
 				64,
 				46,
 				108,
@@ -88,7 +89,7 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 				FormInputSize.SIZE_24,
 				ButtonColor.BASE,
 				getInterfaceStyle().copy_button,
-				new GameMessage[]{new StaticMessage("Copy blueprint")}
+				new GameMessage[]{new StaticMessage(Localization.translate("ui", "copyblueprint"))}
 		));
 		copyButton.onClicked(event -> copyBlueprint());
 
@@ -98,7 +99,7 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 				FormInputSize.SIZE_24,
 				ButtonColor.BASE,
 				getInterfaceStyle().paste_button,
-				new GameMessage[]{new StaticMessage("Paste blueprint")}
+				new GameMessage[]{new StaticMessage(Localization.translate("ui", "pasteblueprint"))}
 		));
 		pasteButton.onClicked(event -> pasteBlueprint());
 
@@ -119,7 +120,7 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 
 	private void setupRenameForm() {
 		renameForm.addComponent(new FormLabel(
-				"Blueprint Name",
+				Localization.translate("ui", "blueprintname"),
 				new FontOptions(16),
 				FormLabel.ALIGN_LEFT,
 				16,
@@ -135,7 +136,7 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 		));
 
 		FormTextButton saveButton = (FormTextButton)renameForm.addComponent(new FormTextButton(
-				"Rename",
+				Localization.translate("ui", "renamebutton"),
 				16,
 				64,
 				156,
@@ -146,7 +147,7 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 			String name = renameInput.getText().trim();
 
 			if (name.isEmpty()) {
-				client.setMessage("Blueprint name cannot be empty", Color.RED);
+				client.setMessage(Localization.translate("misc", "blueprintnameempty"), Color.RED);
 				return;
 			}
 
@@ -156,7 +157,7 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 		});
 
 		FormTextButton cancelButton = (FormTextButton)renameForm.addComponent(new FormTextButton(
-				"Cancel",
+				Localization.translate("ui", "cancelbutton"),
 				188,
 				64,
 				156,
@@ -168,7 +169,7 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 
 	private void setupRemoveFlowerPotForm() {
 		removeFlowerPotForm.addComponent(new FormLabel(
-				"Warning, This will remove potted plants as well",
+				Localization.translate("ui", "blueprintpottedwarning"),
 				new FontOptions(16),
 				FormLabel.ALIGN_MID,
 				removeFlowerPotForm.getWidth() / 2,
@@ -176,7 +177,7 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 		));
 
 		FormTextButton okButton = (FormTextButton)removeFlowerPotForm.addComponent(new FormTextButton(
-				"Ok",
+				Localization.translate("ui", "okbutton"),
 				32,
 				68,
 				156,
@@ -194,7 +195,7 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 		});
 
 		FormTextButton cancelButton = (FormTextButton)removeFlowerPotForm.addComponent(new FormTextButton(
-				"Cancel",
+				Localization.translate("ui", "cancelbutton"),
 				212,
 				68,
 				156,
@@ -246,7 +247,7 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 				throw new IllegalArgumentException();
 			}
 		} catch (Exception e) {
-			client.setMessage("Clipboard does not contain valid blueprint JSON", Color.RED);
+			client.setMessage(Localization.translate("misc", "blueprintclipboardinvalid"), Color.RED);
 			return;
 		}
 
@@ -277,7 +278,7 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 
 		if (!hasBlueprint) {
 			elementsBox.addComponent(new FormLabel(
-					"Place a blueprint in the slot above.",
+					Localization.translate("ui", "blueprintslotempty"),
 					new FontOptions(16),
 					FormLabel.ALIGN_LEFT,
 					8,
@@ -294,7 +295,7 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 			data = BlueprintData.fromJson(blueprintItem.getBlueprintJson(item));
 		} catch (Exception e) {
 			elementsBox.addComponent(new FormLabel(
-					"Invalid blueprint data",
+					Localization.translate("ui", "blueprintinvaliddata"),
 					new FontOptions(16),
 					FormLabel.ALIGN_LEFT,
 					8,
@@ -310,7 +311,7 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 
 		if (groups.isEmpty()) {
 			elementsBox.addComponent(new FormLabel(
-					"Blueprint has no elements.",
+					Localization.translate("ui", "blueprintnoelements"),
 					new FontOptions(16),
 					FormLabel.ALIGN_LEFT,
 					8,
@@ -378,7 +379,7 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 
 				if (BlueprintObjectMaterialResolver.isPottedFlowerObject(objectID)) {
 					addObjectGroupCount(groups, "flowerpot", null);
-					addObjectGroupCount(groups, objectID, " (Potted)");
+					addObjectGroupCount(groups, objectID, " (" + Localization.translate("ui", "blueprintpotted") + ")");
 				} else {
 					addObjectGroupCount(groups, objectID, null);
 				}
@@ -388,7 +389,7 @@ public class BlueprintWorkstationContainerForm extends ContainerFormSwitcher {
 				String key = "wire:all";
 				ElementGroup group = groups.get(key);
 				if (group == null) {
-					group = new ElementGroup(key, "Wire");
+					group = new ElementGroup(key, Localization.translate("ui", "wire"));
 					groups.put(key, group);
 				}
 				group.count += Integer.bitCount(element.getWireMask());

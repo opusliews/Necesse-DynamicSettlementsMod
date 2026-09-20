@@ -1,5 +1,6 @@
 package opusliews.forms;
 
+import necesse.engine.localization.Localization;
 import java.util.ArrayList;
 import java.util.Collection;
 import necesse.engine.GlobalData;
@@ -58,19 +59,19 @@ public class DynamicCraftingStationContainerForm extends CraftingStationContaine
 		craftingForm.setWidth(vanillaWidth + leftOffset + OUTPUT_PANEL_GAP + OUTPUT_PANEL_WIDTH + 4);
 
 		FormTwoLineTextButton inputButton = craftingForm.addComponent(new FormTwoLineTextButton(
-				"Set Input", "Storage",
+				Localization.translate("ui", "setinput"), Localization.translate("ui", "storage"),
 				7, 104,
 				LEFT_PANEL_WIDTH - 14, 48));
 		inputButton.onClicked(event -> startStorageSelection(true));
 
 		FormTwoLineTextButton outputButton = craftingForm.addComponent(new FormTwoLineTextButton(
-				"Set Output", "Storage",
+				Localization.translate("ui", "setoutput"), Localization.translate("ui", "storage"),
 				7, 164,
 				LEFT_PANEL_WIDTH - 14, 48));
 		outputButton.onClicked(event -> startStorageSelection(false));
 
 		FormTwoLineTextButton taskBoardButton = craftingForm.addComponent(new FormTwoLineTextButton(
-				"Select Task", "Board",
+				Localization.translate("ui", "selecttask"), Localization.translate("ui", "board"),
 				7, 224,
 				LEFT_PANEL_WIDTH - 14, 48));
 		taskBoardButton.onClicked(event -> startTaskBoardSelection());

@@ -2,7 +2,6 @@ package opusliews;
 
 import necesse.engine.loading.ClientLoader;
 import necesse.engine.localization.message.LocalMessage;
-import necesse.engine.localization.message.StaticMessage;
 import necesse.engine.modLoader.LoadedMod;
 import necesse.engine.modLoader.ModListData;
 import necesse.engine.modLoader.ModLoader;
@@ -94,11 +93,7 @@ public class DynamicSettlements {
 		};
 
 		form.addComponent(new FormLocalLabel(
-				new StaticMessage(
-						"\"Dynamic Settlements\" cannot be loaded alongside \"Settlement Builders\".\n\n"
-								+ "\"Dynamic Settlements\" already includes all \"Settlement Builders\" features.\n\n"
-								+ "Choose which mod you want to disable:"
-				),
+				new LocalMessage("ui", "modincompatibilitymessage"),
 				new FontOptions(20),
 				0,
 				form.getWidth() / 2,
@@ -108,7 +103,7 @@ public class DynamicSettlements {
 
 		FormLocalTextButton disableSettlementBuilders = form.addComponent(
 				new FormLocalTextButton(
-						new StaticMessage("Disable \"Settlement Builders\" and restart"),
+						new LocalMessage("ui", "disablesettlementbuildersrestart"),
 						20,
 						175,
 						form.getWidth() - 40
@@ -121,7 +116,7 @@ public class DynamicSettlements {
 
 		FormLocalTextButton disableDynamicSettlements = form.addComponent(
 				new FormLocalTextButton(
-						new StaticMessage("Disable \"Dynamic Settlements\" and restart"),
+						new LocalMessage("ui", "disabledynamicsettlementsrestart"),
 						20,
 						225,
 						form.getWidth() - 40
