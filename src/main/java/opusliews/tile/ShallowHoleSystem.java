@@ -12,11 +12,15 @@ import opusliews.item.TreasureShovelItem;
 import opusliews.network.PacketDigShallowHole;
 
 public final class ShallowHoleSystem {
-	private static final int[][] cardinalOffsets = {
+	public static final int[][] surroundingOffsets = {
 			{0, -1},
+			{1, -1},
 			{1, 0},
+			{1, 1},
 			{0, 1},
-			{-1, 0}
+			{-1, 1},
+			{-1, 0},
+			{-1, -1}
 	};
 
 	private ShallowHoleSystem() {
@@ -86,15 +90,15 @@ public final class ShallowHoleSystem {
 
 	private static boolean canDig(Level level, int tileX, int tileY, PlayerMob player, InventoryItem item) {
 		if (!isHoleInteraction(level, tileX, tileY, player, item)) return false;
-		return !hasCardinalPit(level, tileX, tileY);
+		return !hasAdjacentPit(level, tileX, tileY);
 	}
 
 	private static int getDigTileID(Level level, int tileX, int tileY) {
 		return TileRegistry.dirtID;
 	}
 
-	private static boolean hasCardinalPit(Level level, int tileX, int tileY) {
-		for (int[] offset : cardinalOffsets) {
+	public static boolean hasAdjacentPit(Level level, int tileX, int tileY) {
+		for (int[] offset : surroundingOffsets) {
 			int checkX = tileX + offset[0];
 			int checkY = tileY + offset[1];
 			if (CharcoalPitSystem.isPitTile(level, checkX, checkY)) return true;

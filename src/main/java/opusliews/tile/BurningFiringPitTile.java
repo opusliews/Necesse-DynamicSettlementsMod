@@ -4,6 +4,7 @@ import java.awt.Color;
 import necesse.engine.sound.SoundEffect;
 import necesse.engine.sound.SoundManager;
 import necesse.engine.util.GameRandom;
+import necesse.entity.mobs.Mob;
 import necesse.entity.particle.Particle;
 import necesse.entity.particle.ParticleOption;
 import necesse.gfx.GameResources;
@@ -72,5 +73,10 @@ public class BurningFiringPitTile extends FiringPitLogTile {
 				);
 			}
 		}
+	}
+
+	@Override
+	public void tick(Mob mob, Level level, int tileX, int tileY) {
+		FireTileDamage.tick(mob, level);
 	}
 }

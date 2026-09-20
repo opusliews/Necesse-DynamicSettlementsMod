@@ -25,9 +25,13 @@ public class CharcoalProductionZone extends SettlementTileTickZone {
 	public static final EventVariable hideZones = new EventVariable(false);
 	public static final int[][] cardinalOffsets = {
 		{0, -1},
+		{1, -1},
 		{1, 0},
+		{1, 1},
 		{0, 1},
-		{-1, 0}
+		{-1, 1},
+		{-1, 0},
+		{-1, -1}
 	};
 
 	@Override

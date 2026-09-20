@@ -49,7 +49,7 @@ public final class FirestarterSystem {
 				x,
 				y,
 				new GameRandom(GameRandom.globalRandom.nextLong()),
-				new GameDamage(0.0F)
+				new GameDamage(10.0F)
 		));
 	}
 

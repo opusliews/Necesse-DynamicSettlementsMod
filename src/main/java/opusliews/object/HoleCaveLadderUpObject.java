@@ -25,6 +25,7 @@ import necesse.level.gameObject.GameObject;
 import necesse.level.maps.Level;
 import necesse.level.maps.light.GameLight;
 import opusliews.deephole.DeepHoleSystem;
+import opusliews.tile.CharcoalPitSystem;
 import opusliews.tile.DeepHoleTile;
 
 import java.awt.*;
@@ -110,8 +111,9 @@ public class HoleCaveLadderUpObject extends GameObject {
 			Level upper = level.getServer().world.getLevel(upperIdentifier);
 			if (upper == null) return "invalidlevel";
 
-			upper.regionManager.ensureTileIsLoaded(x, y);
+			upper.regionManager.ensureTilesAreLoaded(x - 1, y - 1, x + 1, y + 1);
 			if (DeepHoleSystem.isShaftTransitionAt(upper, x, y)) return "tilecovered";
+			if (hasAdjacentPit(upper, x, y)) return "tilecovered";
 			if (upper.preventsLadderPlacement(x, y) != null) return "tilecovered";
 		}
 
@@ -161,6 +163,16 @@ public class HoleCaveLadderUpObject extends GameObject {
 			if (objectID == customLadderUpID || objectID == vanillaLadderUpID || objectID == vanillaDeepLadderID || objectID == ceilingLightID) return true;
 		}
 
+		return false;
+	}
+
+
+	private static boolean hasAdjacentPit(Level level, int tileX, int tileY) {
+		for (int[] offset : cardinalOffsets) {
+			int checkX = tileX + offset[0];
+			int checkY = tileY + offset[1];
+			if (level.isTileWithinBounds(checkX, checkY) && CharcoalPitSystem.isPitTile(level, checkX, checkY)) return true;
+		}
 		return false;
 	}
 

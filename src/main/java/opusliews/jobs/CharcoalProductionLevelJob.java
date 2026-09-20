@@ -1,5 +1,6 @@
 package opusliews.jobs;
 
+import java.awt.Point;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -13,6 +14,7 @@ import necesse.engine.registries.GlobalIngredientRegistry;
 import necesse.engine.registries.ItemRegistry;
 import necesse.engine.registries.TileRegistry;
 import necesse.engine.save.LoadData;
+import necesse.entity.mobs.Mob;
 import necesse.entity.mobs.friendly.human.HumanMob;
 import necesse.entity.mobs.job.EntityJobWorker;
 import necesse.entity.mobs.job.FoundJob;
@@ -46,6 +48,7 @@ import opusliews.tile.CharcoalPitLevelData.ProductionStage;
 import opusliews.tile.CharcoalPitTile;
 import opusliews.tile.BurningCharcoalPitTile;
 import opusliews.tile.CoveredCharcoalPitTile;
+import opusliews.tile.FireHazardPathing;
 import opusliews.tile.ShallowHoleTile;
 
 public class CharcoalProductionLevelJob extends TileLevelJob {
@@ -138,10 +141,44 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 			private long pitIgnitionCompleteTime;
 			private boolean burnStarted;
 			private boolean loggedPitActionStart;
+			private Point workTile;
 
 			@Override
 			public JobMoveToTile getMoveToTile(JobMoveToTile lastTile) {
-				return new JobMoveToTile(tileX, tileY, true);
+				Point selectedWorkTile = getWorkTile();
+				if (selectedWorkTile == null) return new JobMoveToTile(tileX, tileY - 1, false);
+				return new JobMoveToTile(selectedWorkTile.x, selectedWorkTile.y, false);
+			}
+
+			private Point getWorkTile() {
+				HumanMob mob = (HumanMob)worker.getMobWorker();
+				if (isValidWorkTile(mob, workTile, false)) return workTile;
+
+				Point currentTile = new Point(mob.getTileX(), mob.getTileY());
+				if (isValidWorkTile(mob, currentTile, false)) {
+					workTile = currentTile;
+					return workTile;
+				}
+
+				for (int[] offset : CharcoalProductionZone.cardinalOffsets) {
+					Point candidate = new Point(tileX + offset[0], tileY + offset[1]);
+					if (isValidWorkTile(mob, candidate, true)) {
+						workTile = candidate;
+						return workTile;
+					}
+				}
+
+				workTile = null;
+				return null;
+			}
+
+			private boolean isValidWorkTile(HumanMob mob, Point candidate, boolean checkReachable) {
+				if (candidate == null || !getLevel().isTileWithinBounds(candidate.x, candidate.y)) return false;
+				int dx = Math.abs(candidate.x - tileX);
+				int dy = Math.abs(candidate.y - tileY);
+				if (dx > 1 || dy > 1 || (dx == 0 && dy == 0)) return false;
+				if (FireHazardPathing.isFireHazard(getLevel(), candidate.x, candidate.y)) return false;
+				return !checkReachable || mob.estimateCanMoveTo(candidate.x, candidate.y, false);
 			}
 
 			@Override
@@ -431,6 +468,11 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 					return ActiveJobResult.FAILED;
 				}
 
+				nudgeIdleMobsOffPit();
+				if (isPitTileOccupied()) {
+					return ActiveJobResult.PERFORMING;
+				}
+
 				long fullDayDuration = (long)getLevel().getWorldEntity().getDayTimeMax() * 1000L;
 				long burnEndWorldTime = getLevel().getWorldEntity().getWorldTime() + fullDayDuration;
 				pitData.startBurn(tileX, tileY, burnEndWorldTime);
@@ -455,6 +497,65 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 
 			private CharcoalPitLevelData pitDataForRecovery() {
 				return CharcoalPitLevelData.get(getLevel(), true);
+			}
+
+			private void nudgeIdleMobsOffPit() {
+				int centerX = tileX * 32 + 16;
+				int centerY = tileY * 32 + 16;
+
+				getLevel().entityManager.mobs
+						.streamInRegionsInTileRange(centerX, centerY, 1)
+						.filter(mob -> !mob.isFlying() && mob.getTileX() == tileX && mob.getTileY() == tileY)
+						.filter(mob -> mob.dx * mob.dx + mob.dy * mob.dy < 1.0F)
+						.forEach(this::nudgeMobOffPit);
+			}
+
+			private void nudgeMobOffPit(Mob mob) {
+				Point bestTile = null;
+				float bestDistance = Float.MAX_VALUE;
+
+				for (int dx = -1; dx <= 1; dx++) {
+					for (int dy = -1; dy <= 1; dy++) {
+						if (dx == 0 && dy == 0) continue;
+
+						int candidateX = tileX + dx;
+						int candidateY = tileY + dy;
+						if (!getLevel().isTileWithinBounds(candidateX, candidateY)) continue;
+						if (FireHazardPathing.isFireHazard(getLevel(), candidateX, candidateY)) continue;
+						if (!mob.estimateCanMoveTo(candidateX, candidateY, false)) continue;
+
+						float targetX = candidateX * 32.0F + 16.0F;
+						float targetY = candidateY * 32.0F + 16.0F;
+						float deltaX = targetX - mob.getX();
+						float deltaY = targetY - mob.getY();
+						float distance = deltaX * deltaX + deltaY * deltaY;
+						if (distance < bestDistance) {
+							bestDistance = distance;
+							bestTile = new Point(candidateX, candidateY);
+						}
+					}
+				}
+
+				if (bestTile == null) return;
+
+				float targetX = bestTile.x * 32.0F + 16.0F;
+				float targetY = bestTile.y * 32.0F + 16.0F;
+				mob.knockback(targetX - mob.getX(), targetY - mob.getY(), 40.0F);
+				mob.sendMovementPacket(true);
+			}
+
+			private boolean isPitTileOccupied() {
+				int centerX = tileX * 32 + 16;
+				int centerY = tileY * 32 + 16;
+
+				boolean mobOnTile = getLevel().entityManager.mobs
+						.streamInRegionsInTileRange(centerX, centerY, 1)
+						.anyMatch(mob -> !mob.isFlying() && mob.getTileX() == tileX && mob.getTileY() == tileY);
+				if (mobOnTile) return true;
+
+				return getLevel().entityManager.players
+						.streamInRegionsInTileRange(centerX, centerY, 1)
+						.anyMatch(player -> !player.isFlying() && player.getTileX() == tileX && player.getTileY() == tileY);
 			}
 
 			private boolean hasGrassTile() {

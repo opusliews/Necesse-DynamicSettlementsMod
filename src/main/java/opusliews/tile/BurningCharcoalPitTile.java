@@ -4,6 +4,7 @@ import java.awt.Color;
 import necesse.engine.sound.SoundEffect;
 import necesse.engine.sound.SoundManager;
 import necesse.engine.util.GameRandom;
+import necesse.entity.mobs.Mob;
 import necesse.entity.particle.Particle;
 import necesse.gfx.GameResources;
 import necesse.level.maps.Level;
@@ -60,5 +61,10 @@ public class BurningCharcoalPitTile extends CoveredCharcoalPitTile {
 					SoundEffect.effect(centerX, centerY).volume(0.3F).pitch(GameRandom.globalRandom.getFloatBetween(0.92F, 1.05F))
 			);
 		}
+	}
+
+	@Override
+	public void tick(Mob mob, Level level, int tileX, int tileY) {
+		FireTileDamage.tick(mob, level);
 	}
 }
