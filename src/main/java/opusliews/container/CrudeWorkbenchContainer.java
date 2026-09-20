@@ -25,9 +25,9 @@ import necesse.level.maps.levelData.settlementData.settler.romancePersonalities.
 import opusliews.earlygame.CrudeWorkbenchFeature;
 import opusliews.network.PacketCrudeWorkbenchOutput;
 import opusliews.logging.Logging;
+import opusliews.crafting.CraftingTime;
 
 public class CrudeWorkbenchContainer extends CraftingStationContainer {
-	public static final long CRAFT_TIME_MS = 2000L;
 
 	public final PlayerTempInventory outputInventory;
 	public final int OUTPUT_SLOT;
@@ -36,6 +36,7 @@ public class CrudeWorkbenchContainer extends CraftingStationContainer {
 	private int craftingRecipeID = -1;
 	private int craftingRecipeHash;
 	private long craftingStartTime;
+	private long craftingDurationMs = CraftingTime.DEFAULT_TIME_MS;
 
 	public CrudeWorkbenchContainer(NetworkClient client, int uniqueSeed, SettlementDataEvent settlement, LevelObject stump, PacketReader reader) {
 		super(client, uniqueSeed, settlement, makeVirtualStation(stump), reader);
@@ -90,6 +91,7 @@ public class CrudeWorkbenchContainer extends CraftingStationContainer {
 		craftingRecipeID = recipeID;
 		craftingRecipeHash = recipeHash;
 		craftingStartTime = System.currentTimeMillis();
+		craftingDurationMs = CraftingTime.get(recipe);
 		Logging.logMessage("[CrudeWorkbench] " + (client.isServer() ? "SERVER" : "CLIENT")
 				+ " started craft recipeID=" + recipeID + " hash=" + recipeHash);
 		return 1;
@@ -99,7 +101,7 @@ public class CrudeWorkbenchContainer extends CraftingStationContainer {
 	public void tick() {
 		super.tick();
 
-		if (!crafting || System.currentTimeMillis() - craftingStartTime < CRAFT_TIME_MS) return;
+		if (!crafting || System.currentTimeMillis() - craftingStartTime < craftingDurationMs) return;
 
 		if (client.isServer()) completeCraftServer();
 
@@ -195,7 +197,8 @@ public class CrudeWorkbenchContainer extends CraftingStationContainer {
 
 	public float getCraftProgress() {
 		if (!crafting) return 0.0F;
-		return Math.min(1.0F, (float)(System.currentTimeMillis() - craftingStartTime) / (float)CRAFT_TIME_MS);
+		if (craftingDurationMs <= 0L) return 1.0F;
+		return Math.min(1.0F, (float)(System.currentTimeMillis() - craftingStartTime) / (float)craftingDurationMs);
 	}
 
 	private void cancelCraft() {
@@ -203,6 +206,7 @@ public class CrudeWorkbenchContainer extends CraftingStationContainer {
 		craftingRecipeID = -1;
 		craftingRecipeHash = 0;
 		craftingStartTime = 0L;
+		craftingDurationMs = CraftingTime.DEFAULT_TIME_MS;
 	}
 
 	@Override

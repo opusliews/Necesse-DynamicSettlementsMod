@@ -19,6 +19,7 @@ import necesse.inventory.Inventory;
 import necesse.inventory.InventoryItem;
 import necesse.inventory.InventoryRange;
 import necesse.inventory.recipe.Recipe;
+import opusliews.crafting.CraftingTime;
 import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
 
@@ -319,9 +320,10 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		return null;
 	}
 
-	public int getSettlerCraftingActionDelay(HumanMob worker) {
+	public int getSettlerCraftingActionDelay(HumanMob worker, Recipe recipe) {
 		int happiness = Math.max(0, Math.min(100, worker.getSettlerHappiness()));
-		return 5000 - happiness * 45;
+		float happinessMultiplier = 2.5F - happiness * 0.0225F;
+		return (int)Math.min(Integer.MAX_VALUE, Math.round(CraftingTime.get(recipe) * happinessMultiplier));
 	}
 
 	public String getSettlerCraftingProblem(Recipe recipe) {

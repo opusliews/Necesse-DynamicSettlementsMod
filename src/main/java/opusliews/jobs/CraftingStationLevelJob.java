@@ -232,14 +232,13 @@ public class CraftingStationLevelJob extends TileLevelJob {
 					}
 
 					CraftingTask selectedTask = currentBoard.getTask(currentTaskIndex);
-					int happiness = Math.max(0, Math.min(100, human.getSettlerHappiness()));
-					int actionDelay = station.getSettlerCraftingActionDelay(human);
-					actionCompleteTime = job.getLevel().getTime() + actionDelay;
 					Recipe selectedRecipe = selectedTask == null ? null : CraftingTaskLogic.getRecipe(currentBoard, selectedTask.itemID);
+					int actionDelay = station.getSettlerCraftingActionDelay(human, selectedRecipe);
+					actionCompleteTime = job.getLevel().getTime() + actionDelay;
 					if (selectedRecipe != null) station.onSettlerCraftStarted(human, selectedRecipe);
 					Logging.logMessage("[CraftingJob] Worker " + uniqueID + " started task index=" + currentTaskIndex
 							+ " item=" + (selectedTask == null ? -1 : selectedTask.itemID)
-							+ " delay=" + actionDelay + "ms happiness=" + happiness);
+							+ " delay=" + actionDelay + "ms");
 					return ActiveJobResult.PERFORMING;
 				}
 
