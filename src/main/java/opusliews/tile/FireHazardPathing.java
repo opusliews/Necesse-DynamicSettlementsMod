@@ -2,6 +2,12 @@ package opusliews.tile;
 
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.Shape;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.WeakHashMap;
 import necesse.engine.registries.TileRegistry;
 import necesse.engine.util.GameMath;
 import necesse.engine.util.MovedRectangle;
@@ -13,6 +19,8 @@ import necesse.entity.mobs.friendly.human.HumanMob;
 import necesse.level.maps.Level;
 
 public final class FireHazardPathing {
+	private static final Map<Level, GroundFireCache> groundFireCaches = Collections.synchronizedMap(new WeakHashMap<>());
+
 	private FireHazardPathing() {
 	}
 
@@ -68,14 +76,78 @@ public final class FireHazardPathing {
 			return true;
 		}
 
-		Rectangle tileBounds = new Rectangle(tileX * 32, tileY * 32, 32, 32);
-		for (Object eventObject : level.entityManager.events) {
-			if (!(eventObject instanceof PhoenixFeatherGroundFireEvent)) continue;
-			LevelEvent event = (LevelEvent)eventObject;
-			if (event.isOver()) continue;
-			if (((PhoenixFeatherGroundFireEvent)eventObject).getHitBox().intersects(tileBounds)) return true;
+		return getGroundFireCache(level).contains(tileX, tileY);
+	}
+
+	public static void invalidateGroundFireCache(Level level) {
+		if (level == null) return;
+		synchronized (groundFireCaches) {
+			groundFireCaches.remove(level);
+		}
+	}
+
+	private static GroundFireCache getGroundFireCache(Level level) {
+		long levelTime = level.getTime();
+		GroundFireCache cache;
+
+		synchronized (groundFireCaches) {
+			cache = groundFireCaches.get(level);
+			if (cache != null && cache.levelTime == levelTime) return cache;
+
+			cache = buildGroundFireCache(level, levelTime);
+			groundFireCaches.put(level, cache);
 		}
 
-		return false;
+		return cache;
+	}
+
+	private static GroundFireCache buildGroundFireCache(Level level, long levelTime) {
+		Set<Long> fireTiles = new HashSet<>();
+
+		for (Object eventObject : level.entityManager.events) {
+			if (!(eventObject instanceof PhoenixFeatherGroundFireEvent)) continue;
+
+			LevelEvent event = (LevelEvent)eventObject;
+			if (event.isOver()) continue;
+
+			Shape hitBox = ((PhoenixFeatherGroundFireEvent)eventObject).getHitBox();
+			if (hitBox == null) continue;
+
+			Rectangle hitBounds = hitBox.getBounds();
+			if (hitBounds.width <= 0 || hitBounds.height <= 0) continue;
+
+			int minTileX = GameMath.getTileCoordinate(hitBounds.x);
+			int minTileY = GameMath.getTileCoordinate(hitBounds.y);
+			int maxTileX = GameMath.getTileCoordinate(hitBounds.x + hitBounds.width - 1);
+			int maxTileY = GameMath.getTileCoordinate(hitBounds.y + hitBounds.height - 1);
+
+			for (int tileX = minTileX; tileX <= maxTileX; tileX++) {
+				for (int tileY = minTileY; tileY <= maxTileY; tileY++) {
+					if (!level.isTileWithinBounds(tileX, tileY)) continue;
+					Rectangle tileBounds = new Rectangle(tileX * 32, tileY * 32, 32, 32);
+					if (hitBox.intersects(tileBounds)) fireTiles.add(getTileKey(tileX, tileY));
+				}
+			}
+		}
+
+		return new GroundFireCache(levelTime, fireTiles);
+	}
+
+	private static long getTileKey(int tileX, int tileY) {
+		return ((long)tileX << 32) ^ (tileY & 0xFFFFFFFFL);
+	}
+
+	private static class GroundFireCache {
+		private final long levelTime;
+		private final Set<Long> fireTiles;
+
+		private GroundFireCache(long levelTime, Set<Long> fireTiles) {
+			this.levelTime = levelTime;
+			this.fireTiles = fireTiles;
+		}
+
+		private boolean contains(int tileX, int tileY) {
+			return fireTiles.contains(getTileKey(tileX, tileY));
+		}
 	}
 }

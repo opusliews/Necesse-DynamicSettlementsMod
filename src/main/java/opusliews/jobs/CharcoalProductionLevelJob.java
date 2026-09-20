@@ -146,7 +146,10 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 			@Override
 			public JobMoveToTile getMoveToTile(JobMoveToTile lastTile) {
 				Point selectedWorkTile = getWorkTile();
-				if (selectedWorkTile == null) return new JobMoveToTile(tileX, tileY - 1, false);
+				if (selectedWorkTile == null) {
+					((HumanMob)worker.getMobWorker()).cancelJob();
+					return null;
+				}
 				return new JobMoveToTile(selectedWorkTile.x, selectedWorkTile.y, false);
 			}
 

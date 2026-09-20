@@ -9,6 +9,7 @@ import necesse.inventory.InventoryItem;
 import necesse.level.maps.Level;
 import opusliews.item.FirestarterItem;
 import opusliews.network.PacketFirestarterUse;
+import opusliews.tile.FireHazardPathing;
 
 public final class FirestarterSystem {
 	private static final int interactRange = 100;
@@ -51,6 +52,7 @@ public final class FirestarterSystem {
 				new GameRandom(GameRandom.globalRandom.nextLong()),
 				new GameDamage(10.0F)
 		));
+		FireHazardPathing.invalidateGroundFireCache(level);
 	}
 
 	private static boolean isFirestarter(InventoryItem item) {
