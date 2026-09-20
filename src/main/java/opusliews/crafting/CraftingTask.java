@@ -7,7 +7,7 @@ import necesse.engine.network.PacketWriter;
 import necesse.engine.save.LoadData;
 import necesse.engine.save.SaveData;
 
-public class AnvilCraftingTask {
+public class CraftingTask {
 	public static final int CONDITION_CRAFT_UNITS = 0;
 	public static final int CONDITION_KEEP_STOCKED = 1;
 
@@ -23,13 +23,13 @@ public class AnvilCraftingTask {
 	public int status = STATUS_FINISHED;
 	public final ArrayList<String> problemDetails = new ArrayList<>();
 
-	public AnvilCraftingTask(int itemID, int conditionType, int amount) {
+	public CraftingTask(int itemID, int conditionType, int amount) {
 		this.itemID = itemID;
 		this.conditionType = conditionType;
 		this.amount = Math.max(0, amount);
 	}
 
-	public AnvilCraftingTask(LoadData data) {
+	public CraftingTask(LoadData data) {
 		this(
 				data.getInt("itemID", -1),
 				data.getInt("conditionType", CONDITION_CRAFT_UNITS),
@@ -38,7 +38,7 @@ public class AnvilCraftingTask {
 		paused = data.getBoolean("paused", false, false);
 	}
 
-	public AnvilCraftingTask(PacketReader reader) {
+	public CraftingTask(PacketReader reader) {
 		this(reader.getNextInt(), reader.getNextByteUnsigned(), reader.getNextInt());
 		paused = reader.getNextBoolean();
 		status = reader.getNextByteUnsigned();
@@ -75,8 +75,8 @@ public class AnvilCraftingTask {
 		return changed;
 	}
 
-	public AnvilCraftingTask copy() {
-		AnvilCraftingTask copy = new AnvilCraftingTask(itemID, conditionType, amount);
+	public CraftingTask copy() {
+		CraftingTask copy = new CraftingTask(itemID, conditionType, amount);
 		copy.paused = paused;
 		copy.status = status;
 		copy.problemDetails.addAll(problemDetails);

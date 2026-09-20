@@ -9,7 +9,7 @@ import opusliews.blueprint.BlueprintAreaHud;
 import opusliews.blueprint.BlueprintAreaSync;
 import opusliews.forms.NewBlueprintForm;
 import opusliews.hud.InspectionGlassHud;
-import opusliews.hud.AnvilLinkHud;
+import opusliews.hud.CraftingStationLinkHud;
 import opusliews.item.BlueprintItem;
 
 @ModMethodPatch(target= MainGame.class, name="frameTick", arguments={TickManager.class, GameWindow.class})
@@ -26,7 +26,7 @@ public class MainGamePatch {
 			if (mainGame.getClient().getLevel() != null) {
 				BlueprintAreaHud.ensureAdded(mainGame.getClient().getLevel());
 				InspectionGlassHud.ensureAdded(mainGame.getClient().getLevel());
-				AnvilLinkHud.ensureAdded(mainGame.getClient().getLevel());
+				CraftingStationLinkHud.ensureAdded(mainGame.getClient().getLevel());
 			}
 		}
 	}

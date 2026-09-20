@@ -3,9 +3,12 @@ package opusliews.object;
 import java.awt.Color;
 import java.awt.Rectangle;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import necesse.engine.gameLoop.tickManager.TickManager;
 import necesse.engine.localization.Localization;
 import necesse.entity.mobs.PlayerMob;
+import necesse.entity.objectEntity.ObjectEntity;
 import necesse.gfx.camera.GameCamera;
 import necesse.gfx.drawOptions.DrawOptions;
 import necesse.gfx.drawables.LevelSortedDrawable;
@@ -14,15 +17,16 @@ import necesse.gfx.gameTexture.GameTexture;
 import necesse.inventory.item.toolItem.ToolType;
 import necesse.level.gameObject.GameObject;
 import necesse.level.maps.Level;
+import necesse.level.maps.LevelObject;
 import necesse.level.maps.light.GameLight;
 import necesse.level.maps.multiTile.MultiTile;
 import necesse.level.maps.multiTile.SideMultiTile;
 
-public class AnvilCraftingTaskBoard2Object extends GameObject {
-	public GameTexture texture;
+public class CraftingTaskBoard2Object extends GameObject {
+	public final Map<String, GameTexture> textures = new HashMap<>();
 	protected int counterID;
 
-	public AnvilCraftingTaskBoard2Object() {
+	public CraftingTaskBoard2Object() {
 		super(new Rectangle(32, 32));
 		displayMapTooltip = true;
 		mapColor = new Color(132, 91, 25);
@@ -39,7 +43,19 @@ public class AnvilCraftingTaskBoard2Object extends GameObject {
 	@Override
 	public void loadTextures() {
 		super.loadTextures();
-		texture = GameTexture.fromFile("objects/anvilcraftingtaskboard");
+		for (String key : new String[]{"unlinked", "anvil", "workstation", "alchemy", "carpenter"}) {
+			textures.put(key, GameTexture.fromFile("objects/craftingtaskboard_" + key));
+		}
+	}
+
+	private GameTexture getTexture(Level level, int tileX, int tileY) {
+		LevelObject master = (LevelObject)getMultiTile(level.getObjectRotation(tileX, tileY))
+				.getMasterLevelObject(level, 0, tileX, tileY).orElse(null);
+		ObjectEntity entity = master == null ? null : master.getObjectEntity();
+		String key = entity instanceof CraftingTaskBoardObjectEntity
+				? ((CraftingTaskBoardObjectEntity)entity).getLinkedStationTextureKey()
+				: "unlinked";
+		return textures.getOrDefault(key, textures.get("unlinked"));
 	}
 
 	@Override
@@ -54,6 +70,7 @@ public class AnvilCraftingTaskBoard2Object extends GameObject {
 		GameLight light = level.getLightLevel(tileX, tileY);
 		int drawX = camera.getTileDrawX(tileX);
 		int drawY = camera.getTileDrawY(tileY);
+		GameTexture texture = getTexture(level, tileX, tileY);
 		final DrawOptions options = texture.initDraw().sprite(1, 0, 32, texture.getHeight()).addObjectDamageOverlay(this, level, tileX, tileY).light(light).pos(drawX, drawY - texture.getHeight() + 32);
 		list.add(new LevelSortedDrawable(this, tileX, tileY) {
 			@Override
@@ -72,6 +89,7 @@ public class AnvilCraftingTaskBoard2Object extends GameObject {
 	public void drawPreview(Level level, int tileX, int tileY, int rotation, float alpha, PlayerMob player, GameCamera camera) {
 		int drawX = camera.getTileDrawX(tileX);
 		int drawY = camera.getTileDrawY(tileY);
+		GameTexture texture = getTexture(level, tileX, tileY);
 		texture.initDraw().sprite(1, 0, 32, texture.getHeight()).alpha(alpha).pos(drawX, drawY - texture.getHeight() + 32).draw();
 	}
 

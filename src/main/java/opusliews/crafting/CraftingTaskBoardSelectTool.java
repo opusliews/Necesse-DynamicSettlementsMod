@@ -16,15 +16,15 @@ import necesse.gfx.gameTooltips.ListGameTooltips;
 import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
 import necesse.level.maps.TilePosition;
-import opusliews.container.AnvilContainer;
-import opusliews.object.AnvilCraftingTaskBoardObjectEntity;
+import opusliews.container.DynamicCraftingStationContainer;
+import opusliews.object.CraftingTaskBoardObjectEntity;
 
-public class AnvilTaskBoardSelectTool extends SelectTileGameTool {
-	private final AnvilContainer container;
+public class CraftingTaskBoardSelectTool extends SelectTileGameTool {
+	private final DynamicCraftingStationContainer container;
 	private final Runnable finished;
 
-	public AnvilTaskBoardSelectTool(
-			AnvilContainer container,
+	public CraftingTaskBoardSelectTool(
+			DynamicCraftingStationContainer container,
 			Level level,
 			Runnable finished
 	) {
@@ -97,14 +97,14 @@ public class AnvilTaskBoardSelectTool extends SelectTileGameTool {
 		lastHoverBounds = null;
 
 		LevelObject master = getMaster(pos);
-		Point current = container.anvilEntity.getTaskBoard();
+		Point current = container.stationEntity.getTaskBoard();
 
 		if (master == null) {
 			if (current != null && current.x == pos.tileX && current.y == pos.tileY) {
 				return null;
 			}
 
-			return new StaticMessage("Must be an Anvil Crafting Tasks board");
+			return new StaticMessage("Must be an Crafting Task Board");
 		}
 
 		Point target = new Point(master.tileX, master.tileY);
@@ -115,13 +115,13 @@ public class AnvilTaskBoardSelectTool extends SelectTileGameTool {
 		}
 
 		ObjectEntity entity = master.getObjectEntity();
-		if (!(entity instanceof AnvilCraftingTaskBoardObjectEntity)) {
-			return new StaticMessage("Must be an Anvil Crafting Tasks board");
+		if (!(entity instanceof CraftingTaskBoardObjectEntity)) {
+			return new StaticMessage("Must be an Crafting Task Board");
 		}
 
-		Point owner = ((AnvilCraftingTaskBoardObjectEntity)entity).getLinkedAnvil();
-		if (owner != null && (owner.x != container.anvilEntity.tileX || owner.y != container.anvilEntity.tileY)) {
-			return new StaticMessage("This board is already linked to another anvil");
+		Point owner = ((CraftingTaskBoardObjectEntity)entity).getLinkedStation();
+		if (owner != null && (owner.x != container.stationEntity.tileX || owner.y != container.stationEntity.tileY)) {
+			return new StaticMessage("This board is already linked to another crafting station");
 		}
 
 		return null;

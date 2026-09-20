@@ -1,5 +1,7 @@
 package opusliews.forms;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import necesse.engine.GlobalData;
 import necesse.engine.gameTool.GameToolManager;
 import necesse.engine.network.client.Client;
@@ -11,28 +13,25 @@ import necesse.gfx.forms.components.containerSlot.FormContainerSlot;
 import necesse.gfx.forms.position.FormFixedPosition;
 import necesse.gfx.forms.position.FormPositionContainer;
 import necesse.gfx.forms.presets.containerComponent.object.CraftingStationContainerForm;
-import opusliews.container.AnvilContainer;
-import opusliews.crafting.AnvilStorageSelectTool;
-import opusliews.crafting.AnvilTaskBoardSelectTool;
-import opusliews.hud.AnvilLinkHud;
+import opusliews.container.DynamicCraftingStationContainer;
+import opusliews.crafting.CraftingStorageSelectTool;
+import opusliews.crafting.CraftingTaskBoardSelectTool;
+import opusliews.hud.CraftingStationLinkHud;
 
-import java.util.ArrayList;
-import java.util.Collection;
-
-public class AnvilContainerForm extends CraftingStationContainerForm {
+public class DynamicCraftingStationContainerForm extends CraftingStationContainerForm {
 	private static final int LEFT_PANEL_WIDTH = 118;
 	private static final int LEFT_PANEL_GAP = 8;
 	private static final int OUTPUT_PANEL_WIDTH = 62;
 	private static final int OUTPUT_PANEL_HEIGHT = 76;
 	private static final int OUTPUT_PANEL_GAP = 12;
 
-	private final Client client;
-	private final AnvilContainer anvilContainer;
+	protected final Client client;
+	protected final DynamicCraftingStationContainer stationContainer;
 
-	public AnvilContainerForm(Client client, AnvilContainer container) {
+	public DynamicCraftingStationContainerForm(Client client, DynamicCraftingStationContainer container) {
 		super(client, container);
 		this.client = client;
-		this.anvilContainer = container;
+		this.stationContainer = container;
 
 		int vanillaWidth = craftingForm.getWidth();
 		int leftOffset = LEFT_PANEL_WIDTH + LEFT_PANEL_GAP;
@@ -77,7 +76,7 @@ public class AnvilContainerForm extends CraftingStationContainerForm {
 		taskBoardButton.onClicked(event -> startTaskBoardSelection());
 
 		int outputPanelX = leftOffset + vanillaWidth + OUTPUT_PANEL_GAP;
-		Form outputPanel = craftingForm.addComponent(new Form("anvilOutput", OUTPUT_PANEL_WIDTH, OUTPUT_PANEL_HEIGHT));
+		Form outputPanel = craftingForm.addComponent(new Form("craftingStationOutput", OUTPUT_PANEL_WIDTH, OUTPUT_PANEL_HEIGHT));
 		outputPanel.setPosition(new FormFixedPosition(outputPanelX, 92));
 		outputPanel.addComponent(new FormContainerSlot(client, container, container.OUTPUT_SLOT, 11, 8));
 		outputPanel.addComponent(new FormProgressBar(9, 54, 44, false) {
@@ -91,37 +90,41 @@ public class AnvilContainerForm extends CraftingStationContainerForm {
 	@Override
 	protected void init() {
 		super.init();
-		AnvilLinkHud.setOpenAnvil(client.getLevel(), anvilContainer.anvilEntity.tileX, anvilContainer.anvilEntity.tileY);
+		CraftingStationLinkHud.setOpenStation(
+				client.getLevel(),
+				stationContainer.stationEntity.tileX,
+				stationContainer.stationEntity.tileY
+		);
 	}
 
-	private void startStorageSelection(boolean input) {
-		startSelection();
+	protected void startStorageSelection(boolean input) {
+		startLinkSelection();
 		GameToolManager.setGameTool(
-				new AnvilStorageSelectTool(
-						anvilContainer,
+				new CraftingStorageSelectTool(
+						stationContainer,
 						client.getLevel(),
 						input,
-						this::finishSelection
+						this::finishLinkSelection
 				),
 				this
 		);
 	}
 
-	private void startTaskBoardSelection() {
-		startSelection();
+	protected void startTaskBoardSelection() {
+		startLinkSelection();
 		GameToolManager.setGameTool(
-				new AnvilTaskBoardSelectTool(
-						anvilContainer,
+				new CraftingTaskBoardSelectTool(
+						stationContainer,
 						client.getLevel(),
-						this::finishSelection
+						this::finishLinkSelection
 				),
 				this
 		);
 	}
 
-	private void startSelection() {
+	protected void startLinkSelection() {
 		GameToolManager.clearGameTools(this);
-		anvilContainer.setSelectingLinkedElement.runAndSend(true);
+		stationContainer.setSelectingLinkedElement.runAndSend(true);
 		craftingForm.setHidden(true);
 
 		MainGameFormManager formManager = (MainGameFormManager)GlobalData.getCurrentState().getFormManager();
@@ -129,8 +132,8 @@ public class AnvilContainerForm extends CraftingStationContainerForm {
 		formManager.toolbar.setHidden(true);
 	}
 
-	private void finishSelection() {
-		anvilContainer.setSelectingLinkedElement.runAndSend(false);
+	protected void finishLinkSelection() {
+		stationContainer.setSelectingLinkedElement.runAndSend(false);
 		craftingForm.setHidden(false);
 
 		MainGameFormManager formManager = (MainGameFormManager)GlobalData.getCurrentState().getFormManager();
@@ -140,16 +143,13 @@ public class AnvilContainerForm extends CraftingStationContainerForm {
 
 	@Override
 	public void dispose() {
-		if (anvilContainer.isSelectingStorage()) {
-			finishSelection();
-		}
-
-		GameToolManager.clearGameTools(this);
-		AnvilLinkHud.clearOpenAnvil(
+		CraftingStationLinkHud.clearOpenStation(
 				client.getLevel(),
-				anvilContainer.anvilEntity.tileX,
-				anvilContainer.anvilEntity.tileY
+				stationContainer.stationEntity.tileX,
+				stationContainer.stationEntity.tileY
 		);
+		if (stationContainer.isSelectingStorage()) finishLinkSelection();
+		GameToolManager.clearGameTools(this);
 		super.dispose();
 	}
 }

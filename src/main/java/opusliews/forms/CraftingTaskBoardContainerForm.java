@@ -32,15 +32,17 @@ import necesse.inventory.item.ItemCategory;
 import necesse.inventory.recipe.Recipe;
 import necesse.level.gameObject.container.CraftingStationObject;
 import necesse.level.maps.LevelObject;
-import opusliews.container.AnvilCraftingTaskBoardContainer;
-import opusliews.crafting.AnvilCraftingTask;
-import opusliews.hud.AnvilLinkHud;
+import opusliews.container.CraftingTaskBoardContainer;
+import opusliews.crafting.CraftingTask;
+import opusliews.hud.CraftingStationLinkHud;
 
 import java.awt.*;
 import java.util.List;
 import java.util.*;
 
-public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
+import static java.lang.Math.max;
+
+public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 	private static final int ITEM_WIDTH = 400;
 	private static final int CONDITION_WIDTH = 400;
 	private static final int STATUS_WIDTH = 72;
@@ -48,7 +50,7 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 	private static final int FORM_WIDTH = ITEM_WIDTH + CONDITION_WIDTH + STATUS_WIDTH + CONFIG_WIDTH;
 
 	private final Client client;
-	private final AnvilCraftingTaskBoardContainer taskContainer;
+	private final CraftingTaskBoardContainer taskContainer;
 	private final Form boardForm;
 	private final FormContentBox content;
 	private final Form itemSelectForm;
@@ -58,15 +60,15 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 	private int currentConfigIndex = -1;
 	private final HashSet<String> collapsedPickerCategories = new HashSet<>();
 
-	public AnvilCraftingTaskBoardContainerForm(Client client, AnvilCraftingTaskBoardContainer container) {
+	public CraftingTaskBoardContainerForm(Client client, CraftingTaskBoardContainer container) {
 		super(client, container);
 		this.client = client;
 		this.taskContainer = container;
 
-		boardForm = (Form)addComponent(new Form("anvilCraftingTasks", FORM_WIDTH, 400));
+		boardForm = (Form)addComponent(new Form("craftingTasks", FORM_WIDTH, 400));
 		FormFlow flow = new FormFlow(10);
 		boardForm.addComponent(flow.nextY(new FormLabel(
-				"Anvil Crafting Tasks",
+				"Crafting Tasks",
 				new FontOptions(32),
 				0,
 				boardForm.getWidth() / 2,
@@ -84,8 +86,8 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 
 		int contentY = flow.next();
 		content = boardForm.addComponent(new FormContentBox(0, contentY, boardForm.getWidth(), boardForm.getHeight() - contentY));
-		itemSelectForm = (Form)addComponent(new Form("anvilTaskItemSelect", 0, 0));
-		conditionConfigForm = (Form)addComponent(new Form("anvilTaskConditionConfig", 0, 0));
+		itemSelectForm = (Form)addComponent(new Form("craftingTaskItemSelect", 0, 0));
+		conditionConfigForm = (Form)addComponent(new Form("craftingTaskConditionConfig", 0, 0));
 
 		updateBoard();
 		makeCurrent(boardForm);
@@ -93,10 +95,10 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 	}
 
 	private int getSignature() {
-		int result = taskContainer.hasValidLinkedAnvil() ? 1 : 0;
-		List<AnvilCraftingTask> tasks = taskContainer.boardEntity.getTasks();
+		int result = taskContainer.hasValidLinkedStation() ? 1 : 0;
+		List<CraftingTask> tasks = taskContainer.boardEntity.getTasks();
 		result = 31 * result + tasks.size();
-		for (AnvilCraftingTask task : tasks) {
+		for (CraftingTask task : tasks) {
 			result = 31 * result + task.itemID;
 			result = 31 * result + task.conditionType;
 			result = 31 * result + task.amount;
@@ -111,23 +113,23 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 		lastSignature = getSignature();
 		content.clearComponents();
 
-		if (!taskContainer.hasValidLinkedAnvil()) {
+		if (!taskContainer.hasValidLinkedStation()) {
 			FormFlow flow = new FormFlow(60);
 			content.addComponent(flow.nextY(new FormLabel(
-					"This board is not linked to an anvil",
+					"This board is not linked to a crafting station",
 					new FontOptions(20),
 					0,
 					content.getWidth() / 2,
 					0
 			), 8));
 			content.addComponent(flow.nextY(new FormLabel(
-					"Make the link from an anvil first",
+					"Make the link from a crafting station first",
 					new FontOptions(16),
 					0,
 					content.getWidth() / 2,
 					0
 			), 8));
-			content.setContentBox(new Rectangle(content.getWidth(), Math.max(content.getHeight(), flow.next())));
+			content.setContentBox(new Rectangle(content.getWidth(), max(content.getHeight(), flow.next())));
 			return;
 		}
 
@@ -137,16 +139,16 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 		content.addComponent(new FormLabel("Item", headerOptions, 0, ITEM_WIDTH / 2, headerY + 2));
 		content.addComponent(new FormBreakLine(FormBreakLine.ALIGN_BEGINNING, ITEM_WIDTH, 0, 0, false));
 		content.addComponent(new FormLabel("Condition", headerOptions, 0, ITEM_WIDTH + CONDITION_WIDTH / 2, headerY + 2));
-		content.addComponent(new FormBreakLine(FormBreakLine.ALIGN_BEGINNING, ITEM_WIDTH + CONDITION_WIDTH, 0, 0, false));
+		content.addComponent(new FormBreakLine(FormBreakLine.ALIGN_BEGINNING, ITEM_WIDTH + CONDITION_WIDTH, 0, 1, false));
 		content.addComponent(new FormLabel("Status", headerOptions, 0, ITEM_WIDTH + CONDITION_WIDTH + STATUS_WIDTH / 2, headerY + 2));
-		content.addComponent(new FormBreakLine(FormBreakLine.ALIGN_BEGINNING, ITEM_WIDTH + CONDITION_WIDTH + STATUS_WIDTH, 0, 0, false));
+		content.addComponent(new FormBreakLine(FormBreakLine.ALIGN_BEGINNING, ITEM_WIDTH + CONDITION_WIDTH + STATUS_WIDTH, 0, 1, false));
 		content.addComponent(new FormBreakLine(FormBreakLine.ALIGN_BEGINNING, 4, flow.next(), content.getWidth() - 8, true));
 		flow.next(4);
 
-		List<AnvilCraftingTask> tasks = taskContainer.boardEntity.getTasks();
+		List<CraftingTask> tasks = taskContainer.boardEntity.getTasks();
 		for (int i = 0; i < tasks.size(); i++) {
 			if (i > 0) {
-				content.addComponent(new FormBreakLine(FormBreakLine.ALIGN_BEGINNING, 4, flow.next(), content.getWidth() - 8, true));
+				content.addComponent(new FormBreakLine(FormBreakLine.ALIGN_BEGINNING, 4, flow.next(), content.getWidth() + 18, true));
 				flow.next(2);
 			}
 			TaskRow row = new TaskRow(content.getWidth() - content.getScrollBarWidth(), i, tasks.get(i));
@@ -167,7 +169,8 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 			makeCurrent(itemSelectForm);
 		});
 
-		int fullHeight = flow.next() + 10;
+		int fullHeight = flow.next() - 35;
+		fullHeight = max(fullHeight, 0);
 		for (Object componentObject : content.getComponents()) {
 			if (componentObject instanceof FormBreakLine) {
 				FormBreakLine line = (FormBreakLine)componentObject;
@@ -231,8 +234,8 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 		String filter = search == null ? "" : search.trim().toLowerCase(Locale.ROOT);
 		boolean searching = !filter.isEmpty();
 
-		LevelObject anvil = taskContainer.getLinkedAnvil();
-		if (anvil == null || !(anvil.object instanceof CraftingStationObject)) {
+		LevelObject stationObject = taskContainer.getLinkedStation();
+		if (stationObject == null || !(stationObject.object instanceof CraftingStationObject)) {
 			itemContent.addComponent(new FormLabel(
 					"No craftable items found",
 					new FontOptions(16),
@@ -244,8 +247,8 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 			return;
 		}
 
-		CraftingStationObject station = (CraftingStationObject)anvil.object;
-		int categoryDepth = Math.max(station.getCraftingCategoryDepth(), 0);
+		CraftingStationObject station = (CraftingStationObject)stationObject.object;
+		int categoryDepth = max(station.getCraftingCategoryDepth(), 0);
 		HashSet forceCategorySolo = station.getForcedSoloCraftingCategories();
 		Map<String, ItemCategory> displayNameToCategory = new HashMap<>();
 		Map<ItemCategory, ArrayList<Integer>> byCategory = new HashMap<>();
@@ -300,7 +303,7 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 		FormFlow flow = new FormFlow(2);
 		int contentWidth = itemContent.getWidth() - itemContent.getScrollBarWidth() - 8;
 		int iconSize = 36;
-		int iconsPerRow = Math.max(1, (contentWidth - 28) / iconSize);
+		int iconsPerRow = max(1, (contentWidth - 28) / iconSize);
 
 		for (ItemCategory category : categories) {
 			boolean expanded = searching || !collapsedPickerCategories.contains(category.stringID);
@@ -365,7 +368,7 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 
 	private void setupConditionConfig(int index) {
 		currentConfigIndex = index;
-		AnvilCraftingTask task = taskContainer.boardEntity.getTask(index);
+		CraftingTask task = taskContainer.boardEntity.getTask(index);
 		if (task == null) {
 			makeCurrent(boardForm);
 			return;
@@ -431,18 +434,18 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 		));
 		button.acceptMouseRepeatEvents = true;
 		button.onClicked(e -> {
-			AnvilCraftingTask current = taskContainer.boardEntity.getTask(index);
+			CraftingTask current = taskContainer.boardEntity.getTask(index);
 			if (current == null) {
 				return;
 			}
-			int amount = Math.max(0, Math.min(65535, current.amount + delta));
+			int amount = max(0, Math.min(65535, current.amount + delta));
 			taskContainer.updateTask(index, current.conditionType, amount);
 			amountLabel.setText(Integer.toString(amount));
 		});
 	}
 
 	private String getConditionName(int type, String amount) {
-		return type == AnvilCraftingTask.CONDITION_KEEP_STOCKED
+		return type == CraftingTask.CONDITION_KEEP_STOCKED
 				? "Keep " + amount + " Units Stocked"
 				: "Craft " + amount + " Units";
 	}
@@ -450,7 +453,7 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 	@Override
 	protected void init() {
 		super.init();
-		AnvilLinkHud.setOpenTaskBoard(
+		CraftingStationLinkHud.setOpenTaskBoard(
 				client.getLevel(),
 				taskContainer.boardEntity.tileX,
 				taskContainer.boardEntity.tileY
@@ -485,7 +488,7 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 
 	@Override
 	public void dispose() {
-		AnvilLinkHud.clearOpenTaskBoard(
+		CraftingStationLinkHud.clearOpenTaskBoard(
 				client.getLevel(),
 				taskContainer.boardEntity.tileX,
 				taskContainer.boardEntity.tileY
@@ -505,7 +508,7 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 		public void handleInputEvent(InputEvent event, TickManager tickManager, PlayerMob perspective) {
 			super.handleInputEvent(event, tickManager, perspective);
 			if (!event.isUsed() && event.state && event.getID() == -100 && isMouseOver(event)) {
-				taskContainer.addTaskAction.runAndSend(itemID);
+				taskContainer.addTask(itemID);
 				updateBoard();
 				makeCurrent(boardForm);
 				if (event.shouldSubmitSound()) {
@@ -528,10 +531,10 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 
 	private class TaskRow extends Form {
 		private final int index;
-		private AnvilCraftingTask task;
+		private CraftingTask task;
 		private FormFairTypeLabel conditionLabel;
 
-		TaskRow(int width, int index, AnvilCraftingTask task) {
+		TaskRow(int width, int index, CraftingTask task) {
 			super(width, 44);
 			this.index = index;
 			this.task = task;
@@ -596,13 +599,13 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 			change.onClicked(e -> {
 				SelectionFloatMenu menu = new SelectionFloatMenu(change, SelectionFloatMenu.Solid(new FontOptions(12)), 210);
 				menu.add("Craft X Units", () -> {
-					AnvilCraftingTask current = taskContainer.boardEntity.getTask(index);
-					if (current != null) taskContainer.updateTask(index, AnvilCraftingTask.CONDITION_CRAFT_UNITS, current.amount);
+					CraftingTask current = taskContainer.boardEntity.getTask(index);
+					if (current != null) taskContainer.updateTask(index, CraftingTask.CONDITION_CRAFT_UNITS, current.amount);
 					menu.remove();
 				});
 				menu.add("Keep X Units Stocked", () -> {
-					AnvilCraftingTask current = taskContainer.boardEntity.getTask(index);
-					if (current != null) taskContainer.updateTask(index, AnvilCraftingTask.CONDITION_KEEP_STOCKED, current.amount);
+					CraftingTask current = taskContainer.boardEntity.getTask(index);
+					if (current != null) taskContainer.updateTask(index, CraftingTask.CONDITION_KEEP_STOCKED, current.amount);
 					menu.remove();
 				});
 				if (e.event.isControllerEvent()) getManager().openFloatMenu(menu);
@@ -636,15 +639,15 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 			ButtonIcon statusIcon;
 			String statusTooltip;
 			switch (task.status) {
-				case AnvilCraftingTask.STATUS_PAUSED:
+				case CraftingTask.STATUS_PAUSED:
 					statusIcon = new ButtonIcon(getInterfaceStyle(), "pause_song", new Color(145, 145, 145));
 					statusTooltip = "Paused";
 					break;
-				case AnvilCraftingTask.STATUS_PROBLEM:
+				case CraftingTask.STATUS_PROBLEM:
 					statusIcon = new ButtonIcon(getInterfaceStyle(), "settlement_error_icon", new Color(225, 55, 55));
 					statusTooltip = task.problemDetails.isEmpty() ? "Problem" : String.join("\n", task.problemDetails);
 					break;
-				case AnvilCraftingTask.STATUS_IN_PROGRESS:
+				case CraftingTask.STATUS_IN_PROGRESS:
 					statusIcon = new ButtonIcon(getInterfaceStyle(), "rotate_clockwise_32", new Color(70, 145, 235));
 					statusTooltip = "In Progress";
 					break;
@@ -673,7 +676,7 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 					new GameMessage[]{new StaticMessage(task.paused ? "Resume" : "Pause")}
 			));
 			pause.onClicked(e -> {
-				AnvilCraftingTask current = taskContainer.boardEntity.getTask(index);
+				CraftingTask current = taskContainer.boardEntity.getTask(index);
 				if (current != null) {
 					taskContainer.setTaskPaused(index, !current.paused);
 					updateBoard();
@@ -689,21 +692,21 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 					new GameMessage[]{new StaticMessage("Delete")}
 			));
 			delete.onClicked(e -> {
-				taskContainer.deleteTaskAction.runAndSend(index);
+				taskContainer.deleteTask(index);
 				updateBoard();
 			});
 		}
 
 		private void updateConditionLabel() {
-			AnvilCraftingTask current = taskContainer.boardEntity.getTask(index);
+			CraftingTask current = taskContainer.boardEntity.getTask(index);
 			if (current == null) {
 				return;
 			}
 			task = current;
 			FontOptions options = conditionLabel.getFontOptions();
 			FairType fairType = new FairType();
-			String prefix = task.conditionType == AnvilCraftingTask.CONDITION_KEEP_STOCKED ? "Keep " : "Craft ";
-			String suffix = task.conditionType == AnvilCraftingTask.CONDITION_KEEP_STOCKED ? " Units Stocked" : " Units";
+			String prefix = task.conditionType == CraftingTask.CONDITION_KEEP_STOCKED ? "Keep " : "Craft ";
+			String suffix = task.conditionType == CraftingTask.CONDITION_KEEP_STOCKED ? " Units Stocked" : " Units";
 			fairType.append(options, prefix);
 			fairType.append(createAmountGlyph(-1));
 			fairType.append(new FairAmountGlyph(options));
@@ -736,7 +739,7 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 
 			@Override
 			public void draw(float x, float y, Color defaultColor) {
-				AnvilCraftingTask current = taskContainer.boardEntity.getTask(index);
+				CraftingTask current = taskContainer.boardEntity.getTask(index);
 				String text = current == null ? "0" : Integer.toString(current.amount);
 				options.defaultColor(defaultColor);
 				float textWidth = FontManager.bit.getWidth(text, options);
@@ -756,6 +759,15 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 
 		private FairButtonGlyph createAmountGlyph(int direction) {
 			return new FairButtonGlyph(16, 16) {
+				private boolean hovering;
+
+				@Override
+				public void handleInputEvent(float drawX, float drawY, InputEvent event) {
+					Rectangle hitbox = new Rectangle((int)drawX + 2, (int)drawY - height - 2, width, height);
+					hovering = hitbox.contains(event.pos.hudX, event.pos.hudY);
+					if (hovering) handleEvent(drawX, drawY, event);
+				}
+
 				@Override
 				public void handleEvent(float drawX, float drawY, InputEvent event) {
 					if ((event.getID() == -100 || event.isRepeatEvent(conditionLabel)) && event.state) {
@@ -764,9 +776,9 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 						if (Control.INV_QUICK_MOVE.isDown()) amount = 10;
 						else if (Control.INV_QUICK_TRASH.isDown() || Control.INV_QUICK_DROP.isDown()) amount = 100;
 
-						AnvilCraftingTask current = taskContainer.boardEntity.getTask(index);
+						CraftingTask current = taskContainer.boardEntity.getTask(index);
 						if (current == null) return;
-						int next = Math.max(0, Math.min(65535, current.amount + direction * amount));
+						int next = max(0, Math.min(65535, current.amount + direction * amount));
 						if (next != current.amount) {
 							taskContainer.updateTask(index, current.conditionType, next);
 							updateConditionLabel();
@@ -777,13 +789,13 @@ public class AnvilCraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 
 				@Override
 				public void draw(float x, float y, Color defaultColor) {
-					ButtonState state = isHovering() ? ButtonState.HIGHLIGHTED : ButtonState.ACTIVE;
+					ButtonState state = hovering ? ButtonState.HIGHLIGHTED : ButtonState.ACTIVE;
 					Color color = direction < 0
 							? getInterfaceStyle().button_minus_20.colorGetter.apply(state)
 							: getInterfaceStyle().button_plus_20.colorGetter.apply(state);
 					if (direction < 0) getInterfaceStyle().button_minus_20.texture.initDraw().color(color).posMiddle((int)x + 8, (int)y - 8).draw();
 					else getInterfaceStyle().button_plus_20.texture.initDraw().color(color).posMiddle((int)x + 8, (int)y - 8).draw();
-					if (isHovering()) Renderer.setCursor(GameWindow.CURSOR.INTERACT);
+					if (hovering) Renderer.setCursor(GameWindow.CURSOR.INTERACT);
 				}
 			};
 		}

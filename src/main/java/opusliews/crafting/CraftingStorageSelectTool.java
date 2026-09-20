@@ -25,23 +25,23 @@ import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
 import necesse.level.maps.TilePosition;
 import necesse.level.maps.hudManager.HudDrawElement;
-import opusliews.container.AnvilContainer;
+import opusliews.container.DynamicCraftingStationContainer;
 
-import static opusliews.object.AnvilObjectEntity.STORAGE_LINK_RADIUS;
+import static opusliews.object.DynamicCraftingStationObjectEntity.STORAGE_LINK_RADIUS;
 
-public class AnvilStorageSelectTool extends SelectTileGameTool {
-	private final AnvilContainer container;
+public class CraftingStorageSelectTool extends SelectTileGameTool {
+	private final DynamicCraftingStationContainer container;
 	private final boolean input;
 	private final Runnable finished;
 	private final HudDrawElement rangeHud;
 
-	public AnvilStorageSelectTool(
-			AnvilContainer container,
+	public CraftingStorageSelectTool(
+			DynamicCraftingStationContainer container,
 			Level level,
 			boolean input,
 			Runnable finished
 	) {
-		super(level, new StaticMessage(input ? "Set input storage" : "Set output storage"), true);
+		super(level, new StaticMessage(input ? "Set input storages" : "Set output storages"), true);
 		this.container = container;
 		this.input = input;
 		this.finished = finished;
@@ -49,8 +49,8 @@ public class AnvilStorageSelectTool extends SelectTileGameTool {
 		rangeHud = new HudDrawElement() {
 			@Override
 			public void addDrawables(List list, GameCamera camera, PlayerMob perspective) {
-				final int minX = container.anvilEntity.tileX - STORAGE_LINK_RADIUS;
-				final int minY = container.anvilEntity.tileY - STORAGE_LINK_RADIUS;
+				final int minX = container.stationEntity.tileX - STORAGE_LINK_RADIUS;
+				final int minY = container.stationEntity.tileY - STORAGE_LINK_RADIUS;
 				final int size = STORAGE_LINK_RADIUS * 2 + 1;
 
 				list.add(new SortedDrawable() {
@@ -147,50 +147,37 @@ public class AnvilStorageSelectTool extends SelectTileGameTool {
 	public GameMessage isValidTile(TilePosition pos) {
 		lastHoverBounds = null;
 
-		if (!container.anvilEntity.isWithinStorageLinkRange(pos.tileX, pos.tileY)) {
-			return new StaticMessage("Storage must be within " + STORAGE_LINK_RADIUS + " tiles of the anvil");
+		if (!container.stationEntity.isWithinStorageLinkRange(pos.tileX, pos.tileY)) {
+			return new StaticMessage("Storage must be within " + STORAGE_LINK_RADIUS + " tiles of the crafting station");
 		}
 
 		LevelObject master = getMaster(pos);
-		Point current = input ? container.anvilEntity.getInputStorage() : container.anvilEntity.getOutputStorage();
-		Point other = input ? container.anvilEntity.getOutputStorage() : container.anvilEntity.getInputStorage();
-
-		if (master == null) {
-			if (current != null && current.x == pos.tileX && current.y == pos.tileY) {
-				return null;
-			}
-			return new StaticMessage("Must be a storage container");
-		}
+		if (master == null) return new StaticMessage("Must be a storage container");
 
 		Point target = new Point(master.tileX, master.tileY);
 		lastHoverBounds = master.getMultiTile().getTileRectangle(master.tileX, master.tileY);
 
-		if (!container.anvilEntity.isWithinStorageLinkRange(target.x, target.y)) {
-			return new StaticMessage("Storage must be within " + STORAGE_LINK_RADIUS + " tiles of the anvil");
+		if (!container.stationEntity.isWithinStorageLinkRange(target.x, target.y)) {
+			return new StaticMessage("Storage must be within " + STORAGE_LINK_RADIUS + " tiles of the crafting station");
 		}
 
-		if (current != null && current.equals(target)) {
-			return null;
-		}
-
-		if (other != null && other.equals(target)) {
-			return new StaticMessage(input
-					? "This container is already the output storage"
-					: "This container is already the input storage");
-		}
-
-		if (container.anvilEntity.isStorageUsedByOtherAnvil(target)) {
-			return new StaticMessage("This container is already linked to another anvil");
-		}
+		boolean alreadyLinked = input
+				? container.stationEntity.hasInputStorage(target)
+				: container.stationEntity.hasOutputStorage(target);
+		if (alreadyLinked) return null;
 
 		ObjectEntity objectEntity = master.getObjectEntity();
-		if (!(objectEntity instanceof OEInventory) || objectEntity == container.anvilEntity) {
+		if (!(objectEntity instanceof OEInventory) || objectEntity == container.stationEntity) {
 			return new StaticMessage("Must be a storage container");
 		}
 
 		OEInventory inventory = (OEInventory)objectEntity;
 		if (inventory.getInventory() == null || inventory.getSettlementStorage() == null) {
 			return new StaticMessage("Must be a storage container");
+		}
+
+		if (input && container.stationEntity.isStorageInputForOtherStation(target)) {
+			return new StaticMessage("This container is already linked as another crafting station input");
 		}
 
 		return null;

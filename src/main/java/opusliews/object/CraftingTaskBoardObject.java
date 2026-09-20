@@ -5,6 +5,8 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 import necesse.engine.gameLoop.tickManager.TickManager;
 import necesse.engine.localization.Localization;
@@ -27,14 +29,14 @@ import necesse.level.maps.Level;
 import necesse.level.maps.light.GameLight;
 import necesse.level.maps.multiTile.MultiTile;
 import necesse.level.maps.multiTile.SideMultiTile;
-import opusliews.crafting.AnvilCraftingTasksFeature;
+import opusliews.crafting.CraftingTasksFeature;
 
-public class AnvilCraftingTaskBoardObject extends GameObject {
-	public static final String STRING_ID = "anvilcraftingtaskboard";
-	public GameTexture texture;
+public class CraftingTaskBoardObject extends GameObject {
+	public static final String STRING_ID = "craftingtaskboard";
+	public final Map<String, GameTexture> textures = new HashMap<>();
 	protected int counterID;
 
-	public AnvilCraftingTaskBoardObject() {
+	public CraftingTaskBoardObject() {
 		super(new Rectangle(32, 32));
 		displayMapTooltip = true;
 		mapColor = new Color(132, 91, 25);
@@ -48,7 +50,17 @@ public class AnvilCraftingTaskBoardObject extends GameObject {
 	@Override
 	public void loadTextures() {
 		super.loadTextures();
-		texture = GameTexture.fromFile("objects/anvilcraftingtaskboard");
+		for (String key : new String[]{"unlinked", "anvil", "workstation", "alchemy", "carpenter"}) {
+			textures.put(key, GameTexture.fromFile("objects/craftingtaskboard_" + key));
+		}
+	}
+
+	private GameTexture getTexture(Level level, int tileX, int tileY) {
+		ObjectEntity entity = level.entityManager.getObjectEntity(tileX, tileY);
+		String key = entity instanceof CraftingTaskBoardObjectEntity
+				? ((CraftingTaskBoardObjectEntity)entity).getLinkedStationTextureKey()
+				: "unlinked";
+		return textures.getOrDefault(key, textures.get("unlinked"));
 	}
 
 	@Override
@@ -76,6 +88,7 @@ public class AnvilCraftingTaskBoardObject extends GameObject {
 		GameLight light = level.getLightLevel(tileX, tileY);
 		int drawX = camera.getTileDrawX(tileX);
 		int drawY = camera.getTileDrawY(tileY);
+		GameTexture texture = getTexture(level, tileX, tileY);
 		final DrawOptions options = texture.initDraw().sprite(0, 0, 32, texture.getHeight()).addObjectDamageOverlay(this, level, tileX, tileY).light(light).pos(drawX, drawY - texture.getHeight() + 32);
 		list.add(new LevelSortedDrawable(this, tileX, tileY) {
 			@Override
@@ -94,6 +107,7 @@ public class AnvilCraftingTaskBoardObject extends GameObject {
 	public void drawPreview(Level level, int tileX, int tileY, int rotation, float alpha, PlayerMob player, GameCamera camera) {
 		int drawX = camera.getTileDrawX(tileX);
 		int drawY = camera.getTileDrawY(tileY);
+		GameTexture texture = getTexture(level, tileX, tileY);
 		texture.initDraw().sprite(0, 0, 32, texture.getHeight()).alpha(alpha).pos(drawX, drawY - texture.getHeight() + 32).draw();
 	}
 
@@ -114,22 +128,22 @@ public class AnvilCraftingTaskBoardObject extends GameObject {
 		}
 
 		ObjectEntity objectEntity = level.entityManager.getObjectEntity(x, y);
-		if (objectEntity instanceof AnvilCraftingTaskBoardObjectEntity) {
+		if (objectEntity instanceof CraftingTaskBoardObjectEntity) {
 			ContainerRegistry.openAndSendContainer(
 					player.getServerClient(),
-					PacketOpenContainer.ObjectEntity(AnvilCraftingTasksFeature.taskBoardContainerID, objectEntity)
+					PacketOpenContainer.ObjectEntity(CraftingTasksFeature.taskBoardContainerID, objectEntity)
 			);
 		}
 	}
 
 	@Override
 	public ObjectEntity getNewObjectEntity(Level level, int x, int y) {
-		return new AnvilCraftingTaskBoardObjectEntity(level, x, y);
+		return new CraftingTaskBoardObjectEntity(level, x, y);
 	}
 
 	public static int[] registerBoard() {
-		AnvilCraftingTaskBoardObject primary = new AnvilCraftingTaskBoardObject();
-		AnvilCraftingTaskBoard2Object secondary = new AnvilCraftingTaskBoard2Object();
+		CraftingTaskBoardObject primary = new CraftingTaskBoardObject();
+		CraftingTaskBoard2Object secondary = new CraftingTaskBoard2Object();
 		int primaryID = ObjectRegistry.registerObject(STRING_ID, primary, 500.0F, true);
 		int secondaryID = ObjectRegistry.registerObject(STRING_ID + "2", secondary, 0.0F, false);
 		primary.counterID = secondaryID;

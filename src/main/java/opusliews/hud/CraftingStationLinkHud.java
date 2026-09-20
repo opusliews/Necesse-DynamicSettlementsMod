@@ -17,25 +17,25 @@ import necesse.gfx.ui.HUD;
 import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
 import necesse.level.maps.hudManager.HudDrawElement;
-import opusliews.object.AnvilCraftingTaskBoardObjectEntity;
-import opusliews.object.AnvilObjectEntity;
+import opusliews.object.CraftingTaskBoardObjectEntity;
+import opusliews.object.DynamicCraftingStationObjectEntity;
 
-public class AnvilLinkHud {
+public class CraftingStationLinkHud {
 	private static final Color INPUT_COLOR = new Color(40, 220, 70, 255);
 	private static final Color OUTPUT_COLOR = new Color(230, 55, 55, 255);
 	private static final Color TASK_LINK_COLOR = new Color(40, 220, 70, 255);
 
 	private static final Map<Level, HudDrawElement> elements = new WeakHashMap<>();
-	private static Level openAnvilLevel;
-	private static int openAnvilX;
-	private static int openAnvilY;
-	private static boolean hasOpenAnvil;
+	private static Level openStationLevel;
+	private static int openStationX;
+	private static int openStationY;
+	private static boolean hasOpenStation;
 	private static Level openBoardLevel;
 	private static int openBoardX;
 	private static int openBoardY;
 	private static boolean hasOpenBoard;
 
-	private AnvilLinkHud() {
+	private CraftingStationLinkHud() {
 	}
 
 	public static void ensureAdded(Level level) {
@@ -48,16 +48,21 @@ public class AnvilLinkHud {
 			public void addDrawables(List list, GameCamera camera, PlayerMob perspective) {
 				final DrawOptionsList options = new DrawOptionsList();
 
-				AnvilObjectEntity anvil = getDisplayedAnvil(level, camera);
-				if (anvil != null) {
-					addStorageOutline(options, level, camera, anvil.getInputStorage(), INPUT_COLOR);
-					addStorageOutline(options, level, camera, anvil.getOutputStorage(), OUTPUT_COLOR);
-					addTaskBoardOutline(options, level, camera, anvil.getTaskBoard(), TASK_LINK_COLOR);
+				DynamicCraftingStationObjectEntity station = getDisplayedStation(level, camera);
+				if (station != null) {
+					for (Point storage : station.getInputStorages()) {
+						addStorageOutline(options, level, camera, storage, INPUT_COLOR, 0);
+					}
+					for (Point storage : station.getOutputStorages()) {
+						int inset = station.getInputStorages().contains(storage) ? 3 : 0;
+						addStorageOutline(options, level, camera, storage, OUTPUT_COLOR, inset);
+					}
+					addTaskBoardOutline(options, level, camera, station.getTaskBoard(), TASK_LINK_COLOR);
 				}
 
-				AnvilCraftingTaskBoardObjectEntity board = getDisplayedBoard(level, camera);
+				CraftingTaskBoardObjectEntity board = getDisplayedBoard(level, camera);
 				if (board != null) {
-					addAnvilOutline(options, level, camera, board.getLinkedAnvil(), TASK_LINK_COLOR);
+					addStationOutline(options, level, camera, board.getLinkedStation(), TASK_LINK_COLOR);
 				}
 
 				if (options.isEmpty()) {
@@ -82,18 +87,18 @@ public class AnvilLinkHud {
 		elements.put(level, element);
 	}
 
-	public static void setOpenAnvil(Level level, int tileX, int tileY) {
-		openAnvilLevel = level;
-		openAnvilX = tileX;
-		openAnvilY = tileY;
-		hasOpenAnvil = true;
+	public static void setOpenStation(Level level, int tileX, int tileY) {
+		openStationLevel = level;
+		openStationX = tileX;
+		openStationY = tileY;
+		hasOpenStation = true;
 		ensureAdded(level);
 	}
 
-	public static void clearOpenAnvil(Level level, int tileX, int tileY) {
-		if (hasOpenAnvil && openAnvilLevel == level && openAnvilX == tileX && openAnvilY == tileY) {
-			hasOpenAnvil = false;
-			openAnvilLevel = null;
+	public static void clearOpenStation(Level level, int tileX, int tileY) {
+		if (hasOpenStation && openStationLevel == level && openStationX == tileX && openStationY == tileY) {
+			hasOpenStation = false;
+			openStationLevel = null;
 		}
 	}
 
@@ -112,11 +117,11 @@ public class AnvilLinkHud {
 		}
 	}
 
-	private static AnvilObjectEntity getDisplayedAnvil(Level level, GameCamera camera) {
-		if (hasOpenAnvil && openAnvilLevel == level) {
-			ObjectEntity openEntity = level.entityManager.getObjectEntity(openAnvilX, openAnvilY);
-			if (openEntity instanceof AnvilObjectEntity) {
-				return (AnvilObjectEntity)openEntity;
+	private static DynamicCraftingStationObjectEntity getDisplayedStation(Level level, GameCamera camera) {
+		if (hasOpenStation && openStationLevel == level) {
+			ObjectEntity openEntity = level.entityManager.getObjectEntity(openStationX, openStationY);
+			if (openEntity instanceof DynamicCraftingStationObjectEntity) {
+				return (DynamicCraftingStationObjectEntity)openEntity;
 			}
 		}
 
@@ -125,24 +130,24 @@ public class AnvilLinkHud {
 		}
 
 		ObjectEntity hoveredEntity = getHoveredMasterEntity(level, camera);
-		return hoveredEntity instanceof AnvilObjectEntity ? (AnvilObjectEntity)hoveredEntity : null;
+		return hoveredEntity instanceof DynamicCraftingStationObjectEntity ? (DynamicCraftingStationObjectEntity)hoveredEntity : null;
 	}
 
-	private static AnvilCraftingTaskBoardObjectEntity getDisplayedBoard(Level level, GameCamera camera) {
+	private static CraftingTaskBoardObjectEntity getDisplayedBoard(Level level, GameCamera camera) {
 		if (hasOpenBoard && openBoardLevel == level) {
 			ObjectEntity openEntity = level.entityManager.getObjectEntity(openBoardX, openBoardY);
-			if (openEntity instanceof AnvilCraftingTaskBoardObjectEntity) {
-				return (AnvilCraftingTaskBoardObjectEntity)openEntity;
+			if (openEntity instanceof CraftingTaskBoardObjectEntity) {
+				return (CraftingTaskBoardObjectEntity)openEntity;
 			}
 		}
 
-		if (hasOpenAnvil && openAnvilLevel == level) {
+		if (hasOpenStation && openStationLevel == level) {
 			return null;
 		}
 
 		ObjectEntity hoveredEntity = getHoveredMasterEntity(level, camera);
-		return hoveredEntity instanceof AnvilCraftingTaskBoardObjectEntity
-				? (AnvilCraftingTaskBoardObjectEntity)hoveredEntity
+		return hoveredEntity instanceof CraftingTaskBoardObjectEntity
+				? (CraftingTaskBoardObjectEntity)hoveredEntity
 				: null;
 	}
 
@@ -163,7 +168,8 @@ public class AnvilLinkHud {
 			Level level,
 			GameCamera camera,
 			Point storage,
-			Color color
+			Color color,
+			int inset
 	) {
 		if (storage == null) {
 			return;
@@ -184,7 +190,7 @@ public class AnvilLinkHud {
 			return;
 		}
 
-		addMasterOutline(options, camera, master, color);
+		addMasterOutline(options, camera, master, color, inset);
 	}
 
 	private static void addTaskBoardOutline(
@@ -195,12 +201,12 @@ public class AnvilLinkHud {
 			Color color
 	) {
 		LevelObject master = point == null ? null : getStoredMaster(level, point);
-		if (master != null && master.getObjectEntity() instanceof AnvilCraftingTaskBoardObjectEntity) {
+		if (master != null && master.getObjectEntity() instanceof CraftingTaskBoardObjectEntity) {
 			addMasterOutline(options, camera, master, color);
 		}
 	}
 
-	private static void addAnvilOutline(
+	private static void addStationOutline(
 			DrawOptionsList options,
 			Level level,
 			GameCamera camera,
@@ -208,7 +214,7 @@ public class AnvilLinkHud {
 			Color color
 	) {
 		LevelObject master = point == null ? null : getStoredMaster(level, point);
-		if (master != null && master.getObjectEntity() instanceof AnvilObjectEntity) {
+		if (master != null && master.getObjectEntity() instanceof DynamicCraftingStationObjectEntity) {
 			addMasterOutline(options, camera, master, color);
 		}
 	}
@@ -227,7 +233,28 @@ public class AnvilLinkHud {
 	}
 
 	private static void addMasterOutline(DrawOptionsList options, GameCamera camera, LevelObject master, Color color) {
+		addMasterOutline(options, camera, master, color, 0);
+	}
+
+	private static void addMasterOutline(
+			DrawOptionsList options,
+			GameCamera camera,
+			LevelObject master,
+			Color color,
+			int inset
+	) {
 		Rectangle bounds = master.getMultiTile().getTileRectangle(master.tileX, master.tileY);
-		options.add(HUD.tileBoundOptions(camera, color, true, bounds));
+		if (inset <= 0) {
+			options.add(HUD.tileBoundOptions(camera, color, true, bounds));
+			return;
+		}
+
+		Rectangle pixelBounds = new Rectangle(
+				bounds.x * 32 + inset,
+				bounds.y * 32 + inset,
+				bounds.width * 32 - inset * 2,
+				bounds.height * 32 - inset * 2
+		);
+		options.add(HUD.levelBoundOptions(camera, color, true, pixelBounds));
 	}
 }
