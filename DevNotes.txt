@@ -1,0 +1,50 @@
+Configuring item durability:
+
+ItemDurabilityRegistry.configure("ironpickaxe", 250)
+		.on(DurabilityAction.OBJECT_DAMAGE, 1)
+		.on(DurabilityAction.TILE_DAMAGE, 1, 3)
+		.on(DurabilityAction.DAMAGE_DEALT, 2);
+---
+ItemDurabilityRegistry.configure("someitem", 100)
+		.on(
+				DurabilityAction.OBJECT_INTERACT,
+				2,
+				5,
+				context -> context.targetObject != null
+						&& context.targetObject.object.getStringID().equals("someobject")
+		);
+		
+---
+
+ItemDurabilityRegistry.configure("ironpickaxe", 250)
+		.destroyOnBreak()
+		.on(DurabilityAction.OBJECT_DAMAGE, 1);
+		
+ItemDurabilityRegistry.configure("ironpickaxe", 250)
+		.replaceOnBreak("brokenironpickaxe")
+		.on(DurabilityAction.OBJECT_DAMAGE, 1);
+
+---------
+
+Setting item crafting time:
+
+CraftingTime.set("ironpickaxe", 5.0F);
+
+---
+
+Item item = new MyItem();
+CraftingTime.set(item, 3.5F);
+ItemRegistry.registerItem("myitem", item, 100, true);
+
+---
+
+ItemRegistry.registerItem(
+		"myitem",
+		CraftingTime.set(new MyItem(), 3.5F),
+		100,
+		true
+);
+
+---
+
+CraftingTime.setMilliseconds("ironpickaxe", 5000L);

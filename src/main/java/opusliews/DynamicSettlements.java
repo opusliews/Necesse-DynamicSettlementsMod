@@ -31,6 +31,7 @@ import opusliews.crafting.CraftingStationFeature;
 import opusliews.crafting.CraftingTasksFeature;
 import opusliews.damage.DamageRepairLevelData;
 import opusliews.damage.WeatheringLevelData;
+import opusliews.durability.ItemDurabilityRegistry;
 import opusliews.earlygame.CrudeAnvilFeature;
 import opusliews.earlygame.CrudeWorkbenchFeature;
 import opusliews.earlygame.EarlyGameLevelData;
@@ -173,6 +174,7 @@ public class DynamicSettlements {
 		CrudeWorkbenchFeature.register();
 		CrudeAnvilFeature.register();
 		DSItemRegistry.registerItems();
+		ItemDurabilityRegistry.registerDurability();
 		ItemRegistry.registerItem(DirtPileItem.stringID, new DirtPileItem(), 0.0F, true);
 		ItemRegistry.registerItem("charcoal", new MatItem(500, Item.Rarity.NORMAL), 4.0F, true);
 		ItemRegistry.registerItem(SharpenedStoneItem.stringID, new SharpenedStoneItem(), 0.5F, true);

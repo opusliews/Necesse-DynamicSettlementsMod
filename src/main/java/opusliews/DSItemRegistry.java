@@ -10,12 +10,7 @@ import opusliews.armor.BuilderHatArmorItem;
 import opusliews.armor.BuilderShirtArmorItem;
 import opusliews.crafting.CraftingComponentCategories;
 import opusliews.crafting.CraftingMaterialItem;
-import opusliews.item.BlueprintItem;
-import opusliews.item.InspectionGlassItem;
-import opusliews.item.FireableMatItem;
-import opusliews.item.MalignanceGogglesItem;
-import opusliews.item.ProjectEraserItem;
-import opusliews.item.TreasureShovelItem;
+import opusliews.item.*;
 
 public class DSItemRegistry {
 	public static final String featherStringID = "feather";

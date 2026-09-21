@@ -1,0 +1,15 @@
+package opusliews.durability;
+
+public enum DurabilityAction {
+	ATTACK,
+	LEVEL_INTERACT,
+	MOB_INTERACT,
+	OBJECT_INTERACT,
+	CRAFTING_USE,
+	DAMAGE_DEALT,
+	OBJECT_DAMAGE,
+	TILE_DAMAGE,
+	OBJECT_DESTROYED,
+	TILE_DESTROYED,
+	CUSTOM
+}
