@@ -47,9 +47,8 @@ public final class ItemDurabilityRegistry {
 	}
 
 	public static void registerDurability() {
-		// TODO Set item durabilities here
-//		ItemDurabilityRegistry.configure("ironpickaxe", 5)
-//				.on(DurabilityAction.OBJECT_DESTROYED, 1)
-//				.destroyOnBreak();
+		ItemDurabilityRegistry.configure("thickplatemold", 10)
+				.on(DurabilityAction.CRAFTING_USE, 1)
+				.destroyOnBreak();
 	}
 }

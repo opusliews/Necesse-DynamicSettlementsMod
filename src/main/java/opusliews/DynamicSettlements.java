@@ -37,6 +37,7 @@ import opusliews.earlygame.CrudeWorkbenchFeature;
 import opusliews.earlygame.EarlyGameLevelData;
 import opusliews.forms.BlueprintWorkstationContainerForm;
 import opusliews.forms.CrudeWorkbenchContainerForm;
+import opusliews.forge.ForgeCookingRecipeRegistry;
 import opusliews.item.*;
 import opusliews.jobs.CharcoalCleanupLevelJob;
 import opusliews.jobs.CharcoalProductionLevelJob;
@@ -175,6 +176,7 @@ public class DynamicSettlements {
 		CrudeAnvilFeature.register();
 		DSItemRegistry.registerItems();
 		ItemDurabilityRegistry.registerDurability();
+		ForgeCookingRecipeRegistry.registerRecipes();
 		ItemRegistry.registerItem(DirtPileItem.stringID, new DirtPileItem(), 0.0F, true);
 		ItemRegistry.registerItem("charcoal", new MatItem(500, Item.Rarity.NORMAL), 4.0F, true);
 		ItemRegistry.registerItem(SharpenedStoneItem.stringID, new SharpenedStoneItem(), 0.5F, true);
