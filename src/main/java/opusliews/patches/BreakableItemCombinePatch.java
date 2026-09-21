@@ -20,6 +20,7 @@ public class BreakableItemCombinePatch {
 			@Advice.Argument(3) InventoryItem them,
 			@Advice.Return(readOnly = false) boolean result
 	) {
-		if (result && (ItemDurabilitySystem.isBreakable(me) || ItemDurabilitySystem.isBreakable(them))) result = false;
+		if (!result) return;
+		if (ItemDurabilitySystem.isDamaged(me) || ItemDurabilitySystem.isDamaged(them)) result = false;
 	}
 }

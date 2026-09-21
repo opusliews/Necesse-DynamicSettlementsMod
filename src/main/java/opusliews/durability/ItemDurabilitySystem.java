@@ -65,6 +65,14 @@ public final class ItemDurabilitySystem {
 		return maxDurability <= 0 ? 1.0F : getDurability(item) / (float)maxDurability;
 	}
 
+	public static boolean isFullDurability(InventoryItem item) {
+		return !isBreakable(item) || getDurability(item) >= getMaxDurability(item);
+	}
+
+	public static boolean isDamaged(InventoryItem item) {
+		return isBreakable(item) && getDurability(item) < getMaxDurability(item);
+	}
+
 	public static void setDurability(InventoryItem item, int durability) {
 		if (!isBreakable(item)) return;
 

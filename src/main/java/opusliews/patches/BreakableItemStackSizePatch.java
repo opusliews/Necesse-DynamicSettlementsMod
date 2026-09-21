@@ -1,21 +1,22 @@
 package opusliews.patches;
 
 import necesse.engine.modLoader.annotations.ModMethodPatch;
-import necesse.inventory.item.Item;
+import necesse.inventory.Inventory;
+import necesse.inventory.InventoryItem;
 import net.bytebuddy.asm.Advice;
-import opusliews.durability.ItemDurabilityRegistry;
+import opusliews.durability.ItemDurabilitySystem;
 
 @ModMethodPatch(
-		target = Item.class,
-		name = "getStackSize",
-		arguments = {}
+		target = Inventory.class,
+		name = "getItemStackLimit",
+		arguments = {int.class, InventoryItem.class}
 )
 public class BreakableItemStackSizePatch {
 	@Advice.OnMethodExit
 	public static void onExit(
-			@Advice.This Item item,
+			@Advice.Argument(1) InventoryItem item,
 			@Advice.Return(readOnly = false) int result
 	) {
-		if (ItemDurabilityRegistry.isBreakable(item)) result = 1;
+		if (ItemDurabilitySystem.isDamaged(item)) result = Math.min(result, 1);
 	}
 }
