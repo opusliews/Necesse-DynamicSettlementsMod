@@ -70,6 +70,9 @@ public class DSRecipeRegistry {
 
 		register(unfiredSwordBladeMoldStringID, 1, CrudeWorkbenchFeature.tech, ingredient("clay", 1));
 		register(unfiredSwordBladeMoldStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("clay", 1));
+
+		register(unfiredThickPlateMoldStringID, 1, CrudeWorkbenchFeature.tech, ingredient("clay", 1));
+		register(unfiredThickPlateMoldStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("clay", 1));
 	}
 
 	private static void registerExistingModRecipes() {

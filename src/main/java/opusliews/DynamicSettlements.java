@@ -31,6 +31,7 @@ import opusliews.crafting.CraftingStationFeature;
 import opusliews.crafting.CraftingTasksFeature;
 import opusliews.damage.DamageRepairLevelData;
 import opusliews.damage.WeatheringLevelData;
+import opusliews.earlygame.CrudeAnvilFeature;
 import opusliews.earlygame.CrudeWorkbenchFeature;
 import opusliews.earlygame.EarlyGameLevelData;
 import opusliews.forms.BlueprintWorkstationContainerForm;
@@ -170,6 +171,7 @@ public class DynamicSettlements {
 				BuilderHumanMob.class, true);
 
 		CrudeWorkbenchFeature.register();
+		CrudeAnvilFeature.register();
 		DSItemRegistry.registerItems();
 		ItemRegistry.registerItem(DirtPileItem.stringID, new DirtPileItem(), 0.0F, true);
 		ItemRegistry.registerItem("charcoal", new MatItem(500, Item.Rarity.NORMAL), 4.0F, true);
@@ -325,6 +327,7 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketCharcoalProductionSettingsSync.class);
 		PacketRegistry.registerPacket(PacketClayDiggingSound.class);
 		PacketRegistry.registerPacket(PacketCrudeWorkbenchOutput.class);
+		PacketRegistry.registerPacket(PacketCrudeAnvilOutput.class);
 
 		CraftingStationFeature.register();
 		CraftingTasksFeature.register();

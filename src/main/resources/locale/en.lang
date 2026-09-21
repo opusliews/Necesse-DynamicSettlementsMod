@@ -75,6 +75,9 @@ unfiredshearsblademold=Unfired Shears Blade Mold
 shearsblademold=Shears Blade Mold
 unfiredswordblademold=Unfired Sword Blade Mold
 swordblademold=Sword Blade Mold
+unfiredthickplatemold=Unfired Thick Plate Mold
+thickplatemold=Thick Plate Mold
+thickironplate=Thick Iron Plate
 
 oakplank=Oak Plank
 nail=Nail
@@ -148,6 +151,7 @@ clockworkmechanism=Clockwork Mechanism
 magicfocus=Magic Focus
 [object]
 placedlog=Log
+crudeanvil=Crude Anvil
 crudeworkbench=Crude Workbench
 blueprintworkstation=Blueprint Workstation
 builderjobrequestbulletin=Builder Job Request Bulletin

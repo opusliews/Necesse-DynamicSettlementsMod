@@ -12,6 +12,7 @@ import net.bytebuddy.asm.Advice;
 import opusliews.object.AlchemyTableObjectEntity;
 import opusliews.object.AnvilObjectEntity;
 import opusliews.object.CarpentersBenchObjectEntity;
+import opusliews.object.CrudeAnvilObject;
 import opusliews.object.WorkstationObjectEntity;
 
 @ModMethodPatch(
@@ -30,7 +31,7 @@ public class CraftingStationObjectEntityPatch {
 	) {
 		if (result != null || !object.isMultiTileMaster()) return;
 
-		if (object instanceof IronAnvilObject) {
+		if (object instanceof IronAnvilObject && !(object instanceof CrudeAnvilObject)) {
 			result = new AnvilObjectEntity(level, tileX, tileY);
 		}
 		else if (object instanceof WorkstationDuoObject) {
