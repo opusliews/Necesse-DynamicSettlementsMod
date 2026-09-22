@@ -9,6 +9,11 @@ import necesse.inventory.recipe.Recipe;
 import necesse.inventory.recipe.RecipeCraftedEvent;
 import necesse.inventory.recipe.Recipes;
 import necesse.inventory.recipe.Tech;
+import necesse.engine.registries.RecipeTechRegistry;
+import opusliews.forge.ForgeCookingRecipe;
+import opusliews.forge.ForgeCookingRecipeRegistry;
+import opusliews.forge.ForgeTaskSystem;
+import opusliews.forge.ForgeRequirementSystem;
 import necesse.level.gameObject.container.CraftingStationObject;
 import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
@@ -28,11 +33,28 @@ public final class CraftingTaskLogic {
 	}
 
 	public static Recipe getRecipe(CraftingTaskBoardObjectEntity board, int itemID) {
+		CraftingTaskRecipe taskRecipe = getAnvilTaskRecipe(board, itemID);
+		return taskRecipe == null ? null : taskRecipe.recipe;
+	}
+
+	public static CraftingTaskRecipe getTaskRecipe(CraftingTaskBoardObjectEntity board, CraftingTask task) {
+		if (task == null) return null;
+		return task.sourceType == CraftingTask.SOURCE_FORGE
+				? getForgeTaskRecipe(board, task.itemID)
+				: getAnvilTaskRecipe(board, task.itemID);
+	}
+
+	public static CraftingTaskRecipe getTaskRecipe(CraftingTaskBoardObjectEntity board, int itemID) {
+		CraftingTaskRecipe anvil = getAnvilTaskRecipe(board, itemID);
+		return anvil != null ? anvil : getForgeTaskRecipe(board, itemID);
+	}
+
+	public static CraftingTaskRecipe getAnvilTaskRecipe(CraftingTaskBoardObjectEntity board, int itemID) {
 		LevelObject stationObject = board.getValidLinkedStationObject();
 		if (stationObject == null || !(stationObject.object instanceof CraftingStationObject)) return null;
 
 		Tech[] techs = ((CraftingStationObject)stationObject.object).getCraftingTechs();
-		return Recipes.streamRecipes()
+		Recipe stationRecipe = Recipes.streamRecipes()
 				.filter(recipe -> recipe.resultItem.item.getID() == itemID)
 				.filter(recipe -> {
 					for (Tech tech : techs) {
@@ -42,10 +64,51 @@ public final class CraftingTaskLogic {
 				})
 				.findFirst()
 				.orElse(null);
+		return stationRecipe == null ? null : CraftingTaskRecipe.station(stationRecipe);
+	}
+
+	public static CraftingTaskRecipe getForgeTaskRecipe(CraftingTaskBoardObjectEntity board, int itemID) {
+		DynamicCraftingStationObjectEntity station = getStationEntity(board);
+		if (station == null || !station.supportsForgeLinks()) return null;
+
+		CraftingTaskRecipe firstForgeCandidate = null;
+		for (ForgeCookingRecipe recipe : ForgeCookingRecipeRegistry.getRecipes()) {
+			InventoryItem output = recipe.getOutput();
+			if (output == null || output.item.getID() != itemID) continue;
+			CraftingTaskRecipe candidate = CraftingTaskRecipe.customForge(recipe);
+			if (firstForgeCandidate == null) firstForgeCandidate = candidate;
+			if (ForgeTaskSystem.getMissingIngredients(board, candidate).isEmpty()) return candidate;
+		}
+
+		Recipe vanillaForge = Recipes.streamRecipes(RecipeTechRegistry.FORGE)
+				.filter(recipe -> recipe.resultItem.item.getID() == itemID)
+				.findFirst()
+				.orElse(null);
+		if (vanillaForge != null) {
+			CraftingTaskRecipe candidate = CraftingTaskRecipe.vanillaForge(vanillaForge);
+			if (firstForgeCandidate == null || ForgeTaskSystem.getMissingIngredients(board, candidate).isEmpty()) return candidate;
+		}
+
+		return firstForgeCandidate;
 	}
 
 	public static DynamicCraftingStationObjectEntity getStationEntity(CraftingTaskBoardObjectEntity board) {
 		return board.getLinkedStationEntity();
+	}
+
+	public static List<String> getMissingIngredients(CraftingTaskBoardObjectEntity board, CraftingTaskRecipe taskRecipe) {
+		if (taskRecipe == null) return new ArrayList<>();
+		return taskRecipe.isForgeRecipe()
+				? ForgeTaskSystem.getMissingIngredients(board, taskRecipe)
+				: getMissingIngredients(board, taskRecipe.recipe);
+	}
+
+	public static boolean canFitResult(CraftingTaskBoardObjectEntity board, CraftingTaskRecipe taskRecipe) {
+		if (taskRecipe == null) return false;
+		InventoryItem result = taskRecipe.getResultItem();
+		if (result == null) return false;
+		if (taskRecipe.isForgeRecipe()) return getStoragePool(board).canFitResult(result);
+		return canFitResult(board, taskRecipe.recipe, result);
 	}
 
 	public static String getStationCraftingProblem(CraftingTaskBoardObjectEntity board, Recipe recipe) {
@@ -131,6 +194,20 @@ public final class CraftingTaskLogic {
 
 		String stationProblem = getStationCraftingProblem(board, recipe);
 		if (stationProblem != null) return CraftResult.problem(stationProblem);
+
+		DynamicCraftingStationObjectEntity station = getStationEntity(board);
+		if (ForgeRequirementSystem.requiresRunningForge(recipe)) {
+			ForgeRequirementSystem.Status forgeStatus = ForgeRequirementSystem.getStatus(station, recipe, pool);
+			if (forgeStatus == ForgeRequirementSystem.Status.NO_LINKED_FORGE) {
+				return CraftResult.problem(Localization.translate("ui", "craftingrequireslinkedforge"));
+			}
+			if (forgeStatus == ForgeRequirementSystem.Status.NO_FUEL) {
+				return CraftResult.problem(Localization.translate("ui", "statusmissingforgefuel"));
+			}
+			if (!ForgeRequirementSystem.ensureRunningForge(station, recipe, pool, 250L)) {
+				return CraftResult.problem(Localization.translate("ui", "statusmissingforgefuel"));
+			}
+		}
 
 		List<String> missing = pool.getMissingIngredients(recipe);
 		if (!missing.isEmpty()) return CraftResult.missing(missing);

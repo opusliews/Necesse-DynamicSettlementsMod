@@ -18,6 +18,9 @@ import necesse.level.maps.LevelObject;
 import necesse.level.maps.levelData.jobs.TileLevelJob;
 import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import opusliews.crafting.CraftingTaskLogic;
+import opusliews.crafting.CraftingTaskRecipe;
+import opusliews.forge.ForgeTaskSystem;
+import opusliews.forge.ForgeRequirementSystem;
 import opusliews.crafting.CraftingTask;
 import opusliews.jobs.CraftingStationLevelJob;
 import opusliews.logging.Logging;
@@ -28,6 +31,7 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 
 	private Point linkedStation;
 	private final ArrayList<CraftingTask> tasks = new ArrayList<>();
+	private final ArrayList<ForgeAssignment> forgeAssignments = new ArrayList<>();
 	private int taskRevision;
 
 	private transient CraftingStationLevelJob craftingJob;
@@ -57,6 +61,14 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 			tasksData.addSaveData(taskData);
 		}
 		save.addSaveData(tasksData);
+
+		SaveData forgeAssignmentsData = new SaveData("forgeAssignments");
+		for (ForgeAssignment assignment : forgeAssignments) {
+			SaveData assignmentData = new SaveData("assignment");
+			assignment.addSaveData(assignmentData);
+			forgeAssignmentsData.addSaveData(assignmentData);
+		}
+		save.addSaveData(forgeAssignmentsData);
 	}
 
 	@Override
@@ -73,6 +85,13 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 				if (task.itemID >= 0) {
 					tasks.add(task);
 				}
+			}
+		}
+		forgeAssignments.clear();
+		LoadData forgeAssignmentsData = save.getFirstLoadDataByName("forgeAssignments");
+		if (forgeAssignmentsData != null) {
+			for (LoadData assignmentData : forgeAssignmentsData.getLoadDataByName("assignment")) {
+				forgeAssignments.add(new ForgeAssignment(assignmentData));
 			}
 		}
 		nextStatusRefreshTime = 0L;
@@ -110,6 +129,7 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 	public void serverTick() {
 		super.serverTick();
 		validateLinkedStation();
+		processForgeAssignments();
 		updateDailyAssignment();
 		ensureCraftingJob();
 
@@ -214,6 +234,64 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 				+ " valid=" + (craftingJob != null && craftingJob.isValid()));
 	}
 
+	public void addForgeAssignment(Point forgePoint, int outputItemID, int outputAmount) {
+		if (forgePoint == null || outputItemID < 0 || outputAmount <= 0) return;
+		forgeAssignments.add(new ForgeAssignment(forgePoint.x, forgePoint.y, outputItemID, outputAmount));
+		markDirty();
+	}
+
+	public boolean hasForgeAssignment(Point forgePoint) {
+		if (forgePoint == null) return false;
+		for (ForgeAssignment assignment : forgeAssignments) {
+			if (assignment.forgeX == forgePoint.x && assignment.forgeY == forgePoint.y) return true;
+		}
+		return false;
+	}
+
+	public int getPendingForgeAmount(int itemID) {
+		int total = 0;
+		for (ForgeAssignment assignment : forgeAssignments) {
+			if (assignment.outputItemID == itemID) total += assignment.outputAmount;
+		}
+		return total;
+	}
+
+	private void processForgeAssignments() {
+		if (!getLevel().isServer() || forgeAssignments.isEmpty()) return;
+		boolean changed = false;
+		for (int i = forgeAssignments.size() - 1; i >= 0; i--) {
+			ForgeAssignment assignment = forgeAssignments.get(i);
+			Point forgePoint = new Point(assignment.forgeX, assignment.forgeY);
+			if (ForgeTaskSystem.collectAssignment(this, forgePoint, assignment.outputItemID, assignment.outputAmount)) {
+				forgeAssignments.remove(i);
+				onForgeAssignmentCompleted(assignment.outputItemID, assignment.outputAmount);
+				changed = true;
+				continue;
+			}
+			if (!ForgeTaskSystem.isAssignmentStillProcessing(this, forgePoint)) {
+				forgeAssignments.remove(i);
+				Logging.logMessage("[CraftingForgeJob] Dropped interrupted forge assignment outputItem="
+						+ assignment.outputItemID + " forge=" + assignment.forgeX + "," + assignment.forgeY);
+				changed = true;
+			}
+		}
+		if (changed) {
+			markDirty();
+			nextStatusRefreshTime = 0L;
+		}
+	}
+
+	private void onForgeAssignmentCompleted(int itemID, int producedAmount) {
+		for (int i = 0; i < tasks.size(); i++) {
+			CraftingTask task = tasks.get(i);
+			if (task.itemID != itemID || task.sourceType != CraftingTask.SOURCE_FORGE || task.paused || task.amount <= 0) continue;
+			if (task.conditionType == CraftingTask.CONDITION_CRAFT_UNITS) {
+				task.amount = Math.max(0, task.amount - Math.max(0, producedAmount));
+			}
+			break;
+		}
+	}
+
 	public Point getLinkedStation() {
 		return linkedStation == null ? null : new Point(linkedStation);
 	}
@@ -272,10 +350,10 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 		return taskRevision;
 	}
 
-	public boolean addTask(int expectedRevision, int itemID) {
+	public boolean addTask(int expectedRevision, int itemID, int sourceType) {
 		if (expectedRevision != taskRevision) return false;
 		refreshTaskStatusesNow();
-		tasks.add(new CraftingTask(itemID, CraftingTask.CONDITION_CRAFT_UNITS, 0));
+		tasks.add(new CraftingTask(itemID, sourceType, CraftingTask.CONDITION_CRAFT_UNITS, 0));
 		commitTaskEdit();
 		return true;
 	}
@@ -403,37 +481,42 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 	}
 
 	public boolean hasActionableTasksCached() {
-		for (CraftingTask task : tasks) {
-			if (task.status == CraftingTask.STATUS_IN_PROGRESS) {
-				return true;
-			}
+		for (int i = 0; i < tasks.size(); i++) {
+			if (isTaskActionableNow(i)) return true;
 		}
 		return false;
 	}
 
 	public boolean hasActionableTasks() {
 		refreshTaskStatusesNow();
-		for (CraftingTask task : tasks) {
-			if (task.status == CraftingTask.STATUS_IN_PROGRESS) {
-				return true;
-			}
+		for (int i = 0; i < tasks.size(); i++) {
+			if (isTaskActionableNow(i)) return true;
 		}
 		return false;
 	}
 
 	public int findNextActionableTask() {
 		refreshTaskStatusesNow();
-		if (tasks.isEmpty()) {
-			return -1;
-		}
+		if (tasks.isEmpty()) return -1;
 
 		for (int offset = 0; offset < tasks.size(); offset++) {
 			int index = (nextTaskIndex + offset) % tasks.size();
-			if (tasks.get(index).status == CraftingTask.STATUS_IN_PROGRESS) {
-				return index;
-			}
+			if (isTaskActionableNow(index)) return index;
 		}
 		return -1;
+	}
+
+	private boolean isTaskActionableNow(int index) {
+		CraftingTask task = getTask(index);
+		if (task == null || task.status != CraftingTask.STATUS_IN_PROGRESS) return false;
+		CraftingTaskRecipe taskRecipe = CraftingTaskLogic.getTaskRecipe(this, task);
+		if (taskRecipe == null || !taskRecipe.isForgeRecipe()) return true;
+		if (task.conditionType == CraftingTask.CONDITION_CRAFT_UNITS
+				&& getPendingForgeAmount(task.itemID) >= task.amount) return false;
+		return ForgeTaskSystem.getMissingIngredients(this, taskRecipe).isEmpty()
+				&& ForgeTaskSystem.hasAvailableForge(this, taskRecipe)
+				&& ForgeTaskSystem.hasFuelAvailable(this, taskRecipe)
+				&& CraftingTaskLogic.canFitResult(this, taskRecipe);
 	}
 
 	public void refreshTaskStatusesNow() {
@@ -466,41 +549,66 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 					&& CraftingTaskLogic.countSettlementStock(this, settlement, task.itemID) >= task.amount) {
 				status = CraftingTask.STATUS_FINISHED;
 			} else {
-				necesse.inventory.recipe.Recipe recipe = CraftingTaskLogic.getRecipe(this, task.itemID);
-				if (recipe == null) {
+				CraftingTaskRecipe taskRecipe = CraftingTaskLogic.getTaskRecipe(this, task);
+				if (taskRecipe == null) {
 					status = CraftingTask.STATUS_PROBLEM;
 					details = Collections.singletonList(Localization.translate("ui", "craftingrecipeunavailable"));
 				} else {
-					String stationProblem = CraftingTaskLogic.getStationCraftingProblem(this, recipe);
+					String stationProblem = taskRecipe.isForgeRecipe()
+							? null
+							: CraftingTaskLogic.getStationCraftingProblem(this, taskRecipe.recipe);
 					if (stationProblem != null) {
 						status = CraftingTask.STATUS_PROBLEM;
 						details = Collections.singletonList(stationProblem);
-						if (task.setRuntimeStatus(status, details)) {
-							changed = true;
-						}
-						continue;
-					}
-					List<String> missing = CraftingTaskLogic.getMissingIngredients(this, recipe);
-					if (!missing.isEmpty()) {
+					} else if (!taskRecipe.isForgeRecipe()
+							&& ForgeRequirementSystem.requiresRunningForge(taskRecipe.recipe)
+							&& ForgeRequirementSystem.getStatus(
+									getLinkedStationEntity(),
+									taskRecipe.recipe,
+									CraftingTaskLogic.getStoragePool(this)
+							) == ForgeRequirementSystem.Status.NO_LINKED_FORGE) {
 						status = CraftingTask.STATUS_PROBLEM;
-						if (missing.size() == 1 && missing.get(0).equals(Localization.translate("ui", "craftinginputnotlinked"))) {
-							details = missing;
-						} else {
-							details = Collections.singletonList(Localization.translate("ui", "craftingmissingingredientslist", "ingredients", String.join(", ", missing)));
-						}
-					} else if (!CraftingTaskLogic.canFitResult(
-							this,
-							recipe,
-							recipe.resultItem.copy(recipe.resultAmount)
-					)) {
+						details = Collections.singletonList(Localization.translate("ui", "craftingrequireslinkedforge"));
+					} else if (!taskRecipe.isForgeRecipe()
+							&& ForgeRequirementSystem.requiresRunningForge(taskRecipe.recipe)
+							&& ForgeRequirementSystem.getStatus(
+									getLinkedStationEntity(),
+									taskRecipe.recipe,
+									CraftingTaskLogic.getStoragePool(this)
+							) == ForgeRequirementSystem.Status.NO_FUEL) {
 						status = CraftingTask.STATUS_PROBLEM;
-						details = Collections.singletonList(
-								CraftingTaskLogic.hasOutputStorage(this)
-										? Localization.translate("ui", "craftingoutputfull")
-										: Localization.translate("ui", "craftingoutputnotlinked")
-						);
+						details = Collections.singletonList(Localization.translate("ui", "statusmissingforgefuel"));
+					} else if (taskRecipe.isForgeRecipe()
+							&& (getLinkedStationEntity() == null || getLinkedStationEntity().getValidLinkedForges().isEmpty())) {
+						status = CraftingTask.STATUS_PROBLEM;
+						details = Collections.singletonList(Localization.translate("ui", "craftingrequireslinkedforge"));
 					} else {
-						status = CraftingTask.STATUS_IN_PROGRESS;
+						List<String> missing = CraftingTaskLogic.getMissingIngredients(this, taskRecipe);
+						int pending = taskRecipe.isForgeRecipe() ? getPendingForgeAmount(task.itemID) : 0;
+						boolean pendingCoversCraftUnits = task.conditionType == CraftingTask.CONDITION_CRAFT_UNITS
+								&& pending >= task.amount;
+						if (!pendingCoversCraftUnits && !missing.isEmpty()) {
+							status = CraftingTask.STATUS_PROBLEM;
+							if (missing.size() == 1 && missing.get(0).equals(Localization.translate("ui", "craftinginputnotlinked"))) {
+								details = missing;
+							} else {
+								details = Collections.singletonList(Localization.translate("ui", "craftingmissingingredientslist", "ingredients", String.join(", ", missing)));
+							}
+						} else if (!pendingCoversCraftUnits && taskRecipe.isForgeRecipe()
+								&& ForgeTaskSystem.hasAvailableForge(this, taskRecipe)
+								&& !ForgeTaskSystem.hasFuelAvailable(this, taskRecipe)) {
+							status = CraftingTask.STATUS_PROBLEM;
+							details = Collections.singletonList(Localization.translate("ui", "statusmissingforgefuel"));
+						} else if (!pendingCoversCraftUnits && !CraftingTaskLogic.canFitResult(this, taskRecipe)) {
+							status = CraftingTask.STATUS_PROBLEM;
+							details = Collections.singletonList(
+									CraftingTaskLogic.hasOutputStorage(this)
+											? Localization.translate("ui", "craftingoutputfull")
+											: Localization.translate("ui", "craftingoutputnotlinked")
+							);
+						} else {
+							status = CraftingTask.STATUS_IN_PROGRESS;
+						}
 					}
 				}
 			}
@@ -548,4 +656,29 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 			getLevel().getServer().network.sendToClientsWithEntity(new PacketObjectEntity(this), this);
 		}
 	}
+	private static final class ForgeAssignment {
+		private final int forgeX;
+		private final int forgeY;
+		private final int outputItemID;
+		private final int outputAmount;
+
+		private ForgeAssignment(int forgeX, int forgeY, int outputItemID, int outputAmount) {
+			this.forgeX = forgeX;
+			this.forgeY = forgeY;
+			this.outputItemID = outputItemID;
+			this.outputAmount = Math.max(1, outputAmount);
+		}
+
+		private ForgeAssignment(LoadData data) {
+			this(data.getInt("forgeX", 0), data.getInt("forgeY", 0), data.getInt("outputItemID", -1), data.getInt("outputAmount", 1));
+		}
+
+		private void addSaveData(SaveData data) {
+			data.addInt("forgeX", forgeX);
+			data.addInt("forgeY", forgeY);
+			data.addInt("outputItemID", outputItemID);
+			data.addInt("outputAmount", outputAmount);
+		}
+	}
+
 }

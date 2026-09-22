@@ -47,6 +47,7 @@ public final class ItemDurabilityRegistry {
 	}
 
 	public static void registerDurability() {
+		registerCraftingMold("ingotmold");
 		registerCraftingMold("pickaxeheadmold");
 		registerCraftingMold("axeheadmold");
 		registerCraftingMold("shovelheadmold");
@@ -54,10 +55,19 @@ public final class ItemDurabilityRegistry {
 		registerCraftingMold("shearsblademold");
 		registerCraftingMold("swordblademold");
 		registerCraftingMold("thickplatemold");
+
+		registerBrokenTool("brokencoppertool");
+		registerBrokenTool("brokenirontool");
 	}
 
 	private static void registerCraftingMold(String itemStringID) {
 		ItemDurabilityRegistry.configure(itemStringID, 10)
+				.on(DurabilityAction.CRAFTING_USE, 1)
+				.destroyOnBreak();
+	}
+
+	private static void registerBrokenTool(String itemStringID) {
+		ItemDurabilityRegistry.configure(itemStringID, 2)
 				.on(DurabilityAction.CRAFTING_USE, 1)
 				.destroyOnBreak();
 	}

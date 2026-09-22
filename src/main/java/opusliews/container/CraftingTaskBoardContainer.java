@@ -6,6 +6,7 @@ import necesse.engine.network.PacketReader;
 import necesse.engine.network.PacketWriter;
 import necesse.engine.network.server.ServerClient;
 import necesse.engine.registries.ItemRegistry;
+import necesse.engine.registries.RecipeTechRegistry;
 import necesse.inventory.container.Container;
 import necesse.inventory.container.customAction.ContentCustomAction;
 import necesse.inventory.recipe.Recipe;
@@ -14,6 +15,9 @@ import necesse.inventory.recipe.Tech;
 import necesse.level.gameObject.container.CraftingStationObject;
 import necesse.level.maps.Level;
 import opusliews.object.CraftingTaskBoardObjectEntity;
+import opusliews.object.DynamicCraftingStationObjectEntity;
+import opusliews.forge.ForgeCookingRecipe;
+import opusliews.forge.ForgeCookingRecipeRegistry;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,7 +45,10 @@ public class CraftingTaskBoardContainer extends Container {
 				PacketReader reader = new PacketReader(content);
 				int expectedRevision = reader.getNextInt();
 				int itemID = reader.getNextInt();
-				if (isItemCraftableByLinkedStation(itemID) && !boardEntity.addTask(expectedRevision, itemID) && client.isServer()) {
+				int sourceType = reader.getNextByteUnsigned();
+				if (isItemCraftableByLinkedStation(itemID, sourceType)
+						&& !boardEntity.addTask(expectedRevision, itemID, sourceType)
+						&& client.isServer()) {
 					boardEntity.syncContentNow();
 				}
 			}
@@ -84,11 +91,12 @@ public class CraftingTaskBoardContainer extends Container {
 		});
 	}
 
-	public void addTask(int itemID) {
+	public void addTask(int itemID, int sourceType) {
 		Packet packet = new Packet();
 		PacketWriter writer = new PacketWriter(packet);
 		writer.putNextInt(boardEntity.getTaskRevision());
 		writer.putNextInt(itemID);
+		writer.putNextByteUnsigned(sourceType);
 		addTaskAction.runAndSend(packet);
 	}
 
@@ -149,27 +157,71 @@ public class CraftingTaskBoardContainer extends Container {
 				.collect(Collectors.toList());
 	}
 
-	public List<Integer> getCraftableItemIDs() {
-		necesse.level.maps.LevelObject anvil = getLinkedStation();
-		if (anvil == null || !(anvil.object instanceof CraftingStationObject)) {
-			return new ArrayList<>();
-		}
+	public boolean supportsForgeTasks() {
+		DynamicCraftingStationObjectEntity stationEntity = boardEntity.getLinkedStationEntity();
+		return stationEntity != null && stationEntity.supportsForgeLinks();
+	}
 
-		CraftingStationObject station = (CraftingStationObject)anvil.object;
+	public List<Integer> getAnvilTaskItemIDs() {
+		necesse.level.maps.LevelObject stationObject = getLinkedStation();
+		if (stationObject == null || !(stationObject.object instanceof CraftingStationObject)) return new ArrayList<>();
+
+		CraftingStationObject station = (CraftingStationObject)stationObject.object;
 		Tech[] techs = station.getCraftingTechs();
 		HashSet<Integer> seen = new HashSet<>();
-
-		return Recipes.streamRecipes()
+		ArrayList<Integer> result = Recipes.streamRecipes()
 				.filter(recipe -> Arrays.stream(techs).anyMatch(recipe::matchTech))
 				.map(recipe -> recipe.resultItem.item.getID())
 				.filter(id -> id >= 0 && ItemRegistry.getItem(id) != null)
 				.filter(seen::add)
-				.sorted((a, b) -> new necesse.inventory.InventoryItem(ItemRegistry.getItem(a)).getItemDisplayName().compareToIgnoreCase(new necesse.inventory.InventoryItem(ItemRegistry.getItem(b)).getItemDisplayName()))
-				.collect(Collectors.toList());
+				.collect(Collectors.toCollection(ArrayList::new));
+
+		sortItemIDs(result);
+		return result;
 	}
 
-	private boolean isItemCraftableByLinkedStation(int itemID) {
-		return getCraftableItemIDs().contains(itemID);
+	public List<Integer> getForgeTaskItemIDs() {
+		DynamicCraftingStationObjectEntity stationEntity = boardEntity.getLinkedStationEntity();
+		if (stationEntity == null || !stationEntity.supportsForgeLinks()) return new ArrayList<>();
+
+		HashSet<Integer> seen = new HashSet<>();
+		ArrayList<Integer> result = Recipes.streamRecipes(RecipeTechRegistry.FORGE)
+				.map(recipe -> recipe.resultItem.item.getID())
+				.filter(id -> id >= 0 && ItemRegistry.getItem(id) != null)
+				.filter(seen::add)
+				.collect(Collectors.toCollection(ArrayList::new));
+		for (ForgeCookingRecipe recipe : ForgeCookingRecipeRegistry.getRecipes()) {
+			necesse.inventory.InventoryItem output = recipe.getOutput();
+			if (output != null && seen.add(output.item.getID())) result.add(output.item.getID());
+		}
+
+		sortItemIDs(result);
+		return result;
+	}
+
+	private void sortItemIDs(List<Integer> result) {
+		result.sort((a, b) -> new necesse.inventory.InventoryItem(ItemRegistry.getItem(a)).getItemDisplayName()
+				.compareToIgnoreCase(new necesse.inventory.InventoryItem(ItemRegistry.getItem(b)).getItemDisplayName()));
+	}
+
+	public Recipe getDisplayRecipe(int itemID, int sourceType) {
+		if (sourceType == opusliews.crafting.CraftingTask.SOURCE_FORGE) {
+			return Recipes.streamRecipes(RecipeTechRegistry.FORGE)
+					.filter(recipe -> recipe.resultItem.item.getID() == itemID)
+					.findFirst()
+					.orElse(null);
+		}
+
+		for (Recipe recipe : getCraftableRecipes()) {
+			if (recipe.resultItem.item.getID() == itemID) return recipe;
+		}
+		return null;
+	}
+
+	private boolean isItemCraftableByLinkedStation(int itemID, int sourceType) {
+		return sourceType == opusliews.crafting.CraftingTask.SOURCE_FORGE
+				? getForgeTaskItemIDs().contains(itemID)
+				: getAnvilTaskItemIDs().contains(itemID);
 	}
 
 	private boolean isCurrentBoardEntity() {

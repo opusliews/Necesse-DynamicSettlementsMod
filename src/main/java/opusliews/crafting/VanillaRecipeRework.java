@@ -2,6 +2,7 @@ package opusliews.crafting;
 
 import necesse.engine.registries.GlobalIngredientRegistry;
 import necesse.engine.registries.ItemRegistry;
+import necesse.engine.registries.RecipeTechRegistry;
 import necesse.inventory.recipe.GlobalIngredient;
 import necesse.inventory.recipe.Ingredient;
 import necesse.inventory.recipe.Recipe;
@@ -36,8 +37,10 @@ public class VanillaRecipeRework {
 	public static void apply(ArrayList recipes) {
 		recipes.removeIf(value -> {
 			if (!(value instanceof Recipe)) return false;
-			String resultID = ((Recipe)value).resultStringID;
-			return "woodaxe".equals(resultID) || "ladderdown".equals(resultID) || "deepladderdown".equals(resultID);
+			Recipe recipe = (Recipe)value;
+			String resultID = recipe.resultStringID;
+			if ("woodaxe".equals(resultID) || "ladderdown".equals(resultID) || "deepladderdown".equals(resultID)) return true;
+			return isLegacyBarRecipe(recipe);
 		});
 
 		Set<String> registeredGlobalIngredients = getRegisteredGlobalIngredientIDs();
@@ -62,6 +65,28 @@ public class VanillaRecipeRework {
 			} catch (IllegalAccessException e) {
 				throw new RuntimeException("Could not replace vanilla recipe ingredients for " + recipe.resultStringID, e);
 			}
+		}
+	}
+
+	private static boolean isLegacyBarRecipe(Recipe recipe) {
+		if (recipe == null || recipe.resultStringID == null) return false;
+		if ("demonicbar".equals(recipe.resultStringID)) return true;
+		if (recipe.tech != RecipeTechRegistry.FORGE) return false;
+
+		switch (recipe.resultStringID) {
+			case "copperbar":
+			case "ironbar":
+			case "goldbar":
+			case "tungstenbar":
+			case "glacialbar":
+			case "myceliumbar":
+			case "ancientfossilbar":
+			case "nightsteelbar":
+			case "spideritebar":
+			case "ivybar":
+				return true;
+			default:
+				return false;
 		}
 	}
 

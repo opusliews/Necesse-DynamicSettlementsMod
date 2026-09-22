@@ -12,6 +12,7 @@ import necesse.inventory.Inventory;
 import necesse.inventory.InventoryItem;
 import necesse.inventory.InventoryItemsRemoved;
 import necesse.inventory.InventoryRange;
+import necesse.inventory.item.Item;
 import necesse.inventory.recipe.Ingredient;
 import necesse.inventory.recipe.Recipe;
 import necesse.level.maps.Level;
@@ -42,6 +43,96 @@ public final class CraftingStoragePool {
 
 	public boolean hasOutputs() {
 		return !outputs.isEmpty();
+	}
+
+	public int getExactAmount(String itemStringID) {
+		if (itemStringID == null) return 0;
+		int total = 0;
+		for (InventoryRange range : inputs) {
+			for (int slot = range.startSlot; slot <= range.endSlot; slot++) {
+				InventoryItem item = range.inventory.getItem(slot);
+				if (item != null && itemStringID.equals(item.item.getStringID())) total += item.getAmount();
+			}
+		}
+		return total;
+	}
+
+	public InventoryItem takeExactItem(String itemStringID, int amount, boolean preferMostDamaged) {
+		if (itemStringID == null || amount <= 0 || getExactAmount(itemStringID) < amount) return null;
+
+		if (preferMostDamaged && amount == 1) {
+			InventoryRange bestRange = null;
+			int bestSlot = -1;
+			int bestDurability = Integer.MAX_VALUE;
+			for (InventoryRange range : inputs) {
+				for (int slot = range.startSlot; slot <= range.endSlot; slot++) {
+					InventoryItem item = range.inventory.getItem(slot);
+					if (item == null || !itemStringID.equals(item.item.getStringID())) continue;
+					int durability = opusliews.durability.ItemDurabilitySystem.isBreakable(item)
+							? opusliews.durability.ItemDurabilitySystem.getDurability(item)
+							: Integer.MAX_VALUE - 1;
+					if (bestRange == null || durability < bestDurability) {
+						bestRange = range;
+						bestSlot = slot;
+						bestDurability = durability;
+					}
+				}
+			}
+			if (bestRange != null) {
+				InventoryItem source = bestRange.inventory.getItem(bestSlot);
+				InventoryItem taken = source.copy(1);
+				source.setAmount(source.getAmount() - 1);
+				if (source.getAmount() <= 0) bestRange.inventory.clearSlot(bestSlot); else bestRange.inventory.markDirty(bestSlot);
+				return taken;
+			}
+		}
+
+		Item itemType = necesse.engine.registries.ItemRegistry.getItem(itemStringID);
+		if (itemType == null) return null;
+		InventoryItem result = new InventoryItem(itemType, amount);
+		int remaining = amount;
+		for (InventoryRange range : inputs) {
+			for (int slot = range.startSlot; slot <= range.endSlot && remaining > 0; slot++) {
+				InventoryItem source = range.inventory.getItem(slot);
+				if (source == null || !itemStringID.equals(source.item.getStringID())) continue;
+				int take = Math.min(remaining, source.getAmount());
+				source.setAmount(source.getAmount() - take);
+				if (source.getAmount() <= 0) range.inventory.clearSlot(slot); else range.inventory.markDirty(slot);
+				remaining -= take;
+			}
+		}
+		return remaining == 0 ? result : null;
+	}
+
+	public InventoryItem takeIngredient(Ingredient ingredient) {
+		if (ingredient == null || ingredient.getIngredientAmount() <= 0) return null;
+		int needed = ingredient.getIngredientAmount();
+		InventoryItem result = null;
+		for (InventoryRange range : inputs) {
+			for (int slot = range.startSlot; slot <= range.endSlot && needed > 0; slot++) {
+				InventoryItem source = range.inventory.getItem(slot);
+				if (source == null || !ingredient.matchesItem(source.item)) continue;
+				int take = Math.min(needed, source.getAmount());
+				if (result == null) result = source.copy(0);
+				result.setAmount(result.getAmount() + take);
+				source.setAmount(source.getAmount() - take);
+				if (source.getAmount() <= 0) range.inventory.clearSlot(slot); else range.inventory.markDirty(slot);
+				needed -= take;
+			}
+		}
+		if (needed <= 0) return result;
+		if (result != null) addInputItemOrdered(result);
+		return null;
+	}
+
+	public boolean addInputItemOrdered(InventoryItem item) {
+		if (item == null || item.getAmount() <= 0 || inputs.isEmpty()) return item == null || item.getAmount() <= 0;
+		InventoryItem remaining = item.copy();
+		for (InventoryRange input : inputs) {
+			if (remaining.getAmount() <= 0) break;
+			input.inventory.addItem(level, null, remaining, input.startSlot, input.endSlot, "craftinginputreturn");
+		}
+		return remaining.getAmount() <= 0;
 	}
 
 	public List<String> getMissingIngredients(Recipe recipe) {

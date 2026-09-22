@@ -11,27 +11,37 @@ public class CraftingTask {
 	public static final int CONDITION_CRAFT_UNITS = 0;
 	public static final int CONDITION_KEEP_STOCKED = 1;
 
+	public static final int SOURCE_ANVIL = 0;
+	public static final int SOURCE_FORGE = 1;
+
 	public static final int STATUS_FINISHED = 0;
 	public static final int STATUS_IN_PROGRESS = 1;
 	public static final int STATUS_PROBLEM = 2;
 	public static final int STATUS_PAUSED = 3;
 
 	public int itemID;
+	public int sourceType;
 	public int conditionType;
 	public int amount;
 	public boolean paused;
 	public int status = STATUS_FINISHED;
 	public final ArrayList<String> problemDetails = new ArrayList<>();
 
-	public CraftingTask(int itemID, int conditionType, int amount) {
+	public CraftingTask(int itemID, int sourceType, int conditionType, int amount) {
 		this.itemID = itemID;
+		this.sourceType = sourceType == SOURCE_FORGE ? SOURCE_FORGE : SOURCE_ANVIL;
 		this.conditionType = conditionType;
 		this.amount = Math.max(0, amount);
+	}
+
+	public CraftingTask(int itemID, int conditionType, int amount) {
+		this(itemID, SOURCE_ANVIL, conditionType, amount);
 	}
 
 	public CraftingTask(LoadData data) {
 		this(
 				data.getInt("itemID", -1),
+				data.getInt("sourceType", SOURCE_ANVIL),
 				data.getInt("conditionType", CONDITION_CRAFT_UNITS),
 				data.getInt("amount", 0)
 		);
@@ -39,7 +49,7 @@ public class CraftingTask {
 	}
 
 	public CraftingTask(PacketReader reader) {
-		this(reader.getNextInt(), reader.getNextByteUnsigned(), reader.getNextInt());
+		this(reader.getNextInt(), reader.getNextByteUnsigned(), reader.getNextByteUnsigned(), reader.getNextInt());
 		paused = reader.getNextBoolean();
 		status = reader.getNextByteUnsigned();
 		int problemCount = reader.getNextByteUnsigned();
@@ -50,6 +60,7 @@ public class CraftingTask {
 
 	public void addSaveData(SaveData data) {
 		data.addInt("itemID", itemID);
+		data.addInt("sourceType", sourceType);
 		data.addInt("conditionType", conditionType);
 		data.addInt("amount", amount);
 		data.addBoolean("paused", paused);
@@ -57,6 +68,7 @@ public class CraftingTask {
 
 	public void writePacket(PacketWriter writer) {
 		writer.putNextInt(itemID);
+		writer.putNextByteUnsigned(sourceType);
 		writer.putNextByteUnsigned(conditionType);
 		writer.putNextInt(amount);
 		writer.putNextBoolean(paused);
@@ -76,7 +88,7 @@ public class CraftingTask {
 	}
 
 	public CraftingTask copy() {
-		CraftingTask copy = new CraftingTask(itemID, conditionType, amount);
+		CraftingTask copy = new CraftingTask(itemID, sourceType, conditionType, amount);
 		copy.paused = paused;
 		copy.status = status;
 		copy.problemDetails.addAll(problemDetails);

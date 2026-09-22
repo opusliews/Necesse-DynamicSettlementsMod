@@ -2,19 +2,72 @@ package opusliews.forge;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public final class ForgeCookingRecipeRegistry {
 	private static final int DEFAULT_PROCESS_TIME = 8000;
 	private static final List<ForgeCookingRecipe> recipes = new ArrayList<>();
+	private static final Set<String> forgeWorkedIngredients = new HashSet<>();
 
 	private ForgeCookingRecipeRegistry() {
 	}
 
 	public static void registerRecipes() {
+		registerMoldedBars();
 		registerMoldedToolHeads();
 		registerMoldedBlades();
 		registerThickIronPlateRecipes();
+	}
+
+	private static void registerMoldedBars() {
+		registerMoldedBar("copperbar", "copperore", 4);
+		registerMoldedBar("ironbar", "ironore", 4);
+		registerMoldedBar("goldbar", "goldore", 4);
+		registerMoldedBar("tungstenbar", "tungstenore", 4);
+		registerMoldedBar("glacialbar", "glacialore", 4);
+		registerMoldedBar("myceliumbar", "myceliumore", 4);
+		registerMoldedBar("ancientfossilbar", "ancientfossilore", 4);
+		registerMoldedBar("nightsteelbar", "nightsteelore", 4);
+		registerMoldedBar("spideritebar", "spideriteore", 4);
+		registerMoldedBar("ivybar", "ivyore", 4);
+
+		register(new ForgeCookingRecipe(
+				"ironbar_from_brokenirontool",
+				ForgeCookingInput.durabilityUse("brokenirontool"),
+				ForgeCookingInput.durabilityUse("ingotmold"),
+				"ironbar",
+				1,
+				DEFAULT_PROCESS_TIME
+		));
+		register(new ForgeCookingRecipe(
+				"copperbar_from_brokencoppertool",
+				ForgeCookingInput.durabilityUse("brokencoppertool"),
+				ForgeCookingInput.durabilityUse("ingotmold"),
+				"copperbar",
+				1,
+				DEFAULT_PROCESS_TIME
+		));
+
+		registerMoldedBarFromMaterial("demonicbar", "copperbar", 3);
+		registerMoldedBarFromMaterial("demonicbar", "ironbar", 2);
+		registerMoldedBarFromMaterial("demonicbar", "goldbar", 1);
+	}
+
+	private static void registerMoldedBar(String outputItem, String oreItem, int oreAmount) {
+		registerMoldedBarFromMaterial(outputItem, oreItem, oreAmount);
+	}
+
+	private static void registerMoldedBarFromMaterial(String outputItem, String inputItem, int inputAmount) {
+		register(new ForgeCookingRecipe(
+				outputItem + "_from_" + inputItem,
+				ForgeCookingInput.consume(inputItem, inputAmount),
+				ForgeCookingInput.durabilityUse("ingotmold"),
+				outputItem,
+				1,
+				DEFAULT_PROCESS_TIME
+		));
 	}
 
 	private static void registerMoldedToolHeads() {
@@ -98,6 +151,17 @@ public final class ForgeCookingRecipeRegistry {
 
 	public static void register(ForgeCookingRecipe recipe) {
 		recipes.add(recipe);
+		if (recipe.firstInput.resultBehavior == ForgeCookingInput.ResultBehavior.CONSUME) {
+			forgeWorkedIngredients.add(recipe.firstInput.itemStringID);
+		}
+		if (recipe.secondInput.resultBehavior == ForgeCookingInput.ResultBehavior.CONSUME) {
+			forgeWorkedIngredients.add(recipe.secondInput.itemStringID);
+		}
+		forgeWorkedIngredients.add(recipe.outputItemStringID);
+	}
+
+	public static boolean isForgeWorkedIngredient(String itemStringID) {
+		return itemStringID != null && forgeWorkedIngredients.contains(itemStringID);
 	}
 
 	public static List<ForgeCookingRecipe> getRecipes() {

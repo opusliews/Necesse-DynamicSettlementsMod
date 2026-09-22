@@ -3,8 +3,10 @@ package opusliews.container;
 import java.awt.Point;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import necesse.engine.GameLog;
 import necesse.engine.GlobalData;
+import necesse.engine.Settings;
 import necesse.engine.journal.listeners.CraftedRecipeJournalChallengeListener;
 import necesse.engine.network.NetworkClient;
 import necesse.engine.network.PacketReader;
@@ -14,7 +16,9 @@ import necesse.entity.mobs.friendly.human.HumanMob;
 import necesse.entity.objectEntity.ObjectEntity;
 import necesse.entity.objectEntity.ProcessingForgeObjectEntity;
 import necesse.entity.objectEntity.interfaces.OEInventory;
+import necesse.inventory.Inventory;
 import necesse.inventory.InventoryItem;
+import necesse.inventory.InventoryRange;
 import necesse.inventory.container.customAction.BooleanCustomAction;
 import necesse.inventory.container.customAction.PointCustomAction;
 import necesse.inventory.container.object.CraftingStationContainer;
@@ -26,7 +30,10 @@ import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
 import necesse.level.maps.levelData.settlementData.settler.romancePersonalities.PlayerRomanceManager;
 import opusliews.object.DynamicCraftingStationObjectEntity;
+import opusliews.object.AnvilObjectEntity;
 import opusliews.crafting.CraftingTime;
+import opusliews.crafting.CraftingStoragePool;
+import opusliews.forge.ForgeRequirementSystem;
 
 public class DynamicCraftingStationContainer extends CraftingStationContainer {
 
@@ -113,6 +120,34 @@ public class DynamicCraftingStationContainer extends CraftingStationContainer {
 	}
 
 	@Override
+	public Collection getCraftInventories() {
+		LinkedHashSet<Inventory> ordered = new LinkedHashSet<>();
+		Level level = client.playerMob.getLevel();
+
+		if (level != null && stationEntity != null) {
+			for (Point point : stationEntity.getInputStorages()) {
+				InventoryRange range = CraftingStoragePool.getLinkedStorageRange(level, point);
+				if (range != null && range.inventory != null) ordered.add(range.inventory);
+			}
+
+			boolean useNearby = client.isServer() ? client.craftingUsesNearbyInventories : Settings.craftingUseNearby.get();
+			if (useNearby) {
+				for (Object value : getNearbyInventories(level, objectX, objectY, range, OEInventory::canUseForNearbyCrafting)) {
+					if (value instanceof InventoryRange) {
+						InventoryRange nearby = (InventoryRange)value;
+						if (nearby.inventory != null) ordered.add(nearby.inventory);
+					}
+				}
+			}
+		}
+
+		for (Object value : craftInventories) {
+			if (value instanceof Inventory) ordered.add((Inventory)value);
+		}
+		return ordered;
+	}
+
+	@Override
 	public int applyCraftingAction(int recipeID, int recipeHash, int craftAmount, boolean transferToInventory) {
 		if (crafting || !isCurrentStationEntity()) return 0;
 
@@ -127,6 +162,19 @@ public class DynamicCraftingStationContainer extends CraftingStationContainer {
 
 		Collection inventories = getCraftInventories();
 		if (!canCraftRecipe(recipe, inventories, false).canCraft()) return 0;
+		if (stationEntity instanceof AnvilObjectEntity && ForgeRequirementSystem.requiresRunningForge(recipe)) {
+			if (client.isServer() && !ForgeRequirementSystem.ensureRunningForge(
+					stationEntity,
+					client.playerMob,
+					recipe,
+					inventories,
+					CraftingTime.get(recipe)
+			)) return 0;
+			if (client.isClient()) {
+				ForgeRequirementSystem.Status status = ForgeRequirementSystem.getStatus(stationEntity, recipe, inventories);
+				if (status == ForgeRequirementSystem.Status.NO_LINKED_FORGE || status == ForgeRequirementSystem.Status.NO_FUEL) return 0;
+			}
+		}
 		if (!stationEntity.canStartPlayerCraft(client.playerMob, recipe)) return 0;
 
 		crafting = true;
@@ -174,6 +222,15 @@ public class DynamicCraftingStationContainer extends CraftingStationContainer {
 
 		Collection inventories = getCraftInventories();
 		if (!canCraftRecipe(recipe, inventories, false).canCraft()) return;
+		if (stationEntity instanceof AnvilObjectEntity && ForgeRequirementSystem.requiresRunningForge(recipe)) {
+			if (!ForgeRequirementSystem.ensureRunningForge(
+					stationEntity,
+					client.playerMob,
+					recipe,
+					inventories,
+					250L
+			)) return;
+		}
 		if (!stationEntity.canCompletePlayerCraft(client.playerMob, recipe)) return;
 
 		ContainerRecipeCraftedEvent event = new ContainerRecipeCraftedEvent(

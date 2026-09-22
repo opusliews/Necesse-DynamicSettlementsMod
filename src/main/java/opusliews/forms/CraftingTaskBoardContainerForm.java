@@ -101,6 +101,7 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 		result = 31 * result + tasks.size();
 		for (CraftingTask task : tasks) {
 			result = 31 * result + task.itemID;
+			result = 31 * result + task.sourceType;
 			result = 31 * result + task.conditionType;
 			result = 31 * result + task.amount;
 			result = 31 * result + (task.paused ? 1 : 0);
@@ -157,18 +158,50 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 		}
 
 		flow.next(12);
-		FormLocalTextButton addButton = content.addComponent(new FormLocalTextButton(
-				new StaticMessage(Localization.translate("ui", "addnewtask")),
-				content.getWidth() / 2 - 100,
-				flow.next(28),
-				200,
-				FormInputSize.SIZE_24,
-				ButtonColor.GREEN
-		));
-		addButton.onClicked(e -> {
-			setupItemSelect();
-			makeCurrent(itemSelectForm);
-		});
+		int addButtonY = flow.next(28);
+		int addButtonWidth = 200;
+		if (taskContainer.supportsForgeTasks()) {
+			int addButtonGap = 8;
+			int addButtonsX = content.getWidth() / 2 - addButtonWidth - addButtonGap / 2;
+			FormLocalTextButton addAnvilButton = content.addComponent(new FormLocalTextButton(
+					new StaticMessage(Localization.translate("ui", "addanviltask")),
+					addButtonsX,
+					addButtonY,
+					addButtonWidth,
+					FormInputSize.SIZE_24,
+					ButtonColor.GREEN
+			));
+			addAnvilButton.onClicked(e -> {
+				setupItemSelect(false);
+				makeCurrent(itemSelectForm);
+			});
+
+			FormLocalTextButton addForgeButton = content.addComponent(new FormLocalTextButton(
+					new StaticMessage(Localization.translate("ui", "addforgetask")),
+					addButtonsX + addButtonWidth + addButtonGap,
+					addButtonY,
+					addButtonWidth,
+					FormInputSize.SIZE_24,
+					ButtonColor.GREEN
+			));
+			addForgeButton.onClicked(e -> {
+				setupItemSelect(true);
+				makeCurrent(itemSelectForm);
+			});
+		} else {
+			FormLocalTextButton addButton = content.addComponent(new FormLocalTextButton(
+					new StaticMessage(Localization.translate("ui", "addnewtask")),
+					content.getWidth() / 2 - addButtonWidth / 2,
+					addButtonY,
+					addButtonWidth,
+					FormInputSize.SIZE_24,
+					ButtonColor.GREEN
+			));
+			addButton.onClicked(e -> {
+				setupItemSelect(false);
+				makeCurrent(itemSelectForm);
+			});
+		}
 
 		int fullHeight = flow.next() - 35;
 		fullHeight = max(fullHeight, 0);
@@ -183,7 +216,7 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 		content.setContentBox(new Rectangle(content.getWidth(), fullHeight));
 	}
 
-	private void setupItemSelect() {
+	private void setupItemSelect(boolean forgeTask) {
 		itemSelectForm.clearComponents();
 		itemSelectForm.setWidth(684);
 		itemSelectForm.setHeight(420);
@@ -214,7 +247,7 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 				340
 		));
 
-		Runnable rebuild = () -> populateItemSelect(itemContent, searchInput.getText());
+		Runnable rebuild = () -> populateItemSelect(itemContent, searchInput.getText(), forgeTask);
 		searchInput.onChange(e -> rebuild.run());
 		rebuild.run();
 
@@ -230,7 +263,7 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 		onWindowResized(WindowManager.getWindow());
 	}
 
-	private void populateItemSelect(FormContentBox itemContent, String search) {
+	private void populateItemSelect(FormContentBox itemContent, String search, boolean forgeTask) {
 		itemContent.clearComponents();
 		String filter = search == null ? "" : search.trim().toLowerCase(Locale.ROOT);
 		boolean searching = !filter.isEmpty();
@@ -255,19 +288,15 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 		Map<ItemCategory, ArrayList<Integer>> byCategory = new HashMap<>();
 		HashSet<Integer> seenItems = new HashSet<>();
 
-		for (Recipe recipe : taskContainer.getCraftableRecipes()) {
-			int itemID = recipe.resultItem.item.getID();
+		for (int itemID : forgeTask ? taskContainer.getForgeTaskItemIDs() : taskContainer.getAnvilTaskItemIDs()) {
 			Item item = ItemRegistry.getItem(itemID);
-			if (item == null || !seenItems.add(itemID)) {
-				continue;
-			}
+			if (item == null || !seenItems.add(itemID)) continue;
 
 			InventoryItem inventoryItem = new InventoryItem(item);
-			if (searching && !inventoryItem.getItemDisplayName().toLowerCase(Locale.ROOT).contains(filter)) {
-				continue;
-			}
+			if (searching && !inventoryItem.getItemDisplayName().toLowerCase(Locale.ROOT).contains(filter)) continue;
 
-			ItemCategory category = recipe.getCraftingCategory();
+			Recipe recipe = taskContainer.getDisplayRecipe(itemID, forgeTask ? CraftingTask.SOURCE_FORGE : CraftingTask.SOURCE_ANVIL);
+			ItemCategory category = recipe == null ? null : recipe.getCraftingCategory();
 			if (category == null) {
 				category = ItemCategory.craftingManager.getItemsCategory(item);
 				int desiredDepth = categoryDepth;
@@ -324,7 +353,7 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 				} else {
 					collapsedPickerCategories.add(category.stringID);
 				}
-				populateItemSelect(itemContent, searchInputText(search));
+				populateItemSelect(itemContent, searchInputText(search), forgeTask);
 			});
 			itemContent.addComponent(new FormLabel(
 					category.displayName.translate(),
@@ -345,7 +374,7 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 				int itemID = items.get(i);
 				int x = 28 + (i % iconsPerRow) * iconSize;
 				int y = gridY + (i / iconsPerRow) * iconSize;
-				itemContent.addComponent(new TaskItemIcon(x, y, itemID));
+				itemContent.addComponent(new TaskItemIcon(x, y, itemID, forgeTask ? CraftingTask.SOURCE_FORGE : CraftingTask.SOURCE_ANVIL));
 			}
 		}
 
@@ -502,17 +531,19 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 
 	private class TaskItemIcon extends FormItemIcon {
 		private final int itemID;
+		private final int sourceType;
 
-		TaskItemIcon(int x, int y, int itemID) {
+		TaskItemIcon(int x, int y, int itemID, int sourceType) {
 			super(x, y, new InventoryItem(ItemRegistry.getItem(itemID)), true);
 			this.itemID = itemID;
+			this.sourceType = sourceType;
 		}
 
 		@Override
 		public void handleInputEvent(InputEvent event, TickManager tickManager, PlayerMob perspective) {
 			super.handleInputEvent(event, tickManager, perspective);
 			if (!event.isUsed() && event.state && event.getID() == -100 && isMouseOver(event)) {
-				taskContainer.addTask(itemID);
+				taskContainer.addTask(itemID, sourceType);
 				updateBoard();
 				makeCurrent(boardForm);
 				if (event.shouldSubmitSound()) {

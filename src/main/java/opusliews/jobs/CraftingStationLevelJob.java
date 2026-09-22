@@ -14,6 +14,10 @@ import necesse.level.maps.levelData.jobs.JobMoveToTile;
 import necesse.level.maps.levelData.jobs.TileLevelJob;
 import opusliews.crafting.CraftingTaskLogic;
 import opusliews.crafting.CraftingTask;
+import opusliews.crafting.CraftingTaskRecipe;
+import opusliews.crafting.CraftingStoragePool;
+import opusliews.forge.ForgeTaskSystem;
+import opusliews.forge.ForgeRequirementSystem;
 import opusliews.logging.Logging;
 import opusliews.object.CraftingTaskBoardObjectEntity;
 import opusliews.object.DynamicCraftingStationObjectEntity;
@@ -157,6 +161,9 @@ public class CraftingStationLevelJob extends TileLevelJob {
 			private int currentTaskIndex = -1;
 			private long actionCompleteTime;
 			private long nextSoundTime;
+			private Recipe currentRecipe;
+			private boolean currentRecipeRequiresForge;
+			private boolean waitingForForgeHeat;
 
 			@Override
 			public JobMoveToTile getMoveToTile(JobMoveToTile lastTile) {
@@ -173,6 +180,7 @@ public class CraftingStationLevelJob extends TileLevelJob {
 				if (!isCurrent || isMovingTo) {
 					return;
 				}
+				if (waitingForForgeHeat) return;
 
 				String workItemStringID = station.getSettlerCraftingWorkItemStringID();
 				if (workItemStringID != null) {
@@ -232,13 +240,61 @@ public class CraftingStationLevelJob extends TileLevelJob {
 					}
 
 					CraftingTask selectedTask = currentBoard.getTask(currentTaskIndex);
-					Recipe selectedRecipe = selectedTask == null ? null : CraftingTaskLogic.getRecipe(currentBoard, selectedTask.itemID);
+					CraftingTaskRecipe selectedTaskRecipe = selectedTask == null
+							? null
+							: CraftingTaskLogic.getTaskRecipe(currentBoard, selectedTask);
+					if (selectedTaskRecipe == null) {
+						currentBoard.refreshTaskStatusesNow();
+						currentBoard.advanceAfterTask(currentTaskIndex);
+						currentTaskIndex = -1;
+						return ActiveJobResult.PERFORMING;
+					}
+
+					if (selectedTaskRecipe.isForgeRecipe()) {
+						ForgeTaskSystem.QueueResult forgeResult = ForgeTaskSystem.queueOne(currentBoard, selectedTaskRecipe);
+						Logging.logMessage("[CraftingForgeJob] Worker " + uniqueID + " queue item="
+								+ selectedTask.itemID + " success=" + forgeResult.success
+								+ (forgeResult.problem == null ? "" : " problem=" + forgeResult.problem));
+						currentBoard.refreshTaskStatusesNow();
+						currentBoard.advanceAfterTask(currentTaskIndex);
+						currentTaskIndex = -1;
+						if (!currentBoard.hasActionableTasks()) {
+							currentBoard.releaseWorker();
+							return ActiveJobResult.FINISHED;
+						}
+						return ActiveJobResult.PERFORMING;
+					}
+
+					Recipe selectedRecipe = selectedTaskRecipe.recipe;
 					int actionDelay = station.getSettlerCraftingActionDelay(human, selectedRecipe);
+					currentRecipe = selectedRecipe;
+					currentRecipeRequiresForge = ForgeRequirementSystem.requiresRunningForge(selectedRecipe);
+					waitingForForgeHeat = false;
+
+					if (currentRecipeRequiresForge) {
+						CraftingStoragePool storagePool = CraftingTaskLogic.getStoragePool(currentBoard);
+						if (!ForgeRequirementSystem.ensureRunningForge(station, selectedRecipe, storagePool, actionDelay)) {
+							Logging.logMessage("[CraftingFRRJob] Worker " + uniqueID + " could not start forge heat for item="
+									+ selectedTask.itemID);
+							currentRecipe = null;
+							currentRecipeRequiresForge = false;
+							currentBoard.refreshTaskStatusesNow();
+							currentBoard.advanceAfterTask(currentTaskIndex);
+							currentTaskIndex = -1;
+							if (!currentBoard.hasActionableTasks()) {
+								currentBoard.releaseWorker();
+								return ActiveJobResult.FINISHED;
+							}
+							return ActiveJobResult.PERFORMING;
+						}
+						Logging.logMessage("[CraftingFRRJob] Worker " + uniqueID + " secured forge heat for item="
+								+ selectedTask.itemID + " duration=" + actionDelay + "ms");
+					}
+
 					actionCompleteTime = job.getLevel().getTime() + actionDelay;
-					if (selectedRecipe != null) station.onSettlerCraftStarted(human, selectedRecipe);
+					station.onSettlerCraftStarted(human, selectedRecipe);
 					Logging.logMessage("[CraftingJob] Worker " + uniqueID + " started task index=" + currentTaskIndex
-							+ " item=" + (selectedTask == null ? -1 : selectedTask.itemID)
-							+ " delay=" + actionDelay + "ms");
+							+ " item=" + selectedTask.itemID + " delay=" + actionDelay + "ms");
 					return ActiveJobResult.PERFORMING;
 				}
 
@@ -246,19 +302,60 @@ public class CraftingStationLevelJob extends TileLevelJob {
 					return ActiveJobResult.PERFORMING;
 				}
 
+				if (currentRecipeRequiresForge && currentRecipe != null) {
+					CraftingStoragePool storagePool = CraftingTaskLogic.getStoragePool(currentBoard);
+					ForgeRequirementSystem.Status forgeStatus = ForgeRequirementSystem.getStatus(station, currentRecipe, storagePool);
+					if (forgeStatus == ForgeRequirementSystem.Status.NO_LINKED_FORGE) {
+						CraftingTask interruptedTask = currentBoard.getTask(currentTaskIndex);
+						Logging.logMessage("[CraftingFRRJob] Worker " + uniqueID + " lost linked forge for item="
+								+ (interruptedTask == null ? "unknown" : interruptedTask.itemID));
+						currentRecipe = null;
+						currentRecipeRequiresForge = false;
+						waitingForForgeHeat = false;
+						currentBoard.refreshTaskStatusesNow();
+						currentBoard.advanceAfterTask(currentTaskIndex);
+						currentTaskIndex = -1;
+						if (!currentBoard.hasActionableTasks()) {
+							currentBoard.releaseWorker();
+							return ActiveJobResult.FINISHED;
+						}
+						return ActiveJobResult.PERFORMING;
+					}
+
+					if (!ForgeRequirementSystem.ensureRunningForge(station, currentRecipe, storagePool, 250L)) {
+						if (!waitingForForgeHeat) {
+							Logging.logMessage("[CraftingFRRJob] Worker " + uniqueID + " waiting for forge fuel after finishing work");
+						}
+						waitingForForgeHeat = true;
+						return ActiveJobResult.PERFORMING;
+					}
+
+					if (waitingForForgeHeat) {
+						Logging.logMessage("[CraftingFRRJob] Worker " + uniqueID + " forge heat restored; completing craft");
+					}
+					waitingForForgeHeat = false;
+				}
+
 				currentBoard.refreshTaskStatusesNow();
 				CraftingTask task = currentBoard.getTask(currentTaskIndex);
 				if (task == null || task.status != CraftingTask.STATUS_IN_PROGRESS) {
 					currentBoard.advanceAfterTask(currentTaskIndex);
 					currentTaskIndex = -1;
+					currentRecipe = null;
+					currentRecipeRequiresForge = false;
+					waitingForForgeHeat = false;
 					return ActiveJobResult.PERFORMING;
 				}
 
-				Recipe recipe = CraftingTaskLogic.getRecipe(currentBoard, task.itemID);
+				CraftingTaskRecipe taskRecipe = CraftingTaskLogic.getTaskRecipe(currentBoard, task);
+				Recipe recipe = taskRecipe == null || taskRecipe.isForgeRecipe() ? null : taskRecipe.recipe;
 				if (recipe == null) {
 					currentBoard.refreshTaskStatusesNow();
 					currentBoard.advanceAfterTask(currentTaskIndex);
 					currentTaskIndex = -1;
+					currentRecipe = null;
+					currentRecipeRequiresForge = false;
+					waitingForForgeHeat = false;
 					return ActiveJobResult.PERFORMING;
 				}
 
@@ -274,6 +371,9 @@ public class CraftingStationLevelJob extends TileLevelJob {
 
 				currentBoard.advanceAfterTask(currentTaskIndex);
 				currentTaskIndex = -1;
+				currentRecipe = null;
+				currentRecipeRequiresForge = false;
+				waitingForForgeHeat = false;
 
 				if (!currentBoard.hasActionableTasks()) {
 					currentBoard.releaseWorker();
