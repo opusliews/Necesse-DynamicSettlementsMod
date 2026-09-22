@@ -27,6 +27,11 @@ public class CraftingComponentCategories {
 		typeManager.createCategory("011", new LocalMessage("componenttype", "plate"), "plate");
 		typeManager.createCategory("012", new LocalMessage("componenttype", "shaft"), "shaft");
 		typeManager.createCategory("013", new LocalMessage("componenttype", "string"), "string");
+		typeManager.createCategory("014", new LocalMessage("componenttype", "pickaxehead"), "pickaxehead");
+		typeManager.createCategory("015", new LocalMessage("componenttype", "axehead"), "axehead");
+		typeManager.createCategory("016", new LocalMessage("componenttype", "shovelhead"), "shovelhead");
+		typeManager.createCategory("017", new LocalMessage("componenttype", "sickleblade"), "sickleblade");
+		typeManager.createCategory("018", new LocalMessage("componenttype", "shearsblade"), "shearsblade");
 		materialClassManager.createCategory("000", new LocalMessage("materialclass", "bone"), "bone");
 		materialClassManager.createCategory("001", new LocalMessage("materialclass", "gem"), "gem");
 		materialClassManager.createCategory("002", new LocalMessage("materialclass", "magic"), "magic");
@@ -76,6 +81,7 @@ public class CraftingComponentCategories {
 		materialManager.createCategory("039", new LocalMessage("material", "void"), "void");
 		materialManager.createCategory("040", new LocalMessage("material", "willow"), "willow");
 		materialManager.createCategory("041", new LocalMessage("material", "wooden"), "wooden");
+		materialManager.createCategory("042", new LocalMessage("material", "frost"), "frost");
 		registered = true;
 	}
 

@@ -62,9 +62,6 @@ public class DSRecipeRegistry {
 		register(unfiredSickleBladeMoldStringID, 1, CrudeWorkbenchFeature.tech, ingredient("clay", 1));
 		register(unfiredSickleBladeMoldStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("clay", 1));
 
-		register(unfiredScytheBladeMoldStringID, 1, CrudeWorkbenchFeature.tech, ingredient("clay", 1));
-		register(unfiredScytheBladeMoldStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("clay", 1));
-
 		register(unfiredShearsBladeMoldStringID, 1, CrudeWorkbenchFeature.tech, ingredient("clay", 1));
 		register(unfiredShearsBladeMoldStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("clay", 1));
 
@@ -102,9 +99,9 @@ public class DSRecipeRegistry {
 		register(dryadplankStringID, 4, RecipeTechRegistry.TUNGSTEN_CARPENTER, ingredient("dryadlog", 1));
 
 		// Basic hardware
-		register(nailStringID, 8, RecipeTechRegistry.IRON_ANVIL, ingredient("ironbar", 1));
-		register(hingeStringID, 2, RecipeTechRegistry.IRON_ANVIL, ingredient("ironbar", 1));
-		register(hookStringID, 4, RecipeTechRegistry.IRON_ANVIL, ingredient("ironbar", 1));
+		register(nailStringID, 8, RecipeTechRegistry.IRON_ANVIL, ingredient("ironshaft", 1));
+		register(hingeStringID, 8, RecipeTechRegistry.IRON_ANVIL, ingredient("ironplate", 1));
+		register(hookStringID, 4, RecipeTechRegistry.IRON_ANVIL, ingredient("ironplate", 1));
 
 		// Shafts
 		register(woodenshaftStringID, 2, RecipeTechRegistry.CARPENTER, ingredient("dsanyplank", 1));
@@ -150,16 +147,7 @@ public class DSRecipeRegistry {
 
 		// Blades
 		register(woodenbladeStringID, 1, RecipeTechRegistry.CARPENTER, ingredient("dsanyplank", 3));
-		register(copperbladeStringID, 1, RecipeTechRegistry.IRON_ANVIL, ingredient(copperplateStringID, 1));
-		register(ironbladeStringID, 1, RecipeTechRegistry.IRON_ANVIL, ingredient(ironplateStringID, 1));
-		register(goldbladeStringID, 1, RecipeTechRegistry.IRON_ANVIL, ingredient(goldplateStringID, 1));
-		register(tungstenbladeStringID, 1, RecipeTechRegistry.TUNGSTEN_ANVIL, ingredient(tungstenplateStringID, 1));
-		register(demonicbladeStringID, 1, RecipeTechRegistry.DEMONIC_ANVIL, ingredient(demonicplateStringID, 1));
-		register(ivybladeStringID, 1, RecipeTechRegistry.DEMONIC_ANVIL, ingredient(ivyplateStringID, 1));
-		register(quartzbladeStringID, 1, RecipeTechRegistry.DEMONIC_ANVIL, ingredient(quartzplateStringID, 1));
-		register(glacialbladeStringID, 1, RecipeTechRegistry.TUNGSTEN_ANVIL, ingredient(glacialplateStringID, 1));
 		register(slimebladeStringID, 1, RecipeTechRegistry.FALLEN_ANVIL, ingredient(slimeplateStringID, 1));
-		register(amethystbladeStringID, 1, RecipeTechRegistry.DEMONIC_ANVIL, ingredient(amethystplateStringID, 1));
 
 		// Armor panels
 		register(clothpanelStringID, 1, RecipeTechRegistry.IRON_ANVIL, ingredient("wool", 4), ingredient("leather", 4));

@@ -47,7 +47,17 @@ public final class ItemDurabilityRegistry {
 	}
 
 	public static void registerDurability() {
-		ItemDurabilityRegistry.configure("thickplatemold", 10)
+		registerCraftingMold("pickaxeheadmold");
+		registerCraftingMold("axeheadmold");
+		registerCraftingMold("shovelheadmold");
+		registerCraftingMold("sickleblademold");
+		registerCraftingMold("shearsblademold");
+		registerCraftingMold("swordblademold");
+		registerCraftingMold("thickplatemold");
+	}
+
+	private static void registerCraftingMold(String itemStringID) {
+		ItemDurabilityRegistry.configure(itemStringID, 10)
 				.on(DurabilityAction.CRAFTING_USE, 1)
 				.destroyOnBreak();
 	}
