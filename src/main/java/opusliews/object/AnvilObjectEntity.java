@@ -15,6 +15,11 @@ public class AnvilObjectEntity extends DynamicCraftingStationObjectEntity {
 	}
 
 	@Override
+	public boolean supportsForgeLinks() {
+		return true;
+	}
+
+	@Override
 	public String getTaskBoardTextureKey() {
 		return "anvil";
 	}

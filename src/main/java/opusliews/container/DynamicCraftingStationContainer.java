@@ -12,6 +12,7 @@ import necesse.engine.network.server.ServerClient;
 import necesse.engine.registries.JournalChallengeRegistry;
 import necesse.entity.mobs.friendly.human.HumanMob;
 import necesse.entity.objectEntity.ObjectEntity;
+import necesse.entity.objectEntity.ProcessingForgeObjectEntity;
 import necesse.entity.objectEntity.interfaces.OEInventory;
 import necesse.inventory.InventoryItem;
 import necesse.inventory.container.customAction.BooleanCustomAction;
@@ -34,6 +35,7 @@ public class DynamicCraftingStationContainer extends CraftingStationContainer {
 	public final PointCustomAction setInputStorage;
 	public final PointCustomAction setOutputStorage;
 	public final PointCustomAction setTaskBoard;
+	public final PointCustomAction setForge;
 	public final BooleanCustomAction setSelectingLinkedElement;
 
 	private final String stationName;
@@ -86,6 +88,13 @@ public class DynamicCraftingStationContainer extends CraftingStationContainer {
 			@Override
 			protected void run(int x, int y) {
 				if (client.isServer()) applyTaskBoardLink(x, y);
+			}
+		});
+
+		setForge = registerAction(new PointCustomAction() {
+			@Override
+			protected void run(int x, int y) {
+				if (client.isServer()) applyForgeLink(x, y);
 			}
 		});
 
@@ -253,6 +262,24 @@ public class DynamicCraftingStationContainer extends CraftingStationContainer {
 		if (owner != null && (owner.x != stationEntity.tileX || owner.y != stationEntity.tileY)) return;
 
 		stationEntity.setTaskBoard(new Point(master.tileX, master.tileY));
+	}
+
+	private void applyForgeLink(int x, int y) {
+		if (!isCurrentStationEntity() || !stationEntity.supportsForgeLinks()) return;
+
+		LevelObject master = getStorageMaster(x, y);
+		if (master == null) return;
+
+		Point target = new Point(master.tileX, master.tileY);
+		if (!stationEntity.isWithinStorageLinkRange(target.x, target.y)) return;
+
+		if (stationEntity.hasLinkedForge(target)) {
+			stationEntity.removeLinkedForge(target);
+			return;
+		}
+
+		if (!(master.getObjectEntity() instanceof ProcessingForgeObjectEntity)) return;
+		stationEntity.addLinkedForge(target);
 	}
 
 	private boolean isCurrentStationEntity() {

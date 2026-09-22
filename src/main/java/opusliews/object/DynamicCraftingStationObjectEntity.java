@@ -14,6 +14,7 @@ import necesse.entity.TileEntity;
 import necesse.entity.mobs.PlayerMob;
 import necesse.entity.mobs.friendly.human.HumanMob;
 import necesse.entity.objectEntity.ObjectEntity;
+import necesse.entity.objectEntity.ProcessingForgeObjectEntity;
 import necesse.entity.objectEntity.interfaces.OEInventory;
 import necesse.inventory.Inventory;
 import necesse.inventory.InventoryItem;
@@ -30,6 +31,7 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 
 	private final ArrayList<Point> inputStorages = new ArrayList<>();
 	private final ArrayList<Point> outputStorages = new ArrayList<>();
+	private final ArrayList<Point> linkedForges = new ArrayList<>();
 	private Point taskBoard;
 
 	protected DynamicCraftingStationObjectEntity(Level level, String type, int tileX, int tileY) {
@@ -44,6 +46,7 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		save.addSaveData(InventorySave.getSave(inventory, "INVENTORY"));
 		addLinkListSaveData(save, "inputStorages", inputStorages);
 		addLinkListSaveData(save, "outputStorages", outputStorages);
+		addLinkListSaveData(save, "linkedForges", linkedForges);
 		addLinkSaveData(save, "taskBoard", taskBoard);
 	}
 
@@ -57,6 +60,8 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		inputStorages.addAll(readLinkListSaveData(save, "inputStorages"));
 		outputStorages.clear();
 		outputStorages.addAll(readLinkListSaveData(save, "outputStorages"));
+		linkedForges.clear();
+		linkedForges.addAll(readLinkListSaveData(save, "linkedForges"));
 		taskBoard = readLinkSaveData(save, "taskBoard");
 	}
 
@@ -66,6 +71,7 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		inventory.writeContent(writer);
 		writeLinks(writer, inputStorages);
 		writeLinks(writer, outputStorages);
+		writeLinks(writer, linkedForges);
 		writeLink(writer, taskBoard);
 	}
 
@@ -77,6 +83,8 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		inputStorages.addAll(readLinks(reader));
 		outputStorages.clear();
 		outputStorages.addAll(readLinks(reader));
+		linkedForges.clear();
+		linkedForges.addAll(readLinks(reader));
 		taskBoard = readLink(reader);
 	}
 
@@ -97,6 +105,7 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 	public void serverTick() {
 		super.serverTick();
 		validateStorageLinks();
+		validateForgeLinks();
 		validateTaskBoard();
 		inventory.tickItems(this);
 		serverTickInventorySync(getLevel().getServer(), this);
@@ -125,6 +134,35 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 
 		OEInventory linkedInventory = (OEInventory)objectEntity;
 		return linkedInventory.getInventory() != null && linkedInventory.getSettlementStorage() != null;
+	}
+
+	private void validateForgeLinks() {
+		if (!supportsForgeLinks()) {
+			if (!linkedForges.isEmpty()) {
+				linkedForges.clear();
+				markDirty();
+				syncContent();
+			}
+			return;
+		}
+
+		boolean changed = linkedForges.removeIf(point -> !isValidLinkedForge(point));
+		if (changed) {
+			markDirty();
+			syncContent();
+		}
+	}
+
+	private boolean isValidLinkedForge(Point point) {
+		if (point == null || !isWithinStorageLinkRange(point.x, point.y)) return false;
+
+		LevelObject object = getLevel().getLevelObject(point.x, point.y);
+		if (object == null) return false;
+
+		LevelObject master = (LevelObject)object.getMasterLevelObject().orElse(null);
+		if (master == null || master.tileX != point.x || master.tileY != point.y) return false;
+
+		return master.getObjectEntity() instanceof ProcessingForgeObjectEntity;
 	}
 
 	private void validateTaskBoard() {
@@ -175,6 +213,9 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		return copyPoints(outputStorages);
 	}
 
+	public ArrayList<Point> getLinkedForges() {
+		return copyPoints(linkedForges);
+	}
 
 	public Point getTaskBoard() {
 		return taskBoard == null ? null : new Point(taskBoard);
@@ -186,6 +227,10 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 
 	public boolean hasOutputStorage(Point point) {
 		return containsPoint(outputStorages, point);
+	}
+
+	public boolean hasLinkedForge(Point point) {
+		return containsPoint(linkedForges, point);
 	}
 
 	public void addInputStorage(Point point) {
@@ -226,6 +271,41 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		outputStorages.clear();
 		markDirty();
 		syncContent();
+	}
+
+	public void addLinkedForge(Point point) {
+		if (!supportsForgeLinks() || point == null || containsPoint(linkedForges, point)) return;
+		linkedForges.add(new Point(point));
+		markDirty();
+		syncContent();
+	}
+
+	public void removeLinkedForge(Point point) {
+		if (point == null || !linkedForges.remove(point)) return;
+		markDirty();
+		syncContent();
+	}
+
+	public void clearLinkedForges() {
+		if (linkedForges.isEmpty()) return;
+		linkedForges.clear();
+		markDirty();
+		syncContent();
+	}
+
+	public ProcessingForgeObjectEntity getLinkedForge(Point point) {
+		if (!hasLinkedForge(point) || !isValidLinkedForge(point)) return null;
+		ObjectEntity entity = getLevel().entityManager.getObjectEntity(point.x, point.y);
+		return entity instanceof ProcessingForgeObjectEntity ? (ProcessingForgeObjectEntity)entity : null;
+	}
+
+	public ArrayList<ProcessingForgeObjectEntity> getValidLinkedForges() {
+		ArrayList<ProcessingForgeObjectEntity> result = new ArrayList<>();
+		for (Point point : linkedForges) {
+			ProcessingForgeObjectEntity forge = getLinkedForge(point);
+			if (forge != null) result.add(forge);
+		}
+		return result;
 	}
 
 	public void setTaskBoard(Point point) {
@@ -300,6 +380,10 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		((CraftingTaskBoardObjectEntity)entity).setLinkedStationInternal(station, sync);
 	}
 
+	public boolean supportsForgeLinks() {
+		return false;
+	}
+
 	public String getTaskBoardTextureKey() {
 		return "unlinked";
 	}
@@ -345,6 +429,7 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 				output == null ? null : output.copy(),
 				copyPoints(inputStorages),
 				copyPoints(outputStorages),
+				copyPoints(linkedForges),
 				taskBoard == null ? null : new Point(taskBoard)
 		);
 	}
@@ -357,6 +442,8 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		inputStorages.addAll(copyPoints(state.inputStorages));
 		outputStorages.clear();
 		outputStorages.addAll(copyPoints(state.outputStorages));
+		linkedForges.clear();
+		linkedForges.addAll(copyPoints(state.linkedForges));
 		taskBoard = state.taskBoard == null ? null : new Point(state.taskBoard);
 		markDirty();
 		syncContent();
@@ -382,17 +469,20 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		private final InventoryItem output;
 		private final ArrayList<Point> inputStorages;
 		private final ArrayList<Point> outputStorages;
+		private final ArrayList<Point> linkedForges;
 		private final Point taskBoard;
 
 		private StationState(
 				InventoryItem output,
 				ArrayList<Point> inputStorages,
 				ArrayList<Point> outputStorages,
+				ArrayList<Point> linkedForges,
 				Point taskBoard
 		) {
 			this.output = output;
 			this.inputStorages = inputStorages;
 			this.outputStorages = outputStorages;
+			this.linkedForges = linkedForges;
 			this.taskBoard = taskBoard;
 		}
 	}

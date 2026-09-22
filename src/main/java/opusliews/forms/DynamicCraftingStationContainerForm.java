@@ -15,6 +15,7 @@ import necesse.gfx.forms.position.FormFixedPosition;
 import necesse.gfx.forms.position.FormPositionContainer;
 import necesse.gfx.forms.presets.containerComponent.object.CraftingStationContainerForm;
 import opusliews.container.DynamicCraftingStationContainer;
+import opusliews.crafting.CraftingForgeSelectTool;
 import opusliews.crafting.CraftingStorageSelectTool;
 import opusliews.crafting.CraftingTaskBoardSelectTool;
 import opusliews.hud.CraftingStationLinkHud;
@@ -76,6 +77,15 @@ public class DynamicCraftingStationContainerForm extends CraftingStationContaine
 				LEFT_PANEL_WIDTH - 14, 48));
 		taskBoardButton.onClicked(event -> startTaskBoardSelection());
 
+		if (stationContainer.stationEntity.supportsForgeLinks()) {
+			FormTwoLineTextButton forgeButton = craftingForm.addComponent(new FormTwoLineTextButton(
+					Localization.translate("ui", "linkforge"), Localization.translate("ui", "forge"),
+					7, 284,
+					LEFT_PANEL_WIDTH - 14, 48));
+			forgeButton.onClicked(event -> startForgeSelection());
+			craftingForm.setHeight(Math.max(craftingForm.getHeight(), 340));
+		}
+
 		int outputPanelX = leftOffset + vanillaWidth + OUTPUT_PANEL_GAP;
 		Form outputPanel = craftingForm.addComponent(new Form("craftingStationOutput", OUTPUT_PANEL_WIDTH, OUTPUT_PANEL_HEIGHT));
 		outputPanel.setPosition(new FormFixedPosition(outputPanelX, 92));
@@ -115,6 +125,18 @@ public class DynamicCraftingStationContainerForm extends CraftingStationContaine
 		startLinkSelection();
 		GameToolManager.setGameTool(
 				new CraftingTaskBoardSelectTool(
+						stationContainer,
+						client.getLevel(),
+						this::finishLinkSelection
+				),
+				this
+		);
+	}
+
+	protected void startForgeSelection() {
+		startLinkSelection();
+		GameToolManager.setGameTool(
+				new CraftingForgeSelectTool(
 						stationContainer,
 						client.getLevel(),
 						this::finishLinkSelection

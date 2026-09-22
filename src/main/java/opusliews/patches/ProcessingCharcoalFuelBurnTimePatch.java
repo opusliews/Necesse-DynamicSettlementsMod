@@ -5,6 +5,7 @@ import necesse.entity.objectEntity.AnyLogFueledProcessingTechInventoryObjectEnti
 import necesse.inventory.InventoryItem;
 import net.bytebuddy.asm.Advice;
 import opusliews.earlygame.CharcoalFuelSystem;
+import opusliews.forge.ForgeHeatSystem;
 
 @ModMethodPatch(
 		target = AnyLogFueledProcessingTechInventoryObjectEntity.class,
@@ -23,6 +24,11 @@ public class ProcessingCharcoalFuelBurnTimePatch {
 			@Advice.Argument(0) boolean useFuel,
 			@Advice.Return(readOnly = false) int result
 	) {
+		if (ForgeHeatSystem.shouldBlockAutomaticIdleFuelUse(objectEntity, useFuel)) {
+			result = 0;
+			return;
+		}
+
 		InventoryItem charcoal = findCharcoal(objectEntity);
 		int burnTime = charcoal == null ? 0 : objectEntity.getFuelTime(charcoal);
 		result = CharcoalFuelSystem.consumeFuel(

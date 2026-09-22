@@ -9,6 +9,7 @@ import java.util.WeakHashMap;
 import necesse.engine.gameLoop.tickManager.TickManager;
 import necesse.entity.mobs.PlayerMob;
 import necesse.entity.objectEntity.ObjectEntity;
+import necesse.entity.objectEntity.ProcessingForgeObjectEntity;
 import necesse.entity.objectEntity.interfaces.OEInventory;
 import necesse.gfx.camera.GameCamera;
 import necesse.gfx.drawOptions.DrawOptionsList;
@@ -24,6 +25,7 @@ public class CraftingStationLinkHud {
 	private static final Color INPUT_COLOR = new Color(40, 220, 70, 255);
 	private static final Color OUTPUT_COLOR = new Color(230, 55, 55, 255);
 	private static final Color TASK_LINK_COLOR = new Color(40, 220, 70, 255);
+	private static final Color FORGE_LINK_COLOR = new Color(255, 170, 80, 255);
 
 	private static final Map<Level, HudDrawElement> elements = new WeakHashMap<>();
 	private static Level openStationLevel;
@@ -58,6 +60,9 @@ public class CraftingStationLinkHud {
 						addStorageOutline(options, level, camera, storage, OUTPUT_COLOR, inset);
 					}
 					addTaskBoardOutline(options, level, camera, station.getTaskBoard(), TASK_LINK_COLOR);
+					for (Point forge : station.getLinkedForges()) {
+						addForgeOutline(options, level, camera, forge, FORGE_LINK_COLOR);
+					}
 				}
 
 				CraftingTaskBoardObjectEntity board = getDisplayedBoard(level, camera);
@@ -202,6 +207,19 @@ public class CraftingStationLinkHud {
 	) {
 		LevelObject master = point == null ? null : getStoredMaster(level, point);
 		if (master != null && master.getObjectEntity() instanceof CraftingTaskBoardObjectEntity) {
+			addMasterOutline(options, camera, master, color);
+		}
+	}
+
+	private static void addForgeOutline(
+			DrawOptionsList options,
+			Level level,
+			GameCamera camera,
+			Point point,
+			Color color
+	) {
+		LevelObject master = point == null ? null : getStoredMaster(level, point);
+		if (master != null && master.getObjectEntity() instanceof ProcessingForgeObjectEntity) {
 			addMasterOutline(options, camera, master, color);
 		}
 	}
