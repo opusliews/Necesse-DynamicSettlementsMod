@@ -15,19 +15,23 @@ import opusliews.jobs.BatchedHaulingSystem;
 )
 public class BatchedHaulingPatch {
 	@Advice.OnMethodEnter(skipOn = Advice.OnNonDefaultValue.class)
-	public static JobSequence onEnter(
+	public static boolean onEnter(
 			@Advice.This HaulFromLevelJob job,
 			@Advice.Argument(0) EntityJobWorker worker,
-			@Advice.Argument(1) JobTypeHandler.TypePriority priority
+			@Advice.Argument(1) JobTypeHandler.TypePriority priority,
+			@Advice.Local("batchedHaulingResult") JobSequence batchedHaulingResult
 	) {
-		return BatchedHaulingSystem.getBatchedJobSequence(job, worker, priority);
+		batchedHaulingResult = BatchedHaulingSystem.getBatchedJobSequence(job, worker, priority);
+		if (batchedHaulingResult != null) return true;
+		return BatchedHaulingSystem.shouldPreventVanillaFallback(job);
 	}
 
 	@Advice.OnMethodExit
 	public static void onExit(
-			@Advice.Enter JobSequence batched,
+			@Advice.Enter boolean handled,
+			@Advice.Local("batchedHaulingResult") JobSequence batchedHaulingResult,
 			@Advice.Return(readOnly = false) JobSequence result
 	) {
-		if (batched != null) result = batched;
+		if (handled) result = batchedHaulingResult;
 	}
 }

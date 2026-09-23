@@ -357,6 +357,9 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketClayDiggingSound.class);
 		PacketRegistry.registerPacket(PacketCrudeWorkbenchOutput.class);
 		PacketRegistry.registerPacket(PacketCrudeAnvilOutput.class);
+		PacketRegistry.registerPacket(PacketSettlementStockRequest.class);
+		PacketRegistry.registerPacket(PacketSettlementStockUpdate.class);
+		PacketRegistry.registerPacket(PacketSettlementStockSync.class);
 
 		CraftingStationFeature.register();
 		CraftingTasksFeature.register();

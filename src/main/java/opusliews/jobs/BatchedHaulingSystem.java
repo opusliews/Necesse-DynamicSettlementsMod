@@ -22,10 +22,12 @@ import necesse.inventory.itemFilter.ItemCategoriesFilter;
 import necesse.level.maps.levelData.jobs.HaulFromLevelJob;
 import necesse.level.maps.levelData.settlementData.LevelStorage;
 import necesse.level.maps.levelData.settlementData.SettlementStoragePickupSlot;
+import necesse.level.maps.levelData.settlementData.SettlementRequestInventory;
 import necesse.level.maps.levelData.settlementData.ZoneTester;
 import opusliews.clay.ClayPackageSystem;
 import opusliews.logging.Logging;
 import opusliews.mobs.BuilderHumanMob;
+import opusliews.stock.SettlementStockSystem;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -56,7 +58,10 @@ public final class BatchedHaulingSystem {
 
 		DestinationCapacity destinationCapacity = new DestinationCapacity(destination.storage);
 		BatchCapacity capacity = new BatchCapacity(worker);
-		int primaryCapacity = capacity.getCanPlanAmount(primary.item);
+		int primaryCapacity = Math.min(
+				capacity.getCanPlanAmount(primary.item),
+				getSourceRemovalLimit(primary, destination.storage)
+		);
 		if (primaryCapacity <= 0) return null;
 
 		int primaryAmount = Math.min(
@@ -89,9 +94,14 @@ public final class BatchedHaulingSystem {
 		capacity.addPlanned(primaryPlanned);
 		destinationCapacity.addPlanned(primaryPlanned);
 
-		Logging.logMessage("[BatchedHauling] Primary item=" + primary.item.item.getStringID()
-				+ " clay=" + ClayPackageSystem.isClayItem(primary.item)
-				+ " destination=" + destination.storage.tileX + "," + destination.storage.tileY);
+		if (Logging.logEnabled) {
+			Logging.logMessage("[BatchedHauling] Primary source=" + primary.storage.tileX + "," + primary.storage.tileY
+					+ " item=" + primary.item.item.getStringID()
+					+ " reserved=" + reservedPrimary
+					+ " clay=" + ClayPackageSystem.isClayItem(primary.item)
+					+ " destination=" + destination.storage.tileX + "," + destination.storage.tileY
+					+ " destinationType=" + destination.storage.getClass().getSimpleName());
+		}
 
 		List<HaulFromLevelJob> siblings = worker.streamValidJobsWithinRange(null)
 				.filter(job -> job instanceof HaulFromLevelJob)
@@ -104,12 +114,14 @@ public final class BatchedHaulingSystem {
 				.collect(Collectors.toList());
 
 		for (HaulFromLevelJob sibling : siblings) {
-			Logging.logMessage("[BatchedHauling] Candidate item=" + sibling.item.item.getStringID()
-					+ " clay=" + ClayPackageSystem.isClayItem(sibling.item)
-					+ " unfired=" + ClayPackageSystem.isUnfiredClayItem(sibling.item.item)
-					+ " fired=" + ClayPackageSystem.isFiredClayItem(sibling.item.item));
+			if (Logging.logEnabled) {
+				Logging.logMessage("[BatchedHauling] Candidate item=" + sibling.item.item.getStringID()
+						+ " clay=" + ClayPackageSystem.isClayItem(sibling.item)
+						+ " unfired=" + ClayPackageSystem.isUnfiredClayItem(sibling.item.item)
+						+ " fired=" + ClayPackageSystem.isFiredClayItem(sibling.item.item));
+			}
 			if (!capacity.canPlan(sibling.item)) {
-				Logging.logMessage("[BatchedHauling] Candidate rejected by worker capacity item="
+				if (Logging.logEnabled) Logging.logMessage("[BatchedHauling] Candidate rejected by worker capacity item="
 						+ sibling.item.item.getStringID());
 				continue;
 			}
@@ -117,9 +129,12 @@ public final class BatchedHaulingSystem {
 			HaulFromLevelJob.HaulPosition siblingDestination = getMatchingDestination(sibling, destination.storage, worker);
 			if (siblingDestination == null) continue;
 
-			int capacityAmount = capacity.getCanPlanAmount(sibling.item);
+			int capacityAmount = Math.min(
+					capacity.getCanPlanAmount(sibling.item),
+					getSourceRemovalLimit(sibling, siblingDestination.storage)
+			);
 			if (capacityAmount <= 0) {
-				Logging.logMessage("[BatchedHauling] Candidate rejected after destination match: no worker capacity item="
+				if (Logging.logEnabled) Logging.logMessage("[BatchedHauling] Candidate rejected after destination match: no worker capacity item="
 						+ sibling.item.item.getStringID());
 				continue;
 			}
@@ -135,14 +150,14 @@ public final class BatchedHaulingSystem {
 					amount
 			);
 			if (slots == null || slots.isEmpty()) {
-				Logging.logMessage("[BatchedHauling] Candidate rejected: no unreserved source slots item="
+				if (Logging.logEnabled) Logging.logMessage("[BatchedHauling] Candidate rejected: no unreserved source slots item="
 						+ sibling.item.item.getStringID() + " requested=" + amount);
 				continue;
 			}
 
 			int reserved = addJobToSequence(sequence, worker, priority, sibling, destination.storage, slots);
 			if (reserved <= 0) {
-				Logging.logMessage("[BatchedHauling] Candidate rejected: sequence reservation produced zero item="
+				if (Logging.logEnabled) Logging.logMessage("[BatchedHauling] Candidate rejected: sequence reservation produced zero item="
 						+ sibling.item.item.getStringID());
 				removeSlots(slots);
 				continue;
@@ -151,11 +166,42 @@ public final class BatchedHaulingSystem {
 			InventoryItem planned = slots.getFirst().item.copy(reserved);
 			capacity.addPlanned(planned);
 			destinationCapacity.addPlanned(planned);
-			Logging.logMessage("[BatchedHauling] Added candidate item=" + sibling.item.item.getStringID()
+			if (Logging.logEnabled) Logging.logMessage("[BatchedHauling] Added candidate item=" + sibling.item.item.getStringID()
 					+ " amount=" + reserved + " destination=" + destination.storage.tileX + "," + destination.storage.tileY);
 		}
 
 		return sequence;
+	}
+
+
+	public static boolean shouldPreventVanillaFallback(HaulFromLevelJob job) {
+		if (job == null || job.storage == null || job.item == null || job.item.getAmount() <= 0) return false;
+
+		boolean hasOrdinaryDestination = false;
+		for (Object value : job.dropOffPositions) {
+			HaulFromLevelJob.HaulPosition pos = (HaulFromLevelJob.HaulPosition)value;
+			if (!(pos.storage instanceof SettlementRequestInventory)) {
+				hasOrdinaryDestination = true;
+				break;
+			}
+		}
+		if (!hasOrdinaryDestination) return false;
+
+		int allowed = SettlementStockSystem.getMaxRemovable(job.storage, job.item);
+		boolean prevent = allowed < job.item.getAmount();
+		if (prevent && Logging.logEnabled) {
+			Logging.logMessage("[BatchedHauling] Blocking vanilla fallback source="
+					+ job.storage.tileX + "," + job.storage.tileY
+					+ " item=" + job.item.item.getStringID()
+					+ " requested=" + job.item.getAmount()
+					+ " allowed=" + allowed);
+		}
+		return prevent;
+	}
+
+	private static int getSourceRemovalLimit(HaulFromLevelJob job, LevelStorage destination) {
+		if (destination instanceof SettlementRequestInventory) return job.item.getAmount();
+		return SettlementStockSystem.getMaxRemovable(job.storage, job.item);
 	}
 
 	private static LinkedList<SettlementStoragePickupSlot> findExactUnreservedSlots(
@@ -207,7 +253,7 @@ public final class BatchedHaulingSystem {
 	) {
 		ZoneTester restrictZone = worker.getJobRestrictZone();
 		if (!restrictZone.containsTile(destination.tileX, destination.tileY)) {
-			Logging.logMessage("[BatchedHauling] Candidate rejected: destination outside restrict zone item="
+			if (Logging.logEnabled) Logging.logMessage("[BatchedHauling] Candidate rejected: destination outside restrict zone item="
 					+ job.item.item.getStringID());
 			return null;
 		}
@@ -220,12 +266,12 @@ public final class BatchedHaulingSystem {
 			}
 
 			if (pos.getInventoryRange() == null) {
-				Logging.logMessage("[BatchedHauling] Candidate rejected: destination inventory unavailable item="
+				if (Logging.logEnabled) Logging.logMessage("[BatchedHauling] Candidate rejected: destination inventory unavailable item="
 						+ job.item.item.getStringID());
 				return null;
 			}
 			if (!pos.storage.estimateCanMoveTo(worker)) {
-				Logging.logMessage("[BatchedHauling] Candidate rejected: destination unreachable item="
+				if (Logging.logEnabled) Logging.logMessage("[BatchedHauling] Candidate rejected: destination unreachable item="
 						+ job.item.item.getStringID());
 				return null;
 			}
@@ -233,7 +279,7 @@ public final class BatchedHaulingSystem {
 			return pos;
 		}
 
-		Logging.logMessage("[BatchedHauling] Candidate rejected: primary destination is not valid for item="
+		if (Logging.logEnabled) Logging.logMessage("[BatchedHauling] Candidate rejected: primary destination is not valid for item="
 				+ job.item.item.getStringID() + " destination=" + destination.tileX + "," + destination.tileY);
 		return null;
 	}
@@ -278,7 +324,7 @@ public final class BatchedHaulingSystem {
 		);
 
 		if (amount <= 0) {
-			Logging.logMessage("[BatchedHauling] Destination full for item=" + job.item.item.getStringID()
+			if (Logging.logEnabled) Logging.logMessage("[BatchedHauling] Destination full for item=" + job.item.item.getStringID()
 					+ " at=" + destination.storage.tileX + "," + destination.storage.tileY
 					+ " globalCapacity=" + globalReservedCapacity + " batchCapacity=" + batchCapacity);
 		}

@@ -211,6 +211,9 @@ craftingtaskboard=Crafting Task Board
 openbuilderform=Open Builder Form
 
 [ui]
+storageadvanced=Advanced
+storagerestock=Restock
+storagestock=Stock
 settlementassigncharcoalproduction=Assign Charcoal Pit Zone
 settlementcharcoalproductiontip=Assign an area where settlers can produce charcoal
 charcoalproductionsettings=Charcoal Production Settings
