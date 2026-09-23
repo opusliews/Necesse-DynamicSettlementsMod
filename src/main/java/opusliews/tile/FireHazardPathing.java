@@ -14,6 +14,9 @@ import necesse.engine.util.MovedRectangle;
 import necesse.entity.levelEvent.LevelEvent;
 import necesse.entity.levelEvent.mobAbilityLevelEvent.PhoenixFeatherGroundFireEvent;
 import necesse.entity.mobs.Mob;
+import necesse.entity.mobs.ai.behaviourTree.AINode;
+import necesse.entity.mobs.ai.behaviourTree.leaves.HumanJobMoveToAINode;
+import necesse.entity.mobs.ai.behaviourTree.util.AIMover;
 import necesse.entity.mobs.ai.path.TilePathfinding;
 import necesse.entity.mobs.friendly.human.HumanMob;
 import necesse.level.maps.Level;
@@ -42,6 +45,20 @@ public final class FireHazardPathing {
 		}
 
 		return false;
+	}
+
+	public static boolean stopStalePathIfFireAppeared(AIMover mover, Mob mob) {
+		if (mover == null || !(mob instanceof HumanMob) || !mover.isMoving()) return false;
+
+		Point destination = mover.getCurrentDestination();
+		if (destination == null || !isFireHazard(mob.getLevel(), destination.x, destination.y)) return false;
+
+		AINode movingFor = mover.getMovingFor();
+		mover.stopMoving(mob);
+		if (movingFor instanceof HumanJobMoveToAINode) {
+			((HumanJobMoveToAINode)movingFor).nextMoveTime = 0L;
+		}
+		return true;
 	}
 
 	public static boolean directMovementCrossesFire(Mob mob, int targetX, int targetY) {

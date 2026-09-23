@@ -49,6 +49,7 @@ import opusliews.tile.CharcoalPitTile;
 import opusliews.tile.BurningCharcoalPitTile;
 import opusliews.tile.CoveredCharcoalPitTile;
 import opusliews.tile.FireHazardPathing;
+import opusliews.tile.FiringGroundSystem;
 import opusliews.tile.ShallowHoleTile;
 
 public class CharcoalProductionLevelJob extends TileLevelJob {
@@ -262,7 +263,7 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 					if (log != null) {
 						worker.showWorkAnimation(tileX * 32 + 16, tileY * 32 + 16, log.item, 1000, true);
 					}
-				} else if (!reuseExistingHole && (hasGrassTile() || holeDigStarted)) {
+				} else if (!reuseExistingHole && (hasDiggableGroundTile() || holeDigStarted)) {
 					worker.showWorkAnimation(
 							tileX * 32 + 16,
 							tileY * 32 + 16,
@@ -322,7 +323,7 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 					return ActiveJobResult.FINISHED;
 				}
 
-				if (hasGrassTile()) {
+				if (hasDiggableGroundTile()) {
 					if (!grassRemovalStarted) {
 						grassRemovalStarted = true;
 						grassRemovalCompleteTime = currentTime + grassRemovalTime;
@@ -333,7 +334,7 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 						return ActiveJobResult.PERFORMING;
 					}
 
-					if (hasGrassTile()) {
+					if (hasDiggableGroundTile()) {
 						getLevel().setObject(tileX, tileY, 0);
 						getLevel().setTile(tileX, tileY, TileRegistry.dirtID);
 						getLevel().sendObjectUpdatePacket(tileX, tileY);
@@ -478,15 +479,11 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 
 				long fullDayDuration = (long)getLevel().getWorldEntity().getDayTimeMax() * 1000L;
 				long burnEndWorldTime = getLevel().getWorldEntity().getWorldTime() + fullDayDuration;
-				pitData.startBurn(tileX, tileY, burnEndWorldTime);
+				pitData.igniteCharcoalPit(tileX, tileY, burnEndWorldTime);
 				pitData.clearProductionRecoveryState(tileX, tileY);
 				burnStarted = true;
 
 				int burningCharcoalPitID = TileRegistry.getTileID(BurningCharcoalPitTile.stringID);
-				getLevel().setTile(tileX, tileY, burningCharcoalPitID);
-				getLevel().sendTileUpdatePacket(tileX, tileY);
-				getLevel().getLevelTile(tileX, tileY).checkAround();
-				getLevel().getLevelObject(tileX, tileY).checkAround();
 				getLevel().getServer().network.sendToClientsWithTile(
 						new PacketBuilderTilePlaceSound(burningCharcoalPitID, tileX, tileY),
 						getLevel(),
@@ -561,8 +558,8 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 						.anyMatch(player -> !player.isFlying() && player.getTileX() == tileX && player.getTileY() == tileY);
 			}
 
-			private boolean hasGrassTile() {
-				return getLevel().getTileID(tileX, tileY) == TileRegistry.grassID;
+			private boolean hasDiggableGroundTile() {
+				return FiringGroundSystem.shouldDigToDirt(getLevel(), tileX, tileY);
 			}
 		};
 	}

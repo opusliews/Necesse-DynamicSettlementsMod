@@ -16,10 +16,15 @@ charcoallogsunavailable=Charcoal production blocked: 32 logs exist, but they are
 charcoalpickupfailed=Charcoal production blocked: a settler could not pick up the reserved logs from settlement storage.
 charcoalworkerlogsmissing=Charcoal production blocked: the settler reached the pit job without carrying all 32 required logs.
 charcoalinvalidsite=Charcoal production blocked: the selected pit location is no longer valid.
+clayfiringmissingitems=Clay firing blocked: no required unfired clay items are available in settlement storage.
+clayfiringmissinglogs=Clay firing blocked: settlement storage does not contain 16 logs.
+clayfiringinvalidsite=Clay firing blocked: the selected firing pit location is no longer valid.
 
 [activities]
 construction=Constructing
 charcoalproduction=Producing charcoal
+clayfiringproduction=Firing clay items
+clayfiringrecovery=Recovering fired clay items
 guardpatrolling=Patrolling
 
 craftingstation=Working at crafting station
@@ -58,6 +63,7 @@ trapdoor=Trapdoor
 holecaveladder=Cave Ladder
 sharpenedstone=Sharpened Stone
 unfiredbrick=Unfired Brick
+claypackage=Clay Package
 brick=Brick
 unfiredingotmold=Unfired Ingot Mold
 ingotmold=Ingot Mold
@@ -213,6 +219,15 @@ charcoalproductionzerotip=Set it to 0 to stop production
 charcoalrepeatforever=Repeat Forever
 charcoalproductionzone=Charcoal Pit Zone
 charcoalproductionzonedefname=Charcoal Pit Zone <number>
+
+settlementassignclayfiring=Assign Clay Firing Zone
+settlementclayfiringtip=Assign an area where settlers can fire bricks and molds
+clayfiringsettings=Clay Firing Settings
+clayproduceuntil=<item>: Produce Until Units Stocked
+clayfiringzerotip=Set an item to 0 to stop producing it
+clayrepeatforever=Repeat Forever
+clayfiringzone=Clay Firing Zone
+clayfiringzonedefname=Clay Firing Zone <number>
 
 blueprintselectarea=Create blueprint zone
 builderstartroadrepairs=Please do repairs and upgrades on the road
@@ -437,3 +452,4 @@ tungsten=Tungsten
 void=Void
 willow=Willow
 wooden=Wooden
+

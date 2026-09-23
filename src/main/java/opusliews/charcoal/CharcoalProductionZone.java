@@ -16,6 +16,7 @@ import necesse.level.maps.levelData.settlementData.storage.SettlementStorageGlob
 import necesse.level.maps.levelData.settlementData.storage.SettlementStorageItemIDIndex;
 import necesse.level.maps.levelData.settlementData.storage.SettlementStorageRecordsRegionData;
 import necesse.level.maps.levelData.settlementData.zones.SettlementTileTickZone;
+import opusliews.tile.FiringGroundSystem;
 import opusliews.jobs.CharcoalProductionLevelJob;
 import opusliews.tile.CharcoalPitLevelData;
 import opusliews.tile.CharcoalPitSystem;
@@ -85,8 +86,7 @@ public class CharcoalProductionZone extends SettlementTileTickZone {
 			return false;
 		}
 
-		int tileID = level.getTileID(tileX, tileY);
-		if (tileID != TileRegistry.dirtID && tileID != TileRegistry.grassID) {
+		if (!FiringGroundSystem.isSupportedGround(level, tileX, tileY)) {
 			return false;
 		}
 

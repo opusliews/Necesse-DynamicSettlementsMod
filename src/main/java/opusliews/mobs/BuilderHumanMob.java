@@ -22,6 +22,7 @@ import necesse.inventory.InventoryItem;
 import necesse.level.maps.Level;
 import necesse.level.maps.levelData.settlementData.CachedSettlementData;
 import necesse.level.maps.levelData.settlementData.ServerSettlementData;
+import opusliews.clay.ClayPackageSystem;
 import opusliews.damage.DamageRepairLevelData;
 import opusliews.damage.WeatheringLevelData;
 import opusliews.logging.Logging;
@@ -612,21 +613,31 @@ public class BuilderHumanMob extends HumanShop {
 
 			@Override
 			public void add(InventoryItem item) {
+				if (ClayPackageSystem.isClayItem(item)) {
+					if (ClayPackageSystem.addToRawWorkInventory(BuilderHumanMob.this.workInventory, item)) {
+						parent.markDirty();
+					}
+					return;
+				}
+
 				parent.add(item);
 			}
 
 			@Override
 			public int getCanAddAmount(InventoryItem item) {
-				if (getTotalItemStacks() >= maxWorkInventoryStacks) {
-					return 0;
+				if (ClayPackageSystem.isClayItem(item)) {
+					if (ClayPackageSystem.hasPackage(BuilderHumanMob.this.workInventory)) return item.getAmount();
+					return getTotalItemStacks() < maxWorkInventoryStacks ? item.getAmount() : 0;
 				}
 
+				if (getTotalItemStacks() >= maxWorkInventoryStacks) return 0;
 				return item.getAmount();
 			}
 
 			@Override
 			public boolean isFull() {
-				return getTotalItemStacks() >= maxWorkInventoryStacks;
+				if (getTotalItemStacks() < maxWorkInventoryStacks) return false;
+				return !ClayPackageSystem.hasPackage(BuilderHumanMob.this.workInventory);
 			}
 
 			@Override

@@ -14,18 +14,22 @@ import necesse.engine.world.worldData.SettlementsWorldData;
 import necesse.engine.save.LoadData;
 import necesse.engine.save.SaveData;
 import necesse.entity.pickup.ItemPickupEntity;
+import necesse.entity.manager.RegionLoadedListenerEntityComponent;
 import necesse.inventory.InventoryItem;
 import opusliews.item.FireableMatItem;
+import opusliews.clayfiring.ClayFiringAutomationLevelData;
 import opusliews.jobs.CharcoalCleanupLevelJob;
 import opusliews.logging.Logging;
 import necesse.level.maps.Level;
 import necesse.level.maps.levelData.LevelData;
+import necesse.level.maps.levelData.RegionLevelDataComponent;
+import necesse.level.maps.regionSystem.Region;
 import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import necesse.level.maps.levelData.settlementData.zones.SettlementWorkZone;
 import opusliews.charcoal.CharcoalProductionZone;
 import opusliews.jobs.CharcoalProductionLevelJob;
 
-public class CharcoalPitLevelData extends LevelData {
+public class CharcoalPitLevelData extends LevelData implements RegionLevelDataComponent, RegionLoadedListenerEntityComponent {
 	public static final String managerKey = "opuscharcoalpitdata";
 
 	private final Map<Long, List<StoredLog>> pitLogs = new HashMap<>();
@@ -175,12 +179,30 @@ public class CharcoalPitLevelData extends LevelData {
 		burnEndWorldTimes.put(getKey(tileX, tileY), burnEndWorldTime);
 	}
 
+	public void igniteCharcoalPit(int tileX, int tileY, long burnEndWorldTime) {
+		startBurn(tileX, tileY, burnEndWorldTime);
+		int burningTileID = TileRegistry.getTileID(BurningCharcoalPitTile.stringID);
+		level.setTile(tileX, tileY, burningTileID);
+		level.sendTileUpdatePacket(tileX, tileY);
+		level.getLevelTile(tileX, tileY).checkAround();
+		level.getLevelObject(tileX, tileY).checkAround();
+	}
+
 	public void removeBurn(int tileX, int tileY) {
 		burnEndWorldTimes.remove(getKey(tileX, tileY));
 	}
 
 	public void startFiringBurn(int tileX, int tileY, long burnEndWorldTime) {
 		firingBurnEndWorldTimes.put(getKey(tileX, tileY), burnEndWorldTime);
+	}
+
+	public void igniteFiringPit(int tileX, int tileY, long burnEndWorldTime) {
+		startFiringBurn(tileX, tileY, burnEndWorldTime);
+		int burningTileID = TileRegistry.getTileID(BurningFiringPitTile.stringID);
+		level.setTile(tileX, tileY, burningTileID);
+		level.sendTileUpdatePacket(tileX, tileY);
+		level.getLevelTile(tileX, tileY).checkAround();
+		level.getLevelObject(tileX, tileY).checkAround();
 	}
 
 	public void removeFiringBurn(int tileX, int tileY) {
@@ -262,6 +284,8 @@ public class CharcoalPitLevelData extends LevelData {
 				iterator.remove();
 				pitLogs.remove(entry.getKey());
 				pitFiringItems.remove(entry.getKey());
+				ClayFiringAutomationLevelData automation = ClayFiringAutomationLevelData.get(level, false);
+				if (automation != null) automation.clearAutomatedBurn(tileX, tileY);
 				continue;
 			}
 
@@ -276,7 +300,12 @@ public class CharcoalPitLevelData extends LevelData {
 			level.getLevelObject(tileX, tileY).checkAround();
 
 			int firedCount = 0;
-			if (firingItems == null || firingItems.isEmpty()) continue;
+			if (firingItems == null || firingItems.isEmpty()) {
+				ClayFiringAutomationLevelData automation = ClayFiringAutomationLevelData.get(level, false);
+				if (automation != null) automation.clearAutomatedBurn(tileX, tileY);
+				continue;
+			}
+
 			Map<String, Integer> firedAmounts = new LinkedHashMap<>();
 			for (StoredFiringItem stored : firingItems) {
 				if (!(ItemRegistry.getItem(stored.itemStringID) instanceof FireableMatItem)) continue;
@@ -285,11 +314,18 @@ public class CharcoalPitLevelData extends LevelData {
 				firedAmounts.put(firedStringID, firedAmounts.getOrDefault(firedStringID, 0) + 1);
 				firedCount++;
 			}
+
+			ArrayList<ItemPickupEntity> firedPickups = new ArrayList<>();
 			for (Map.Entry<String, Integer> fired : firedAmounts.entrySet()) {
 				InventoryItem item = new InventoryItem(fired.getKey(), fired.getValue());
-				level.entityManager.pickups.add(item.getPickupEntity(level, tileX * 32.0F + 16.0F, tileY * 32.0F + 16.0F));
+				ItemPickupEntity pickup = item.getPickupEntity(level, tileX * 32.0F + 16.0F, tileY * 32.0F + 16.0F);
+				level.entityManager.pickups.add(pickup);
+				firedPickups.add(pickup);
 			}
 			Logging.logMessage("[ItemFiring] Burn completed at " + tileX + "," + tileY + "; spawned " + firedCount + " fired items");
+
+			ClayFiringAutomationLevelData automation = ClayFiringAutomationLevelData.get(level, false);
+			if (automation != null) automation.handleCompletedBurn(tileX, tileY, firedPickups);
 		}
 	}
 
@@ -298,47 +334,6 @@ public class CharcoalPitLevelData extends LevelData {
 		super.addSaveData(save);
 		save.addInt("produceUntilUnitsStocked", produceUntilUnitsStocked);
 		save.addBoolean("repeatForever", repeatForever);
-
-		Set<Long> pitKeys = new HashSet<>(pitLogs.keySet());
-		pitKeys.addAll(pitFiringItems.keySet());
-		pitKeys.addAll(burnEndWorldTimes.keySet());
-		pitKeys.addAll(firingBurnEndWorldTimes.keySet());
-		for (Long pitKey : pitKeys) {
-			List<StoredLog> savedLogs = pitLogs.getOrDefault(pitKey, new ArrayList<>());
-			int tileX = (int)(pitKey >> 32);
-			int tileY = (int)(long)pitKey;
-			SaveData pit = new SaveData("CHARCOAL_PIT");
-			pit.addInt("tileX", tileX);
-			pit.addInt("tileY", tileY);
-
-			Long burnEndWorldTime = burnEndWorldTimes.get(pitKey);
-			if (burnEndWorldTime != null) {
-				pit.addLong("burnEndWorldTime", burnEndWorldTime);
-			}
-
-			Long firingBurnEndWorldTime = firingBurnEndWorldTimes.get(pitKey);
-			if (firingBurnEndWorldTime != null) {
-				pit.addLong("firingBurnEndWorldTime", firingBurnEndWorldTime);
-			}
-
-			for (StoredLog log : savedLogs) {
-				SaveData logData = new SaveData("LOG");
-				logData.addSafeString("itemStringID", log.itemStringID);
-				logData.addInt("amount", log.amount);
-				pit.addSaveData(logData);
-			}
-
-			List<StoredFiringItem> firingItems = pitFiringItems.get(pitKey);
-			if (firingItems != null) {
-				for (StoredFiringItem item : firingItems) {
-					SaveData itemData = new SaveData("FIRING_ITEM");
-					itemData.addSafeString("itemStringID", item.itemStringID);
-					pit.addSaveData(itemData);
-				}
-			}
-
-			save.addSaveData(pit);
-		}
 
 		for (Map.Entry<Long, ProductionRecoveryState> entry : productionRecoveryStates.entrySet()) {
 			SaveData stateSave = new SaveData("CHARCOAL_PRODUCTION_RECOVERY");
@@ -370,37 +365,6 @@ public class CharcoalPitLevelData extends LevelData {
 		produceUntilUnitsStocked = Math.max(0, save.getInt("produceUntilUnitsStocked", 0, false));
 		repeatForever = save.getBoolean("repeatForever", false, false);
 
-		for (LoadData pit : save.getLoadDataByName("CHARCOAL_PIT")) {
-			int tileX = pit.getInt("tileX", 0, false);
-			int tileY = pit.getInt("tileY", 0, false);
-			List<StoredLog> logs = new ArrayList<>();
-			List<StoredFiringItem> firingItems = new ArrayList<>();
-
-			for (LoadData logData : pit.getLoadDataByName("LOG")) {
-				String itemStringID = logData.getSafeString("itemStringID", "", false);
-				int amount = logData.getInt("amount", 0, false);
-
-				if (!itemStringID.isEmpty() && amount > 0) {
-					logs.add(new StoredLog(itemStringID, amount));
-				}
-			}
-
-			for (LoadData itemData : pit.getLoadDataByName("FIRING_ITEM")) {
-				String itemStringID = itemData.getSafeString("itemStringID", "", false);
-				if (!itemStringID.isEmpty()) firingItems.add(new StoredFiringItem(itemStringID));
-			}
-
-			long key = getKey(tileX, tileY);
-			if (!logs.isEmpty()) pitLogs.put(key, logs);
-			if (!firingItems.isEmpty()) pitFiringItems.put(key, firingItems);
-
-			long burnEndWorldTime = pit.getLong("burnEndWorldTime", 0L, false);
-			if (burnEndWorldTime > 0L) burnEndWorldTimes.put(key, burnEndWorldTime);
-
-			long firingBurnEndWorldTime = pit.getLong("firingBurnEndWorldTime", 0L, false);
-			if (firingBurnEndWorldTime > 0L) firingBurnEndWorldTimes.put(key, firingBurnEndWorldTime);
-		}
-
 		for (LoadData stateSave : save.getLoadDataByName("CHARCOAL_PRODUCTION_RECOVERY")) {
 			int tileX = stateSave.getInt("tileX", 0, false);
 			int tileY = stateSave.getInt("tileY", 0, false);
@@ -422,24 +386,169 @@ public class CharcoalPitLevelData extends LevelData {
 	}
 
 	@Override
+	public void addRegionSaveData(Region region, SaveData save) {
+		Set<Long> pitKeys = new HashSet<>(pitLogs.keySet());
+		pitKeys.addAll(pitFiringItems.keySet());
+		pitKeys.addAll(burnEndWorldTimes.keySet());
+		pitKeys.addAll(firingBurnEndWorldTimes.keySet());
+
+		for (Long pitKey : pitKeys) {
+			int tileX = (int)(pitKey >> 32);
+			int tileY = (int)(long)pitKey;
+			if (!isInsideRegion(region, tileX, tileY)) continue;
+
+			SaveData pit = new SaveData("PIT");
+			pit.addInt("tileX", tileX);
+			pit.addInt("tileY", tileY);
+
+			Long burnEndWorldTime = burnEndWorldTimes.get(pitKey);
+			if (burnEndWorldTime != null) pit.addLong("burnEndWorldTime", burnEndWorldTime);
+
+			Long firingBurnEndWorldTime = firingBurnEndWorldTimes.get(pitKey);
+			if (firingBurnEndWorldTime != null) pit.addLong("firingBurnEndWorldTime", firingBurnEndWorldTime);
+
+			for (StoredLog log : pitLogs.getOrDefault(pitKey, new ArrayList<>())) {
+				SaveData logData = new SaveData("LOG");
+				logData.addSafeString("itemStringID", log.itemStringID);
+				logData.addInt("amount", log.amount);
+				pit.addSaveData(logData);
+			}
+
+			for (StoredFiringItem item : pitFiringItems.getOrDefault(pitKey, new ArrayList<>())) {
+				SaveData itemData = new SaveData("FIRING_ITEM");
+				itemData.addSafeString("itemStringID", item.itemStringID);
+				pit.addSaveData(itemData);
+			}
+
+			save.addSaveData(pit);
+		}
+	}
+
+	@Override
+	public void loadRegionSaveData(Region region, LoadData save) {
+		clearRegionPitState(region);
+
+		for (LoadData pit : save.getLoadDataByName("PIT")) {
+			int tileX = pit.getInt("tileX", 0, false);
+			int tileY = pit.getInt("tileY", 0, false);
+			if (!isInsideRegion(region, tileX, tileY)) continue;
+
+			long key = getKey(tileX, tileY);
+			List<StoredLog> logs = new ArrayList<>();
+			List<StoredFiringItem> firingItems = new ArrayList<>();
+
+			for (LoadData logData : pit.getLoadDataByName("LOG")) {
+				String itemStringID = logData.getSafeString("itemStringID", "", false);
+				int amount = logData.getInt("amount", 0, false);
+				if (!itemStringID.isEmpty() && amount > 0) logs.add(new StoredLog(itemStringID, amount));
+			}
+
+			for (LoadData itemData : pit.getLoadDataByName("FIRING_ITEM")) {
+				String itemStringID = itemData.getSafeString("itemStringID", "", false);
+				if (!itemStringID.isEmpty()) firingItems.add(new StoredFiringItem(itemStringID));
+			}
+
+			if (!logs.isEmpty()) pitLogs.put(key, logs);
+			if (!firingItems.isEmpty()) pitFiringItems.put(key, firingItems);
+
+			long burnEndWorldTime = pit.getLong("burnEndWorldTime", 0L, false);
+			if (burnEndWorldTime > 0L) burnEndWorldTimes.put(key, burnEndWorldTime);
+
+			long firingBurnEndWorldTime = pit.getLong("firingBurnEndWorldTime", 0L, false);
+			if (firingBurnEndWorldTime > 0L) firingBurnEndWorldTimes.put(key, firingBurnEndWorldTime);
+		}
+	}
+
+	@Override
+	public void onUnloadedRegion(Region region) {
+		clearRegionPitState(region);
+	}
+
+	@Override
+	public void onRegionLoaded(Region region) {
+		if (!isServer() || !level.isLoadingComplete()) return;
+		validateRegionBurnState(region);
+		recoverFiringState(region);
+	}
+
+	private void clearRegionPitState(Region region) {
+		pitLogs.keySet().removeIf(key -> isInsideRegion(region, key));
+		pitFiringItems.keySet().removeIf(key -> isInsideRegion(region, key));
+		burnEndWorldTimes.keySet().removeIf(key -> isInsideRegion(region, key));
+		firingBurnEndWorldTimes.keySet().removeIf(key -> isInsideRegion(region, key));
+	}
+
+	private boolean isInsideRegion(Region region, long key) {
+		return isInsideRegion(region, (int)(key >> 32), (int)key);
+	}
+
+	private boolean isInsideRegion(Region region, int tileX, int tileY) {
+		return tileX >= region.tileXOffset && tileX < region.tileXOffset + region.tileWidth
+				&& tileY >= region.tileYOffset && tileY < region.tileYOffset + region.tileHeight;
+	}
+
+	private void validateRegionBurnState(Region region) {
+		int burningCharcoalID = TileRegistry.getTileID(BurningCharcoalPitTile.stringID);
+		int burningFiringID = TileRegistry.getTileID(BurningFiringPitTile.stringID);
+		int shallowHoleID = TileRegistry.getTileID(ShallowHoleTile.stringID);
+
+		for (int tileX = region.tileXOffset; tileX < region.tileXOffset + region.tileWidth; tileX++) {
+			for (int tileY = region.tileYOffset; tileY < region.tileYOffset + region.tileHeight; tileY++) {
+				int tileID = level.getTileID(tileX, tileY);
+				long key = getKey(tileX, tileY);
+
+				if (tileID == burningCharcoalID) {
+					boolean valid = burnEndWorldTimes.containsKey(key) && !pitLogs.getOrDefault(key, new ArrayList<>()).isEmpty();
+					if (!valid) {
+						Logging.logMessage("[PitPersistence] Orphan burning charcoal pit at " + tileX + "," + tileY + "; extinguishing");
+						clearPitState(tileX, tileY);
+						level.setTile(tileX, tileY, shallowHoleID);
+						level.sendTileUpdatePacket(tileX, tileY);
+					}
+				} else if (tileID == burningFiringID) {
+					boolean valid = firingBurnEndWorldTimes.containsKey(key) && !pitFiringItems.getOrDefault(key, new ArrayList<>()).isEmpty();
+					if (!valid) {
+						Logging.logMessage("[PitPersistence] Orphan burning firing pit at " + tileX + "," + tileY + "; extinguishing");
+						clearPitState(tileX, tileY);
+						ClayFiringAutomationLevelData automation = ClayFiringAutomationLevelData.get(level, false);
+						if (automation != null) automation.clearAutomatedBurn(tileX, tileY);
+						level.setTile(tileX, tileY, shallowHoleID);
+						level.sendTileUpdatePacket(tileX, tileY);
+					}
+				}
+			}
+		}
+	}
+
+	private void clearPitState(int tileX, int tileY) {
+		long key = getKey(tileX, tileY);
+		pitLogs.remove(key);
+		pitFiringItems.remove(key);
+		burnEndWorldTimes.remove(key);
+		firingBurnEndWorldTimes.remove(key);
+	}
+
+	@Override
 	public void onLoadingComplete() {
 		super.onLoadingComplete();
 		if (!isServer()) {
 			return;
 		}
 
+		level.regionManager.forEachLoadedRegions(this::validateRegionBurnState);
 		recoverFiringState();
 		recoverProductionJobs();
 		recoverCleanupJobs();
 	}
 
 	private void recoverFiringState() {
-		if (firingBurnEndWorldTimes.isEmpty()) {
-			return;
-		}
+		if (firingBurnEndWorldTimes.isEmpty()) return;
+		tickFiringBurns(level.getWorldEntity().getWorldTime());
+	}
 
-		long currentWorldTime = level.getWorldEntity().getWorldTime();
-		tickFiringBurns(currentWorldTime);
+	private void recoverFiringState(Region region) {
+		if (firingBurnEndWorldTimes.keySet().stream().noneMatch(key -> isInsideRegion(region, key))) return;
+		tickFiringBurns(level.getWorldEntity().getWorldTime());
 	}
 
 	private void recoverProductionJobs() {

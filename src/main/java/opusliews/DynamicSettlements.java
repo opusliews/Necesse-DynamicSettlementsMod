@@ -25,6 +25,9 @@ import necesse.level.maps.levelData.settlementData.zones.SettlementWorkZoneRegis
 import opusliews.blueprint.BlueprintAreaLevelData;
 import opusliews.buff.*;
 import opusliews.charcoal.CharcoalProductionZone;
+import opusliews.clayfiring.ClayFiringSettingsLevelData;
+import opusliews.clayfiring.ClayFiringAutomationLevelData;
+import opusliews.clayfiring.ClayFiringZone;
 import opusliews.container.BlueprintWorkstationContainer;
 import opusliews.container.CrudeWorkbenchContainer;
 import opusliews.crafting.CraftingStationFeature;
@@ -41,6 +44,8 @@ import opusliews.forge.ForgeCookingRecipeRegistry;
 import opusliews.item.*;
 import opusliews.jobs.CharcoalCleanupLevelJob;
 import opusliews.jobs.CharcoalProductionLevelJob;
+import opusliews.jobs.ClayFiringProductionLevelJob;
+import opusliews.jobs.ClayFiringCleanupLevelJob;
 import opusliews.jobs.ConstructionLevelJob;
 import opusliews.jobs.RepairLevelJob;
 import opusliews.mobs.BuilderHumanMob;
@@ -248,6 +253,8 @@ public class DynamicSettlements {
 		LevelDataRegistry.registerLevelData(BuilderRequestLevelData.managerKey, BuilderRequestLevelData.class);
 		LevelDataRegistry.registerLevelData(SettlementSleepSettingsLevelData.managerKey, SettlementSleepSettingsLevelData.class);
 		LevelDataRegistry.registerLevelData(CharcoalPitLevelData.managerKey, CharcoalPitLevelData.class);
+		LevelDataRegistry.registerLevelData(ClayFiringSettingsLevelData.managerKey, ClayFiringSettingsLevelData.class);
+		LevelDataRegistry.registerLevelData(ClayFiringAutomationLevelData.managerKey, ClayFiringAutomationLevelData.class);
 		LevelDataRegistry.registerLevelData(EarlyGameLevelData.managerKey, EarlyGameLevelData.class);
 
 		JobTypeRegistry.registerType(
@@ -271,11 +278,26 @@ public class DynamicSettlements {
 		);
 
 		SettlementWorkZoneRegistry.registerZone(CharcoalProductionZone.stringID, CharcoalProductionZone.class);
+		SettlementWorkZoneRegistry.registerZone(ClayFiringZone.stringID, ClayFiringZone.class);
 
 		LevelJobRegistry.registerJob(
 				CharcoalProductionZone.stringID,
 				CharcoalProductionLevelJob.class,
 				CharcoalProductionLevelJob::handler,
+				"firing"
+		);
+
+		LevelJobRegistry.registerJob(
+				"clayfiringproduction",
+				ClayFiringProductionLevelJob.class,
+				ClayFiringProductionLevelJob::handler,
+				"firing"
+		);
+
+		LevelJobRegistry.registerJob(
+				"clayfiringcleanup",
+				ClayFiringCleanupLevelJob.class,
+				ClayFiringCleanupLevelJob::handler,
 				"firing"
 		);
 
@@ -329,6 +351,9 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketCharcoalProductionSettingsRequest.class);
 		PacketRegistry.registerPacket(PacketCharcoalProductionSettingsUpdate.class);
 		PacketRegistry.registerPacket(PacketCharcoalProductionSettingsSync.class);
+		PacketRegistry.registerPacket(PacketClayFiringSettingsRequest.class);
+		PacketRegistry.registerPacket(PacketClayFiringSettingsUpdate.class);
+		PacketRegistry.registerPacket(PacketClayFiringSettingsSync.class);
 		PacketRegistry.registerPacket(PacketClayDiggingSound.class);
 		PacketRegistry.registerPacket(PacketCrudeWorkbenchOutput.class);
 		PacketRegistry.registerPacket(PacketCrudeAnvilOutput.class);

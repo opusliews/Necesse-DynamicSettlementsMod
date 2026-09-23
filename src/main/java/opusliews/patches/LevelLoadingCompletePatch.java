@@ -6,6 +6,7 @@ import net.bytebuddy.asm.Advice;
 import opusliews.damage.DamageRepairLevelData;
 import opusliews.damage.WeatheringLevelData;
 import opusliews.settler.BuilderRequestLevelData;
+import opusliews.tile.CharcoalPitLevelData;
 
 @ModMethodPatch(target = Level.class, name = "onLoadingComplete", arguments = {})
 public class LevelLoadingCompletePatch {
@@ -16,6 +17,7 @@ public class LevelLoadingCompletePatch {
 		}
 
 		BuilderRequestLevelData.get(level, true);
+		CharcoalPitLevelData.get(level, true);
 
 		DamageRepairLevelData.get(level, true);
 		WeatheringLevelData.get(level, true);

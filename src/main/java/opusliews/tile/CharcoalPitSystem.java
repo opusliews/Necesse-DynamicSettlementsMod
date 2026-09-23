@@ -253,8 +253,7 @@ public final class CharcoalPitSystem {
 		if (storedLogAmount < requiredBrickFiringLogs) return;
 
 		long fullDayDuration = (long)level.getWorldEntity().getDayTimeMax() * 1000L;
-		data.startFiringBurn(tileX, tileY, level.getWorldEntity().getWorldTime() + fullDayDuration);
-		setTile(level, tileX, tileY, TileRegistry.getTileID(BurningFiringPitTile.stringID));
+		data.igniteFiringPit(tileX, tileY, level.getWorldEntity().getWorldTime() + fullDayDuration);
 	}
 
 
@@ -318,8 +317,7 @@ public final class CharcoalPitSystem {
 
 		long fullDayDuration = (long)level.getWorldEntity().getDayTimeMax() * 1000L;
 		long burnEndWorldTime = level.getWorldEntity().getWorldTime() + fullDayDuration;
-		data.startBurn(tileX, tileY, burnEndWorldTime);
-		setTile(level, tileX, tileY, TileRegistry.getTileID(BurningCharcoalPitTile.stringID));
+		data.igniteCharcoalPit(tileX, tileY, burnEndWorldTime);
 	}
 
 	private static List<StoredLog> removeLogs(PlayerMob player, String preferredItemStringID, int amount) {
