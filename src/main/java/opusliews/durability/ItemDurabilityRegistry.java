@@ -47,6 +47,7 @@ public final class ItemDurabilityRegistry {
 	}
 
 	public static void registerDurability() {
+		ItemDurabilityRegistry.configure("crudetorch", 1000).destroyOnBreak();
 		registerCraftingMold("ingotmold");
 		registerCraftingMold("pickaxeheadmold");
 		registerCraftingMold("axeheadmold");

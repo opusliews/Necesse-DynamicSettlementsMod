@@ -9,10 +9,7 @@ import opusliews.earlygame.CrudeWorkbenchFeature;
 import opusliews.item.CrudeAxeItem;
 import opusliews.item.FirestarterItem;
 import opusliews.item.SharpenedStoneItem;
-import opusliews.object.BuilderJobRequestBulletinObject;
-import opusliews.object.HoleCaveLadderObject;
-import opusliews.object.TrapdoorObject;
-import opusliews.object.WarningBellObject;
+import opusliews.object.*;
 
 import static opusliews.DSItemRegistry.*;
 
@@ -82,11 +79,19 @@ public class DSRecipeRegistry {
 		register(BuilderJobRequestBulletinObject.stringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("stackofpaper", 1), ingredient("quillandparchment", 1));
 		register(WarningBellObject.stringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("goldbar", 3), ingredient("ironbar", 1));
 
-
+		register(CrudeTorchObject.stringID, 4, RecipeTechRegistry.NONE,
+				ingredient(woodenshaftStringID, 1),
+				ingredient("firemone", 1),
+				ingredient("grass", 1));
 	}
 
 	private static void registerVanillaRecipes() {
 		register("brickwall", 1, RecipeTechRegistry.WORKSTATION, ingredient(brickStringID, 4), ingredient("demonicbar", 1));
+
+		register("torch", 4, RecipeTechRegistry.WORKSTATION,
+				ingredient(woodenshaftStringID, 1),
+				ingredient("charcoal", 1),
+				ingredient("firemone", 1));
 	}
 
 	private static void registerCraftingMaterialRecipes() {

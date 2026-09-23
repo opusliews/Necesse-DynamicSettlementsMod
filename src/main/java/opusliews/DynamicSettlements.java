@@ -55,6 +55,7 @@ import opusliews.settler.BuilderRequestLevelData;
 import opusliews.settler.BuilderSettler;
 import opusliews.sleep.SettlementSleepSettingsLevelData;
 import opusliews.tile.*;
+import opusliews.torch.CrudeTorchLevelData;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -206,6 +207,11 @@ public class DynamicSettlements {
 		ObjectRegistry.registerObject(
 				WarningBellObject.stringID,
 				new WarningBellObject(), 60.0F, true);
+		CrudeTorchObject crudeTorchObject = new CrudeTorchObject();
+		CrudeWallTorchObject crudeWallTorchObject = new CrudeWallTorchObject();
+		crudeTorchObject.setWallPlaceObjectStringID(CrudeWallTorchObject.stringID);
+		ObjectRegistry.registerObject(CrudeTorchObject.stringID, crudeTorchObject, 2.0F, true);
+		ObjectRegistry.registerObject(CrudeWallTorchObject.stringID, crudeWallTorchObject, 0.0F, false);
 		ObjectRegistry.registerObject(TrapdoorObject.openStringID, new TrapdoorObject(false), 20.0F, true);
 		ObjectRegistry.registerObject(TrapdoorObject.closedStringID, new TrapdoorObject(true), 0.0F, false);
 		ObjectRegistry.registerObject(HoleCaveLadderObject.stringID, new HoleCaveLadderObject(), 10.0F, true);
@@ -256,6 +262,7 @@ public class DynamicSettlements {
 		LevelDataRegistry.registerLevelData(ClayFiringSettingsLevelData.managerKey, ClayFiringSettingsLevelData.class);
 		LevelDataRegistry.registerLevelData(ClayFiringAutomationLevelData.managerKey, ClayFiringAutomationLevelData.class);
 		LevelDataRegistry.registerLevelData(EarlyGameLevelData.managerKey, EarlyGameLevelData.class);
+		LevelDataRegistry.registerLevelData(CrudeTorchLevelData.managerKey, CrudeTorchLevelData.class);
 
 		JobTypeRegistry.registerType(
 				"construction",

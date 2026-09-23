@@ -42,7 +42,8 @@ public class VanillaRecipeRework {
 			if ("woodaxe".equals(resultID)
 					|| "ladderdown".equals(resultID)
 					|| "deepladderdown".equals(resultID)
-					|| "brickwall".equals(resultID)) return true;
+					|| "brickwall".equals(resultID)
+					|| "torch".equals(resultID)) return true;
 			return isLegacyBarRecipe(recipe);
 		});
 
