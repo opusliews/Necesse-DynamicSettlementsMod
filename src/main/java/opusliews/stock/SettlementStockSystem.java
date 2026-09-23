@@ -6,12 +6,15 @@ import necesse.engine.save.LoadData;
 import necesse.engine.save.SaveData;
 import necesse.inventory.InventoryItem;
 import necesse.inventory.InventoryRange;
+import necesse.inventory.InventoryAddConsumer;
+import necesse.entity.mobs.PlayerMob;
 import necesse.inventory.item.Item;
 import necesse.inventory.itemFilter.ItemCategoriesFilter;
 import necesse.level.maps.levelData.jobs.HaulFromLevelJob;
 import necesse.level.maps.levelData.settlementData.LevelStorage;
 import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import necesse.level.maps.levelData.settlementData.SettlementInventory;
+import necesse.level.maps.levelData.settlementData.SettlementStockInventoryAccess;
 import necesse.level.maps.levelData.settlementData.SettlementStoragePickupFuture;
 import necesse.level.maps.levelData.settlementData.storage.SettlementStorageItemIDIndex;
 import necesse.level.maps.levelData.settlementData.storage.SettlementStorageRecord;
@@ -19,6 +22,7 @@ import necesse.level.maps.levelData.settlementData.storage.SettlementStorageReco
 import necesse.inventory.container.settlement.events.SettlementStorageChangeAllowedEvent;
 import necesse.inventory.container.settlement.events.SettlementStoragePriorityLimitEvent;
 import opusliews.logging.Logging;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -33,14 +37,15 @@ public final class SettlementStockSystem {
 	private static final String entryKey = "item";
 	private static final int stockPriority = 1000000;
 	private static final WeakHashMap<SettlementInventory, StorageState> states = new WeakHashMap<>();
-	private static final WeakHashMap<ItemCategoriesFilter, SettlementInventory> filterOwners = new WeakHashMap<>();
+	private static final WeakHashMap<ItemCategoriesFilter, WeakReference<SettlementInventory>> filterOwners = new WeakHashMap<>();
 
 	private SettlementStockSystem() {
 	}
 
 	public static synchronized StorageState getState(SettlementInventory storage) {
 		if (storage == null) return null;
-		filterOwners.put(storage.filter, storage);
+		WeakReference<SettlementInventory> owner = filterOwners.get(storage.filter);
+		if (owner == null || owner.get() != storage) filterOwners.put(storage.filter, new WeakReference<>(storage));
 		return states.computeIfAbsent(storage, ignored -> new StorageState());
 	}
 
@@ -79,7 +84,33 @@ public final class SettlementStockSystem {
 	}
 
 	public static int getRestockThreshold(int stock) {
-		return Math.max(0, stock / 2);
+		return stock <= 0 ? 0 : Math.max(1, stock / 2);
+	}
+
+	private static synchronized SettlementInventory getFilterOwner(ItemCategoriesFilter filter) {
+		WeakReference<SettlementInventory> owner = filterOwners.get(filter);
+		return owner == null ? null : owner.get();
+	}
+
+	public static boolean isStockDestination(HaulFromLevelJob.HaulPosition position) {
+		return position instanceof StockHaulPosition;
+	}
+
+	public static int getRemainingStockDemand(HaulFromLevelJob.HaulPosition position, InventoryItem item) {
+		if (item == null || item.getAmount() <= 0) return 0;
+		if (!isStockDestination(position)) return item.getAmount();
+		SettlementInventory storage = (SettlementInventory)position.storage;
+		int itemID = item.item.getID();
+		int target = getStockTarget(storage, itemID);
+		if (target <= 0 || !isRestocking(storage, itemID)) return 0;
+
+		storage.canAddFutureDropOff(item);
+		int effectiveCount = storage.getItemCount(
+				inventoryItem -> inventoryItem != null && inventoryItem.item.getID() == itemID,
+				Integer.MAX_VALUE,
+				true
+		);
+		return Math.min(item.getAmount(), Math.max(0, target - effectiveCount));
 	}
 
 	public static void save(SettlementInventory storage, SaveData save) {
@@ -181,10 +212,7 @@ public final class SettlementStockSystem {
 			int vanillaAmount
 	) {
 		if (filter == null || item == null || range == null) return vanillaAmount;
-		SettlementInventory storage;
-		synchronized (SettlementStockSystem.class) {
-			storage = filterOwners.get(filter);
-		}
+		SettlementInventory storage = getFilterOwner(filter);
 		if (storage == null || !filter.isItemAllowed(item.item)) return vanillaAmount;
 		StorageState state = getState(storage);
 		int itemID = item.item.getID();
@@ -206,10 +234,7 @@ public final class SettlementStockSystem {
 			int vanillaAmount
 	) {
 		if (vanillaAmount <= 0 || filter == null || item == null || range == null) return vanillaAmount;
-		SettlementInventory storage;
-		synchronized (SettlementStockSystem.class) {
-			storage = filterOwners.get(filter);
-		}
+		SettlementInventory storage = getFilterOwner(filter);
 		if (storage == null) return vanillaAmount;
 
 		int itemID = item.item.getID();
@@ -275,6 +300,7 @@ public final class SettlementStockSystem {
 			if (state == null || state.targets.isEmpty()) continue;
 			InventoryRange destinationRange = destination.getInventoryRange();
 			if (destinationRange == null || destination.isAllAdjacentSolid()) continue;
+			StockDestinationCapacity destinationCapacity = new StockDestinationCapacity(destination);
 
 			for (Map.Entry<Integer, Integer> targetEntry : new ArrayList<>(state.targets.entrySet())) {
 				int itemID = targetEntry.getKey();
@@ -325,13 +351,7 @@ public final class SettlementStockSystem {
 					continue;
 				}
 
-				InventoryItem probe = new InventoryItem(item, Math.max(1, Math.min(stock, item.getStackSize())));
-				destination.canAddFutureDropOff(probe);
-				int effectiveCount = destination.getItemCount(
-						inventoryItem -> inventoryItem != null && inventoryItem.item.getID() == itemID,
-						Integer.MAX_VALUE,
-						true
-				);
+				int effectiveCount = destinationCapacity.getItemCount(itemID);
 				int pendingCount = Math.max(0, effectiveCount - physicalCount);
 				int deficit = Math.max(0, stock - effectiveCount);
 				if (Logging.logEnabled) {
@@ -365,6 +385,7 @@ public final class SettlementStockSystem {
 					int sourceBudget = sourcePool.remainingBySource.getOrDefault(source, 0);
 					if (sourceBudget <= 0 || sourceGroup.remainingAmount <= 0) continue;
 					int amount = Math.min(deficit, Math.min(sourceBudget, sourceGroup.remainingAmount));
+					amount = destinationCapacity.getCanPlanAmount(sourceGroup.item.copy(amount));
 					if (amount <= 0) continue;
 
 					HaulFromLevelJob job = findHaulJob(settlement, source, sourceGroup.item);
@@ -376,7 +397,7 @@ public final class SettlementStockSystem {
 					int planned = plannedByJob.getOrDefault(job, 0) + amount;
 					plannedByJob.put(job, planned);
 					job.item.setAmount(Math.max(job.item.getAmount(), planned));
-					job.dropOffPositions.add(new HaulFromLevelJob.HaulPosition(destination, stockPriority, amount));
+					job.dropOffPositions.add(new StockHaulPosition(destination, amount));
 					if (Logging.logEnabled) {
 						Logging.logMessage("[StockSchedule] source=" + source.tileX + "," + source.tileY
 								+ " destination=" + destination.tileX + "," + destination.tileY
@@ -401,6 +422,7 @@ public final class SettlementStockSystem {
 						job = added;
 					}
 
+					destinationCapacity.addPlanned(sourceGroup.item.copy(amount));
 					sourcePool.remainingBySource.put(source, sourceBudget - amount);
 					sourceGroup.remainingAmount -= amount;
 					deficit -= amount;
@@ -465,7 +487,7 @@ public final class SettlementStockSystem {
 	private static boolean hasStockDestination(HaulFromLevelJob job, SettlementInventory destination) {
 		for (Object positionValue : job.dropOffPositions) {
 			HaulFromLevelJob.HaulPosition position = (HaulFromLevelJob.HaulPosition)positionValue;
-			if (position.priority < stockPriority) continue;
+			if (!isStockDestination(position)) continue;
 			if (position.storage == destination
 					|| (position.storage.tileX == destination.tileX && position.storage.tileY == destination.tileY)) {
 				return true;
@@ -521,6 +543,42 @@ public final class SettlementStockSystem {
 			if (amount >= stopAt) return amount;
 		}
 		return amount;
+	}
+
+	private static final class StockHaulPosition extends HaulFromLevelJob.HaulPosition {
+		private StockHaulPosition(SettlementInventory storage, int amount) {
+			super(storage, stockPriority, amount);
+		}
+	}
+
+	private static final class StockDestinationCapacity {
+		private final SettlementInventory storage;
+		private final InventoryRange plannedRange;
+
+		private StockDestinationCapacity(SettlementInventory storage) {
+			this.storage = storage;
+			this.plannedRange = SettlementStockInventoryAccess.copyFutureDropOffRange(storage);
+		}
+
+		private int getItemCount(int itemID) {
+			return countItem(plannedRange, itemID, Integer.MAX_VALUE);
+		}
+
+		private int getCanPlanAmount(InventoryItem item) {
+			if (plannedRange == null || item.getAmount() <= 0) return 0;
+			int filterAmount = storage.filter.getAddAmount(storage.level, item, plannedRange, false);
+			int inventoryAmount = plannedRange.inventory.canAddItem(
+					storage.level, (PlayerMob)null, item, plannedRange.startSlot, plannedRange.endSlot, "stocking"
+			);
+			return Math.min(item.getAmount(), Math.min(filterAmount, inventoryAmount));
+		}
+
+		private void addPlanned(InventoryItem item) {
+			plannedRange.inventory.addItem(
+					storage.level, (PlayerMob)null, item, plannedRange.startSlot, plannedRange.endSlot,
+					"stocking", (InventoryAddConsumer)null
+			);
+		}
 	}
 
 	private static final class StockSourcePool {

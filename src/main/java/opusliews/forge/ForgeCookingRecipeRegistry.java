@@ -53,6 +53,8 @@ public final class ForgeCookingRecipeRegistry {
 		registerMoldedBarFromMaterial("demonicbar", "copperbar", 3);
 		registerMoldedBarFromMaterial("demonicbar", "ironbar", 2);
 		registerMoldedBarFromMaterial("demonicbar", "goldbar", 1);
+
+
 	}
 
 	private static void registerMoldedBar(String outputItem, String oreItem, int oreAmount) {

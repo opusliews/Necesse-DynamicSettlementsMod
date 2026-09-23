@@ -18,12 +18,12 @@ import static opusliews.DSItemRegistry.*;
 
 public class DSRecipeRegistry {
 	public static void registerRecipes() {
-		registerEarlyGameRecipes();
-		registerExistingModRecipes();
+		registerModRecipes();
+		registerVanillaRecipes();
 		registerCraftingMaterialRecipes();
 	}
 
-	private static void registerEarlyGameRecipes() {
+	private static void registerModRecipes() {
 		register(FirestarterItem.stringID, 1, CrudeWorkbenchFeature.tech,
 				ingredient(stringStringID, 1),
 				ingredient("dsanyplank", 1),
@@ -70,9 +70,7 @@ public class DSRecipeRegistry {
 
 		register(unfiredThickPlateMoldStringID, 1, CrudeWorkbenchFeature.tech, ingredient("clay", 1));
 		register(unfiredThickPlateMoldStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("clay", 1));
-	}
 
-	private static void registerExistingModRecipes() {
 		register("blueprintItem", 1, RecipeTechRegistry.WORKSTATION, ingredient("stackofpaper", 1), ingredient("quillandparchment", 1));
 		register("blueprintworkstation", 1, RecipeTechRegistry.WORKSTATION, ingredient("anylog", 15), ingredient("tungstenbar", 3), ingredient("stackofpaper", 1));
 		register("builderhat", 1, RecipeTechRegistry.WORKSTATION, ingredient("wool", 12), ingredient("ironbar", 1));
@@ -83,6 +81,12 @@ public class DSRecipeRegistry {
 		register("malignancegoggles", 1, RecipeTechRegistry.DEMONIC_WORKSTATION, ingredient("inspectionglass", 2), ingredient("demonicbar", 1));
 		register(BuilderJobRequestBulletinObject.stringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("stackofpaper", 1), ingredient("quillandparchment", 1));
 		register(WarningBellObject.stringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("goldbar", 3), ingredient("ironbar", 1));
+
+
+	}
+
+	private static void registerVanillaRecipes() {
+		register("brickwall", 1, RecipeTechRegistry.WORKSTATION, ingredient(brickStringID, 4), ingredient("demonicbar", 1));
 	}
 
 	private static void registerCraftingMaterialRecipes() {

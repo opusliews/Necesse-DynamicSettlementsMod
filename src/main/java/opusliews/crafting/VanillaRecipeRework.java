@@ -39,7 +39,10 @@ public class VanillaRecipeRework {
 			if (!(value instanceof Recipe)) return false;
 			Recipe recipe = (Recipe)value;
 			String resultID = recipe.resultStringID;
-			if ("woodaxe".equals(resultID) || "ladderdown".equals(resultID) || "deepladderdown".equals(resultID)) return true;
+			if ("woodaxe".equals(resultID)
+					|| "ladderdown".equals(resultID)
+					|| "deepladderdown".equals(resultID)
+					|| "brickwall".equals(resultID)) return true;
 			return isLegacyBarRecipe(recipe);
 		});
 

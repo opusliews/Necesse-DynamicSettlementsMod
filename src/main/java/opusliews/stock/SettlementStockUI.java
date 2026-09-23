@@ -33,7 +33,7 @@ public final class SettlementStockUI {
 	}
 
 	public static synchronized void attach(SettlementStorageConfigForm form) {
-		if (form == null || forms.containsKey(form)) return;
+		if (form == null || form.isDisposed() || forms.containsKey(form)) return;
 		if (Logging.logEnabled) Logging.logMessage("[StockUI] attach tile=" + form.tile.x + "," + form.tile.y + " filterForm=" + form.filterForm);
 		FormState state = new FormState(form);
 		forms.put(form, state);
@@ -41,15 +41,32 @@ public final class SettlementStockUI {
 		form.client.network.sendPacket(new PacketSettlementStockRequest(form.tile.x, form.tile.y));
 	}
 
+	public static synchronized void detach(SettlementStorageConfigForm form) {
+		FormState state = forms.remove(form);
+		if (state == null) return;
+		for (ItemControls itemControls : state.controls.values()) advancedRowWidths.remove(itemControls.row);
+		state.controls.clear();
+		state.targets.clear();
+	}
+
 	public static synchronized void applySync(int tileX, int tileY, Map<Integer, Integer> targets) {
 		for (Map.Entry<SettlementStorageConfigForm, FormState> entry : new ArrayList<>(forms.entrySet())) {
 			SettlementStorageConfigForm form = entry.getKey();
-			if (form == null || form.tile.x != tileX || form.tile.y != tileY) continue;
+			if (form == null) continue;
+			if (form.isDisposed()) {
+				detach(form);
+				continue;
+			}
+			if (form.tile.x != tileX || form.tile.y != tileY) continue;
 			entry.getValue().setTargets(targets);
 		}
 	}
 
 	public static synchronized void tickForm(SettlementStorageConfigForm form) {
+		if (form.isDisposed()) {
+			detach(form);
+			return;
+		}
 		FormState state = forms.get(form);
 		if (state == null) return;
 		state.enforceLocalMax();

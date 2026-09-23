@@ -180,9 +180,9 @@ public final class BatchedHaulingSystem {
 		boolean hasOrdinaryDestination = false;
 		for (Object value : job.dropOffPositions) {
 			HaulFromLevelJob.HaulPosition pos = (HaulFromLevelJob.HaulPosition)value;
+			if (SettlementStockSystem.isStockDestination(pos)) return true;
 			if (!(pos.storage instanceof SettlementRequestInventory)) {
 				hasOrdinaryDestination = true;
-				break;
 			}
 		}
 		if (!hasOrdinaryDestination) return false;
@@ -225,6 +225,7 @@ public final class BatchedHaulingSystem {
 		for (Object value : job.dropOffPositions) {
 			HaulFromLevelJob.HaulPosition pos = (HaulFromLevelJob.HaulPosition)value;
 			if (!restrictZone.containsTile(pos.storage.tileX, pos.storage.tileY)) continue;
+			if (getSourceRemovalLimit(job, pos.storage) <= 0) continue;
 			if (!canUseDestination(job, pos, worker, estimatedCanMoveToCache)) continue;
 			valid.add(pos);
 		}
@@ -264,6 +265,7 @@ public final class BatchedHaulingSystem {
 					&& (pos.storage.tileX != destination.tileX || pos.storage.tileY != destination.tileY)) {
 				continue;
 			}
+			if (getDestinationAmount(job, pos) <= 0) continue;
 
 			if (pos.getInventoryRange() == null) {
 				if (Logging.logEnabled) Logging.logMessage("[BatchedHauling] Candidate rejected: destination inventory unavailable item="
@@ -292,6 +294,7 @@ public final class BatchedHaulingSystem {
 	) {
 		InventoryRange range = pos.getInventoryRange();
 		if (range == null) return false;
+		if (getDestinationAmount(job, pos) <= 0) return false;
 
 		int filterAmount = pos.storage.getFilter().getAddAmount(job.getLevel(), job.item, range, false);
 		if (filterAmount <= 0) return false;
@@ -311,6 +314,12 @@ public final class BatchedHaulingSystem {
 		);
 	}
 
+	private static int getDestinationAmount(HaulFromLevelJob job, HaulFromLevelJob.HaulPosition destination) {
+		int capacity = destination.storage.canAddFutureDropOff(job.item);
+		int demand = SettlementStockSystem.getRemainingStockDemand(destination, job.item);
+		return Math.max(0, Math.min(destination.amount, Math.min(capacity, demand)));
+	}
+
 	private static int getReservableAmount(
 			HaulFromLevelJob job,
 			HaulFromLevelJob.HaulPosition destination,
@@ -320,7 +329,7 @@ public final class BatchedHaulingSystem {
 		int batchCapacity = destinationCapacity.getCanPlanAmount(job.item);
 		int amount = Math.min(
 				Math.min(globalReservedCapacity, batchCapacity),
-				Math.min(destination.amount, job.item.itemStackSize())
+				Math.min(getDestinationAmount(job, destination), job.item.itemStackSize())
 		);
 
 		if (amount <= 0) {
