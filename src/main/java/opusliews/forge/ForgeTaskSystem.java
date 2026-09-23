@@ -126,7 +126,7 @@ public final class ForgeTaskSystem {
 				: loadVanillaRecipe(pool, forge, taskRecipe.recipe);
 		if (!loaded) return QueueResult.problem(Localization.translate("ui", "craftingmissingingredients"));
 
-		if (!ensureForgeFuel(pool, forge, taskRecipe.getProcessTime())) {
+		if (!ensureForgeFuel(pool, forge, taskRecipe.getProcessTime(forge.getLevel()))) {
 			returnInputsToPool(pool, forge);
 			return QueueResult.problem(Localization.translate("ui", "craftingrequiresforgefuel"));
 		}
@@ -164,29 +164,40 @@ public final class ForgeTaskSystem {
 
 	private static boolean loadCustomRecipe(CraftingStoragePool pool, ProcessingForgeObjectEntity forge, ForgeCookingRecipe recipe) {
 		if (recipe == null) return false;
-		InventoryItem first = pool.takeExactItem(
-				recipe.firstInput.itemStringID,
-				recipe.firstInput.amount,
-				recipe.firstInput.resultBehavior == ForgeCookingInput.ResultBehavior.DURABILITY_USE
-		);
-		if (first == null) return false;
 
-		InventoryItem second = pool.takeExactItem(
-				recipe.secondInput.itemStringID,
-				recipe.secondInput.amount,
-				recipe.secondInput.resultBehavior == ForgeCookingInput.ResultBehavior.DURABILITY_USE
-		);
-		if (second == null) {
-			pool.addInputItemOrdered(first);
-			return false;
+		InventoryItem first = null;
+		if (recipe.firstInput != null) {
+			first = pool.takeExactItem(
+					recipe.firstInput.itemStringID,
+					recipe.firstInput.amount,
+					recipe.firstInput.resultBehavior == ForgeCookingInput.ResultBehavior.DURABILITY_USE
+			);
+			if (first == null) return false;
 		}
 
-		int firstSlot = forge.fuelSlots;
-		int secondSlot = forge.fuelSlots + 1;
-		forge.inventory.setItem(firstSlot, first);
-		forge.inventory.setItem(secondSlot, second);
-		forge.inventory.markDirty(firstSlot);
-		forge.inventory.markDirty(secondSlot);
+		InventoryItem second = null;
+		if (recipe.secondInput != null) {
+			second = pool.takeExactItem(
+					recipe.secondInput.itemStringID,
+					recipe.secondInput.amount,
+					recipe.secondInput.resultBehavior == ForgeCookingInput.ResultBehavior.DURABILITY_USE
+			);
+			if (second == null) {
+				if (first != null) pool.addInputItemOrdered(first);
+				return false;
+			}
+		}
+
+		int slot = forge.fuelSlots;
+		if (first != null) {
+			forge.inventory.setItem(slot, first);
+			forge.inventory.markDirty(slot);
+			slot++;
+		}
+		if (second != null) {
+			forge.inventory.setItem(slot, second);
+			forge.inventory.markDirty(slot);
+		}
 		return true;
 	}
 
@@ -290,7 +301,6 @@ public final class ForgeTaskSystem {
 		}
 	}
 
-	// Avoids a package cycle in method signatures while keeping the forge system self-contained.
 	private static final class CraftingTaskLogicBridge {
 		private static CraftingStoragePool getStoragePool(CraftingTaskBoardObjectEntity board) {
 			return opusliews.crafting.CraftingTaskLogic.getStoragePool(board);

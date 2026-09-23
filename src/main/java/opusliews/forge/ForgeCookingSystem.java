@@ -24,17 +24,18 @@ public final class ForgeCookingSystem {
 	public static boolean isCustomInput(InventoryItem item) {
 		if (item == null) return false;
 		for (ForgeCookingRecipe recipe : ForgeCookingRecipeRegistry.getRecipes()) {
-			if (recipe.firstInput.itemStringID.equals(item.item.getStringID()) || recipe.secondInput.itemStringID.equals(item.item.getStringID())) {
-				return true;
-			}
+			if (recipe.firstInput != null && recipe.firstInput.itemStringID.equals(item.item.getStringID())) return true;
+			if (recipe.secondInput != null && recipe.secondInput.itemStringID.equals(item.item.getStringID())) return true;
 		}
 		return false;
 	}
 
 	public static FueledProcessingInventoryObjectEntity.NextProcessTask getNextProcessTask(ProcessingForgeObjectEntity forge) {
 		ForgeCookingRecipe recipe = findRecipe(forge);
-		return recipe == null ? null : new FueledProcessingInventoryObjectEntity.NextProcessTask(recipe.getTaskHash(), recipe.processTime);
-	}
+		return recipe == null ? null : new FueledProcessingInventoryObjectEntity.NextProcessTask(
+				recipe.getTaskHash(),
+				recipe.getProcessTime(forge.getLevel())
+		);	}
 
 	public static boolean processInput(ProcessingForgeObjectEntity forge) {
 		ForgeCookingRecipe recipe = findRecipe(forge);
@@ -47,15 +48,12 @@ public final class ForgeCookingSystem {
 		int slotBIndex = forge.fuelSlots + 1;
 		InventoryItem slotA = forge.inventory.getItem(slotAIndex);
 		InventoryItem slotB = forge.inventory.getItem(slotBIndex);
-		boolean normalOrder = recipe.isFirstInputInSlotA(slotA, slotB);
+		ForgeCookingInput slotAInput = recipe.getInputForSlotA(slotA, slotB);
+		ForgeCookingInput slotBInput = recipe.getInputForSlotB(slotA, slotB);
 		DurabilityContext context = DurabilityContext.crafting(forge.getLevel(), null, null);
 
-		InventoryItem newA = normalOrder
-				? recipe.firstInput.apply(slotA, context)
-				: recipe.secondInput.apply(slotA, context);
-		InventoryItem newB = normalOrder
-				? recipe.secondInput.apply(slotB, context)
-				: recipe.firstInput.apply(slotB, context);
+		InventoryItem newA = slotAInput == null ? slotA : slotAInput.apply(slotA, context);
+		InventoryItem newB = slotBInput == null ? slotB : slotBInput.apply(slotB, context);
 
 		forge.inventory.setItem(slotAIndex, newA);
 		forge.inventory.setItem(slotBIndex, newB);

@@ -2,6 +2,7 @@ package opusliews.crafting;
 
 import necesse.inventory.InventoryItem;
 import necesse.inventory.recipe.Recipe;
+import necesse.level.maps.Level;
 import opusliews.forge.ForgeCookingRecipe;
 
 public final class CraftingTaskRecipe {
@@ -47,7 +48,9 @@ public final class CraftingTaskRecipe {
 		return recipe == null ? null : recipe.resultItem.copy(recipe.resultAmount);
 	}
 
-	public int getProcessTime() {
-		return type == Type.CUSTOM_FORGE && forgeRecipe != null ? forgeRecipe.processTime : 8000;
+	public int getProcessTime(Level level) {
+		return type == Type.CUSTOM_FORGE && forgeRecipe != null
+				? forgeRecipe.getProcessTime(level)
+				: 8000;
 	}
 }

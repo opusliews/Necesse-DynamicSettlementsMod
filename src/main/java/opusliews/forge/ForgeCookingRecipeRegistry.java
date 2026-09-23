@@ -1,5 +1,7 @@
 package opusliews.forge;
 
+import opusliews.DSItemRegistry;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -19,8 +21,20 @@ public final class ForgeCookingRecipeRegistry {
 		registerMoldedToolHeads();
 		registerMoldedBlades();
 		registerThickIronPlateRecipes();
+		registerOtherRecipes();
 	}
 
+	private static void registerOtherRecipes() {
+		register(ForgeCookingRecipe.fractionOfDay(
+				"brick_forge_cooked",
+				ForgeCookingInput.consume(DSItemRegistry.unfiredBrickStringID, 1),
+				null,
+				DSItemRegistry.brickStringID,
+				1,
+				0.5f
+		));
+
+	}
 	private static void registerMoldedBars() {
 		registerMoldedBar("copperbar", "copperore", 4);
 		registerMoldedBar("ironbar", "ironore", 4);
@@ -53,6 +67,8 @@ public final class ForgeCookingRecipeRegistry {
 		registerMoldedBarFromMaterial("demonicbar", "copperbar", 3);
 		registerMoldedBarFromMaterial("demonicbar", "ironbar", 2);
 		registerMoldedBarFromMaterial("demonicbar", "goldbar", 1);
+
+
 	}
 
 	private static void registerMoldedBar(String outputItem, String oreItem, int oreAmount) {
@@ -151,10 +167,10 @@ public final class ForgeCookingRecipeRegistry {
 
 	public static void register(ForgeCookingRecipe recipe) {
 		recipes.add(recipe);
-		if (recipe.firstInput.resultBehavior == ForgeCookingInput.ResultBehavior.CONSUME) {
+		if (recipe.firstInput != null && recipe.firstInput.resultBehavior == ForgeCookingInput.ResultBehavior.CONSUME) {
 			forgeWorkedIngredients.add(recipe.firstInput.itemStringID);
 		}
-		if (recipe.secondInput.resultBehavior == ForgeCookingInput.ResultBehavior.CONSUME) {
+		if (recipe.secondInput != null && recipe.secondInput.resultBehavior == ForgeCookingInput.ResultBehavior.CONSUME) {
 			forgeWorkedIngredients.add(recipe.secondInput.itemStringID);
 		}
 		forgeWorkedIngredients.add(recipe.outputItemStringID);
