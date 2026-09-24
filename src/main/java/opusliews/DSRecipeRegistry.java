@@ -5,6 +5,7 @@ import necesse.inventory.recipe.Ingredient;
 import necesse.inventory.recipe.Recipe;
 import necesse.inventory.recipe.Recipes;
 import necesse.inventory.recipe.Tech;
+import necesse.level.gameObject.container.IronAnvilObject;
 import opusliews.earlygame.CrudeAnvilFeature;
 import opusliews.earlygame.CrudeWorkbenchFeature;
 import opusliews.item.CrudeAxeItem;
@@ -13,6 +14,7 @@ import opusliews.item.FirestarterItem;
 import opusliews.item.SharpenedStoneItem;
 import opusliews.object.*;
 
+import static necesse.inventory.recipe.Recipes.ingredientsFromScript;
 import static opusliews.DSItemRegistry.*;
 
 public class DSRecipeRegistry {
@@ -99,8 +101,8 @@ public class DSRecipeRegistry {
 				ingredient("firemone", 1),
 				ingredient("grass", 1));
 
-		register(sawStringID, 1, CrudeAnvilFeature.tech, ingredient(sawBladeStringID, 1), ingredient("dsanyplank", 1));
-		register(sawStringID, 1, RecipeTechRegistry.IRON_ANVIL, ingredient(sawBladeStringID, 1), ingredient("dsanyplank", 1));
+		register(sawStringID, 1, CrudeWorkbenchFeature.tech, ingredient(sawBladeStringID, 1), ingredient("dsanyplank", 1));
+		register(sawStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient(sawBladeStringID, 1), ingredient("dsanyplank", 1));
 	}
 
 	private static void registerVanillaRecipes() {
@@ -113,6 +115,9 @@ public class DSRecipeRegistry {
 		register("woodsword", 1, RecipeTechRegistry.WORKSTATION, ingredient("dsanyplank", 1));
 		register("forge", 1, CrudeWorkbenchFeature.tech, ingredient("brick", 1));
 		register("forge", 1, RecipeTechRegistry.WORKSTATION, ingredient("brick", 1));
+		register("campfire", 1, CrudeWorkbenchFeature.tech, ingredientsFromScript("{{anylog, 10}}"));
+		register("roastingstation", 1, CrudeWorkbenchFeature.tech, ingredientsFromScript("{{woodenshaft, 5}, {string, 4}}"));
+		register("workstationduo", 1, CrudeWorkbenchFeature.tech, ingredientsFromScript("{{woodenshaft, 4}, {nail, 16}, {dsanyplank, 4}, {saw, 1}}"));
 	}
 
 	private static void registerCraftingMaterialRecipes() {
@@ -195,6 +200,10 @@ public class DSRecipeRegistry {
 		register(stringStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("grass", 4));
 		register(groundFiremoneStringID, 5, RecipeTechRegistry.GRAIN_MILL, ingredient("firemone", 1));
 		register(waxStringID, 1, RecipeTechRegistry.COOKING_POT, ingredient(honeycombFragmentStringID, 1));
+		register("metalworkhammer", 1, CrudeAnvilFeature.tech, ingredient("ironbar", 2), ingredient(woodenshaftStringID, 1));
+		register("metalworkhammer", 1, RecipeTechRegistry.IRON_ANVIL, ingredient("ironbar", 2), ingredient(woodenshaftStringID, 1));
+		register("ironanvil", 1, CrudeAnvilFeature.tech, ingredientsFromScript("{{thickironplate, 2},{metalworkhammer, 1}}"));
+		register("ironanvil", 1, RecipeTechRegistry.IRON_ANVIL, ingredientsFromScript("{{thickironplate, 2},{metalworkhammer, 1}}"));
 
 
 		// Tools

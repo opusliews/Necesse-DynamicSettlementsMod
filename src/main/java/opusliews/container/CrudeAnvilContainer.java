@@ -1,6 +1,7 @@
 package opusliews.container;
 
 import java.util.Collection;
+import java.awt.Point;
 import java.util.Iterator;
 import necesse.engine.GameLog;
 import necesse.engine.GlobalData;
@@ -11,8 +12,12 @@ import necesse.engine.network.PacketReader;
 import necesse.engine.registries.JournalChallengeRegistry;
 import necesse.engine.network.server.ServerClient;
 import necesse.entity.mobs.friendly.human.HumanMob;
+import necesse.entity.objectEntity.ObjectEntity;
+import necesse.entity.objectEntity.ProcessingForgeObjectEntity;
 import necesse.inventory.InventoryItem;
 import necesse.inventory.PlayerTempInventory;
+import necesse.inventory.container.customAction.BooleanCustomAction;
+import necesse.inventory.container.customAction.PointCustomAction;
 import necesse.inventory.container.object.CraftingStationContainer;
 import necesse.inventory.container.settlement.events.SettlementDataEvent;
 import necesse.inventory.container.slots.ExtractOnlyContainerSlot;
@@ -22,21 +27,47 @@ import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
 import necesse.level.maps.levelData.settlementData.settler.romancePersonalities.PlayerRomanceManager;
 import opusliews.crafting.CraftingTime;
+import opusliews.forge.ForgeRequirementSystem;
 import opusliews.network.PacketCrudeAnvilOutput;
 import opusliews.object.CrudeAnvilObject;
+import opusliews.object.CrudeAnvilObjectEntity;
 
 public class CrudeAnvilContainer extends CraftingStationContainer {
 	public final PlayerTempInventory outputInventory;
 	public final int OUTPUT_SLOT;
+	public final CrudeAnvilObjectEntity stationEntity;
+	public final PointCustomAction setForge;
+	public final BooleanCustomAction setSelectingForge;
 
 	private boolean crafting;
 	private int craftingRecipeID = -1;
 	private int craftingRecipeHash;
 	private long craftingStartTime;
 	private long craftingDurationMs = CraftingTime.DEFAULT_TIME_MS;
+	private boolean selectingForge;
 
 	public CrudeAnvilContainer(NetworkClient client, int uniqueSeed, SettlementDataEvent settlement, LevelObject anvil, PacketReader reader) {
 		super(client, uniqueSeed, settlement, anvil, reader);
+
+		ObjectEntity objectEntity = anvil.getObjectEntity();
+		if (!(objectEntity instanceof CrudeAnvilObjectEntity)) {
+			throw new IllegalStateException("Crude Anvil is missing its forge-link object entity");
+		}
+		stationEntity = (CrudeAnvilObjectEntity)objectEntity;
+
+		setForge = registerAction(new PointCustomAction() {
+			@Override
+			protected void run(int x, int y) {
+				if (client.isServer()) applyForgeLink(x, y);
+			}
+		});
+
+		setSelectingForge = registerAction(new BooleanCustomAction() {
+			@Override
+			protected void run(boolean value) {
+				selectingForge = value;
+			}
+		});
 
 		Packet tempInventoryContent = reader.getNextContentPacket();
 		outputInventory = client.playerMob.getInv().applyTempInventoryPacket(tempInventoryContent, (player, size, invID) -> new PlayerTempInventory(player, size, invID) {
@@ -65,6 +96,14 @@ public class CrudeAnvilContainer extends CraftingStationContainer {
 
 		Collection inventories = getCraftInventories();
 		if (!canCraftRecipe(recipe, inventories, false).canCraft()) return 0;
+		if (ForgeRequirementSystem.requiresRunningForge(recipe)) {
+			if (client.isServer() && !ForgeRequirementSystem.ensureRunningForge(
+					stationEntity, client.playerMob, recipe, inventories, CraftingTime.get(recipe))) return 0;
+			if (client.isClient()) {
+				ForgeRequirementSystem.Status status = ForgeRequirementSystem.getStatus(stationEntity, recipe, inventories);
+				if (status == ForgeRequirementSystem.Status.NO_LINKED_FORGE || status == ForgeRequirementSystem.Status.NO_FUEL) return 0;
+			}
+		}
 
 		crafting = true;
 		craftingRecipeID = recipeID;
@@ -87,8 +126,27 @@ public class CrudeAnvilContainer extends CraftingStationContainer {
 	public boolean isValid(ServerClient client) {
 		Level level = client.getLevel();
 		if (level == null || !level.isTileWithinBounds(objectX, objectY)) return false;
-		return level.getObject(objectX, objectY) instanceof CrudeAnvilObject
-				&& level.getObject(objectX, objectY).isInInteractRange(level, objectX, objectY, client.playerMob);
+		if (!(level.getObject(objectX, objectY) instanceof CrudeAnvilObject)) return false;
+		if (level.entityManager.getObjectEntity(objectX, objectY) != stationEntity) return false;
+		return selectingForge || level.getObject(objectX, objectY).isInInteractRange(level, objectX, objectY, client.playerMob);
+	}
+
+	private void applyForgeLink(int x, int y) {
+		Level level = client.playerMob.getLevel();
+		if (level == null || level != stationEntity.getLevel()) return;
+
+		LevelObject object = level.getLevelObject(x, y);
+		LevelObject master = object == null ? null : (LevelObject)object.getMasterLevelObject().orElse(object);
+		if (master == null || !stationEntity.isWithinStorageLinkRange(master.tileX, master.tileY)) return;
+
+		Point target = new Point(master.tileX, master.tileY);
+		if (stationEntity.hasLinkedForge(target)) {
+			stationEntity.removeLinkedForge(target);
+			return;
+		}
+
+		if (!(master.getObjectEntity() instanceof ProcessingForgeObjectEntity)) return;
+		stationEntity.addLinkedForge(target);
 	}
 
 	private void completeCraftServer() {
@@ -97,6 +155,8 @@ public class CrudeAnvilContainer extends CraftingStationContainer {
 
 		Collection inventories = getCraftInventories();
 		if (!canCraftRecipe(recipe, inventories, false).canCraft()) return;
+		if (ForgeRequirementSystem.requiresRunningForge(recipe)
+				&& !ForgeRequirementSystem.ensureRunningForge(stationEntity, client.playerMob, recipe, inventories, 250L)) return;
 
 		ContainerRecipeCraftedEvent event = new ContainerRecipeCraftedEvent(
 				recipe,

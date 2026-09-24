@@ -50,6 +50,7 @@ projecteraser=Project Eraser
 inspectionglass=Inspection Glass
 malignancegoggles=Malignance Goggles
 feather=Feather
+metalworkhammer=Metalwork Hammer
 string=String
 groundfiremone=Ground Firemone
 honeycombfragment=Honeycomb Fragment
@@ -203,6 +204,7 @@ magicfocus=Magic Focus
 
 [object]
 placedlog=Log
+placedplank=Plank
 crudeanvil=Crude Anvil
 crudeworkbench=Crude Workbench
 crudetorch=Crude Torch
@@ -438,6 +440,7 @@ demonic=Demonic
 dryad=Dryad
 emerald=Emerald
 feather=Feather
+metalworkhammer=Metalwork Hammer
 firemone=Firemone
 glacial=Glacial
 gold=Gold
@@ -482,7 +485,7 @@ guide6objective=Use the crude workbench to craft a [item=crudeaxe] crude axe.
 guide7title=Obtain some logs
 guide7objective=Cut a few trees with your [item=crudeaxe] crude axe.
 guide8title=Obtain some planks
-guide8objective=With some <logicon> logs in hand, place them [input=mouse2] on the ground, then use your axe [input=mouse2] on them to cut some <plankicon> planks.
+guide8objective=With some <logicon> logs in hand, place them [input=mouse2] on the ground, then use your axe [input=mouse2] on them to cut some <plankicon> planks.\n\nThe same process can be used to cut planks into shafts.
 guide9title=Craft some tools
 guide9objective=Craft a [item=woodsword] wooden sword to protect yourself.\n\nYou will also need to craft a [item=woodshovel] wooden shovel.
 guide10title=Make a hole
@@ -508,4 +511,11 @@ guide19objective=Use the [item=clay] clay you found to make 8 [item=unfiredbrick
 guide20title=Lets cook some food
 guide20objective=Craft a [item=campfire] campfire and a [item=roastingstation] roasting station.
 guide21title=Lets cook some clay
-guide21objective=Dig three more [item=shallowholetile] holes. In the first hole, place [input=mouse2] a stack of 32 <logicon> logs. Afterwards, cover the hole with a [item=dirtpile] pile of dirt. Use a [item=firestarter] firestarter on the covered hole to set it on fire.\n\nOn the second and third holes, fill them up with [item=unfiredbrick] bricks and molds by placing them [input=mouse2] one by one (Maximum 8 per hole). Afterwards, add 8 <logicon> logs on top, and set them on fire as previously.\n\nThe cooking process will take an amount of time equivalent to a day and night cycle period, starting from when they were ignited.\n\nUse that time to collect as much [item=ironore] iron as you can, and gather some food if you need.
+guide21objective=Dig three more [item=shallowholetile] holes. In the first hole, place [input=mouse2] a stack of 32 <logicon> logs. Afterwards, cover the hole with a [item=dirtpile] pile of dirt. Use a [item=firestarter] firestarter on the covered hole to set it on fire. This will produce charcoal.\n\nFor the second and third holes, fill them up with [item=unfiredbrick] bricks and <moldicon> molds by placing them [input=mouse2] one by one (Maximum 8 per hole). Afterwards, add 16 <logicon> logs on top, and set them on fire as previously.\n\nThe cooking process will take an amount of time equivalent to a day and night cycle period, starting from when they were ignited.\n\nUse that time to collect as much [item=ironore] iron as you can, and gather some food if you need.\n\nComplete this objective by retrieving the [item=charcoal] charcoal, the [item=brick] bricks, the [item=thickplatemold] thick plate mold, and the [item=sawblademold] saw blade mold.
+
+guide23title=Lets cook some metal
+guide23objective=Craft a [item=forge] forge.\n\nForges require charcoal to run. Use the crafting guide book to see what you can make with each mold. For now, make a [item=thickironplate] thick iron plate, and a [item=sawblade] saw blade.
+guide24title=Lets cook together
+guide24objective=A core feature of Dynamic Settlements is Workstation Linking. Lets start easy, an example scenario.\n\nTo craft a metal plate in an anvil, it is required to heat up the metal, and shape it while softer. We call this a Forge Requiring Recipe, or FRR for short.\n\nTo setup crafting an FRR, all you need to do is open the anvil UI and link the anvil to a nearby forge. This allows you to craft FRRs.\n\nTo proceed, craft a [item=metalworkinghammer] Metalworking hammer.
+guide25title=Make a proper anvil
+guide25objective=Craft an [item=iron anvil] iron anvil.

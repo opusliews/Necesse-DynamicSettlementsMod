@@ -15,6 +15,7 @@ import necesse.gfx.drawOptions.texture.TextureDrawOptions;
 import necesse.gfx.drawables.LevelSortedDrawable;
 import necesse.gfx.drawables.OrderableDrawables;
 import necesse.gfx.gameTexture.GameTexture;
+import necesse.inventory.InventoryItem;
 import necesse.inventory.lootTable.LootTable;
 import necesse.inventory.lootTable.lootItem.LootItem;
 import necesse.inventory.recipe.Tech;
@@ -23,7 +24,9 @@ import necesse.level.gameObject.container.IronAnvilObject;
 import necesse.level.maps.Level;
 import necesse.level.maps.light.GameLight;
 import opusliews.DSItemRegistry;
+import opusliews.container.CrudeAnvilContainer;
 import opusliews.earlygame.CrudeAnvilFeature;
+import opusliews.story.GuideStoryObjectiveRegistry;
 
 public class CrudeAnvilObject extends IronAnvilObject {
 	private final String stumpTextureName;
@@ -135,6 +138,24 @@ public class CrudeAnvilObject extends IronAnvilObject {
 		stumpRootsTexture.initDraw().sprite(0, 0, 64).alpha(alpha).light(light).mirror(mirror, false).draw(drawX - 16, drawY - 32);
 		stumpTexture.initDraw().sprite(0, 0, 64).alpha(alpha).light(light).mirror(mirror, false).draw(drawX - 16, drawY - 32);
 		plateTexture.initDraw().alpha(alpha).light(light).mirror(mirror, false).draw(drawX - 16, drawY - 32);
+	}
+
+	@Override
+	public boolean canInteract(Level level, int tileX, int tileY, PlayerMob player) {
+		InventoryItem selected = player.getSelectedItem();
+		return selected != null && selected.item.isGlobalIngredient("anystone");
+	}
+
+	@Override
+	public void interact(Level level, int tileX, int tileY, PlayerMob player) {
+		if (level.isServer() && player.isServerClient()) {
+			GuideStoryObjectiveRegistry.complete(
+					player.getServerClient(),
+					"guide22"
+			);
+		}
+
+		super.interact(level, tileX, tileY, player);
 	}
 
 	@Override

@@ -221,6 +221,7 @@ public class DynamicSettlements {
 		ObjectRegistry.registerObject(HoleCaveLadderUpObject.stringID, new HoleCaveLadderUpObject(), 0.0F, false);
 		ObjectRegistry.registerObject(DeepHoleCeilingLightObject.stringID, new DeepHoleCeilingLightObject(), 0.0F, false);
 		PlacedLogRegistry.register();
+		PlacedPlankRegistry.register();
 
 		GameObject clayRock = ObjectRegistry.getObject("clayrock");
 		clayRock.toolType = ToolType.SHOVEL;
@@ -357,6 +358,8 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketCharcoalPitInteract.class);
 		PacketRegistry.registerPacket(PacketFirestarterUse.class);
 		PacketRegistry.registerPacket(PacketPlaceLog.class);
+		PacketRegistry.registerPacket(PacketPlacePlank.class);
+		PacketRegistry.registerPacket(PacketCutPlacedPlank.class);
 		PacketRegistry.registerPacket(PacketLogCutSound.class);
 		PacketRegistry.registerPacket(PacketCharcoalProductionSettingsRequest.class);
 		PacketRegistry.registerPacket(PacketCharcoalProductionSettingsUpdate.class);

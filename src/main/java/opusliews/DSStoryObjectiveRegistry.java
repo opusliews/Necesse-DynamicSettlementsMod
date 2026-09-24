@@ -7,6 +7,7 @@ import necesse.entity.mobs.PlayerMob;
 import necesse.gfx.fairType.TypeParsers;
 import necesse.inventory.InventoryItem;
 import necesse.level.maps.Level;
+import opusliews.durability.ItemDurabilityRegistry;
 import opusliews.story.GuideStoryObjectiveRegistry;
 
 import java.util.Arrays;
@@ -99,7 +100,18 @@ public class DSStoryObjectiveRegistry {
 				"deadwoodplank",
 				"bambooplank",
 				"dryadplank");
-		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
+		String moldIcon = getRotatingItemIcon(
+				"unfiredingotmold",
+				"unfiredpickaxeheadmold",
+				"unfiredaxeheadmold",
+				"unfiredshovelheadmold",
+				"unfiredsickleblademold",
+				"unfiredshearsblademold",
+				"unfiredswordblademold",
+				"unfiredthickplatemold",
+				"unfiredsawblademold"
+		);
+				GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
 				"guide8",
 				new LocalMessage("storyguide", "guide8title"),
 				new LocalMessage("storyguide", "guide8objective",
@@ -206,10 +218,42 @@ public class DSStoryObjectiveRegistry {
 				"guide21",
 				new LocalMessage("storyguide", "guide21title"),
 				new LocalMessage("storyguide", "guide21objective",
-					new Object[]{"logicon", logIcon}),
+						new Object[]{
+								"logicon", logIcon,
+								"moldicon", moldIcon}),
 				objective -> getItemAmount(objective.getPlayer(), "brick") >= 8
 						&& hasItem(objective.getPlayer(), "sawblademold")
 						&& hasItem(objective.getPlayer(), "thickplatemold")
+						&& hasItem(objective.getPlayer(), "charcoal")
+		);
+
+		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
+				"guide22",
+				new LocalMessage("storyguide", "guide22title"),
+				new LocalMessage("storyguide", "guide22objective"),
+				objective -> false
+		);
+
+		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
+				"guide23",
+				new LocalMessage("storyguide", "guide23title"),
+				new LocalMessage("storyguide", "guide23objective"),
+				objective -> hasItem(objective.getPlayer(), "ironthickplate")
+						&& hasItem(objective.getPlayer(), "sawblade")
+		);
+
+		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
+				"guide24",
+				new LocalMessage("storyguide", "guide24title"),
+				new LocalMessage("storyguide", "guide24objective"),
+				objective -> hasItem(objective.getPlayer(), "metalworkinghammer")
+		);
+
+		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
+				"guide25",
+				new LocalMessage("storyguide", "guide25title"),
+				new LocalMessage("storyguide", "guide25objective"),
+				objective -> hasItem(objective.getPlayer(), "ironanvil")
 		);
 	}
 

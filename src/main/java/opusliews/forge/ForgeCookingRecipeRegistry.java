@@ -48,6 +48,10 @@ public final class ForgeCookingRecipeRegistry {
 		registerMoldedBar("spideritebar", "spideriteore", 4);
 		registerMoldedBar("ivybar", "ivyore", 4);
 
+		registerMoldedBarFromMaterial("demonicbar", "copperbar", 3);
+		registerMoldedBarFromMaterial("demonicbar", "ironbar", 2);
+		registerMoldedBarFromMaterial("demonicbar", "goldbar", 1);
+
 		register(new ForgeCookingRecipe(
 				"ironbar_from_brokenirontool",
 				ForgeCookingInput.durabilityUse("brokenirontool"),
@@ -64,12 +68,6 @@ public final class ForgeCookingRecipeRegistry {
 				1,
 				DEFAULT_PROCESS_TIME
 		));
-
-		registerMoldedBarFromMaterial("demonicbar", "copperbar", 3);
-		registerMoldedBarFromMaterial("demonicbar", "ironbar", 2);
-		registerMoldedBarFromMaterial("demonicbar", "goldbar", 1);
-
-
 	}
 
 	private static void registerMoldedBar(String outputItem, String oreItem, int oreAmount) {

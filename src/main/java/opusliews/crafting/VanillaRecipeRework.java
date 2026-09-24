@@ -47,7 +47,11 @@ public class VanillaRecipeRework {
 					|| "woodshovel".equals(resultID)
 					|| "woodsword".equals(resultID)
 					|| "woodpickaxe".equals(resultID)
-					|| "forge".equals(resultID)) return true;
+					|| "forge".equals(resultID)
+					|| "campfire".equals(resultID)
+					|| "roastingstation".equals(resultID)
+					|| "ironanvil".equals(resultID)
+					|| "workstationduo".equals(resultID)) return true;
 
 			if (recipe.tech == RecipeTechRegistry.NONE) {
 				switch (resultID) {

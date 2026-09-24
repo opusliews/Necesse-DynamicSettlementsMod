@@ -14,7 +14,9 @@ import necesse.gfx.gameTooltips.TooltipLocation;
 import necesse.inventory.InventoryItem;
 import necesse.inventory.container.Container;
 import necesse.inventory.recipe.Recipe;
+import opusliews.container.CrudeAnvilContainer;
 import opusliews.container.DynamicCraftingStationContainer;
+import opusliews.object.DynamicCraftingStationObjectEntity;
 import opusliews.object.AnvilObjectEntity;
 
 public final class ForgeRequirementUI {
@@ -22,15 +24,11 @@ public final class ForgeRequirementUI {
 	}
 
 	public static GameMessage getUsableError(Container container, Recipe recipe) {
-		if (!(container instanceof DynamicCraftingStationContainer)) return null;
-		DynamicCraftingStationContainer stationContainer = (DynamicCraftingStationContainer)container;
-		if (!(stationContainer.stationEntity instanceof AnvilObjectEntity)) return null;
-		if (!ForgeRequirementSystem.requiresRunningForge(recipe)) return null;
+		DynamicCraftingStationObjectEntity station = getForgeStation(container);
+		if (station == null || !ForgeRequirementSystem.requiresRunningForge(recipe)) return null;
 
 		ForgeRequirementSystem.Status status = ForgeRequirementSystem.getStatus(
-				stationContainer.stationEntity,
-				recipe,
-				stationContainer.getCraftInventories()
+				station, recipe, container.getCraftInventories()
 		);
 		if (status == ForgeRequirementSystem.Status.NO_LINKED_FORGE) {
 			return new LocalMessage("ui", "craftingrequireslinkedforge");
@@ -42,16 +40,13 @@ public final class ForgeRequirementUI {
 	}
 
 	public static void addRequirementTooltip(Container container, Recipe recipe, boolean hovering) {
-		if (!hovering || !(container instanceof DynamicCraftingStationContainer)) return;
-		DynamicCraftingStationContainer stationContainer = (DynamicCraftingStationContainer)container;
-		if (!(stationContainer.stationEntity instanceof AnvilObjectEntity)) return;
-		if (!ForgeRequirementSystem.requiresRunningForge(recipe)) return;
+		if (!hovering) return;
+		DynamicCraftingStationObjectEntity station = getForgeStation(container);
+		if (station == null || !ForgeRequirementSystem.requiresRunningForge(recipe)) return;
 
 		InventoryItem forgeItem = new InventoryItem(ObjectRegistry.getObject("forge").getObjectItem());
 		ForgeRequirementSystem.Status status = ForgeRequirementSystem.getStatus(
-				stationContainer.stationEntity,
-				recipe,
-				stationContainer.getCraftInventories()
+				station, recipe, container.getCraftInventories()
 		);
 		String color = status == ForgeRequirementSystem.Status.READY ? "§a" : "§c";
 		String text = color + Localization.translate(
@@ -64,5 +59,15 @@ public final class ForgeRequirementUI {
 		fairType.append(new FontOptions(12).outline(), text);
 		fairType.applyParsers(TypeParsers.ItemIcon(16), TypeParsers.GAME_COLOR);
 		GameTooltipManager.addTooltip(new FairTypeTooltip(fairType), GameBackground.getItemTooltipBackground(), TooltipLocation.FORM_FOCUS);
+	}
+	private static DynamicCraftingStationObjectEntity getForgeStation(Container container) {
+		if (container instanceof CrudeAnvilContainer) {
+			return ((CrudeAnvilContainer)container).stationEntity;
+		}
+		if (container instanceof DynamicCraftingStationContainer) {
+			DynamicCraftingStationContainer stationContainer = (DynamicCraftingStationContainer)container;
+			return stationContainer.stationEntity instanceof AnvilObjectEntity ? stationContainer.stationEntity : null;
+		}
+		return null;
 	}
 }
