@@ -195,6 +195,7 @@ metalhook=Hook
 metalcasing=Metal Casing
 clockworkmechanism=Clockwork Mechanism
 magicfocus=Magic Focus
+
 [object]
 placedlog=Log
 crudeanvil=Crude Anvil
@@ -459,3 +460,20 @@ void=Void
 willow=Willow
 wooden=Wooden
 
+[storyguide]
+guide1title=Getting started with\nDynamic Settlements
+guide1objective=These quests will act as a guide for explaining Dynamic Settlements features.\n\nTo get started, interact [input=mouse2] a [item=surfacerocksmall] small rock
+guide2title=Sharpen the stone
+guide2objective=Obtain a [item=sharpenedstone] sharpened stone by striking [input=mouse1] a [item=surfacerocksmall] [item=surfacerock] surface rock with a [item=stone] stone.
+guide3title=Obtain wood shafts
+guide3objective=Hit [input=mouse1] a tree with a [item=sharpenedstone] sharpened stone to obtain some [item=woodenshaft] wooden shafts.
+guide4title=Obtain some grass
+guide4objective=Cut some [item=grass] surface grasses with a [item=sharpenedstone] sharpened stone.
+guide5title=Craft strings
+guide5objective=With a [item=sharpenedstone] sharpened stone in hand, interact [input=mouse2] with any tree stump to use it as a crude workbench.\n\nUse the [item=grass] grass you cut to craft [item=string] strings.
+guide6title=Craft a crude axe
+guide6objective=Use the crude workbench to craft a [item=crudeaxe] crude axe.
+guide7title=Obtain some logs
+guide7objective=Cut a few trees with your [item=crudeaxe] crude axe.
+guide8title=Obtain some planks
+guide8objective=With some <logicon> logs in hand, place them [input=mouse2] on the ground, then use your axe [input=mouse2] on them to cut some <plankicon> planks.

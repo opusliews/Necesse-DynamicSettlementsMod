@@ -54,6 +54,7 @@ import opusliews.object.*;
 import opusliews.settler.BuilderRequestLevelData;
 import opusliews.settler.BuilderSettler;
 import opusliews.sleep.SettlementSleepSettingsLevelData;
+import opusliews.story.GuideStoryObjectiveRegistry;
 import opusliews.tile.*;
 import opusliews.torch.CrudeTorchLevelData;
 
@@ -183,6 +184,7 @@ public class DynamicSettlements {
 		DSItemRegistry.registerItems();
 		ItemDurabilityRegistry.registerDurability();
 		ForgeCookingRecipeRegistry.registerRecipes();
+		DSStoryObjectiveRegistry.registerObjectives();
 		ItemRegistry.registerItem(DirtPileItem.stringID, new DirtPileItem(), 0.0F, true);
 		ItemRegistry.registerItem("charcoal", new MatItem(500, Item.Rarity.NORMAL), 4.0F, true);
 		ItemRegistry.registerItem(SharpenedStoneItem.stringID, new SharpenedStoneItem(), 0.5F, true);
@@ -377,6 +379,7 @@ public class DynamicSettlements {
 			return;
 		}
 
+		GuideStoryObjectiveRegistry.applyOrdering();
 		DSRecipeRegistry.registerRecipes();
 		loadSounds();
 	}

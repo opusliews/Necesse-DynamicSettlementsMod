@@ -87,11 +87,14 @@ public class DSRecipeRegistry {
 
 	private static void registerVanillaRecipes() {
 		register("brickwall", 1, RecipeTechRegistry.WORKSTATION, ingredient(brickStringID, 4), ingredient("demonicbar", 1));
+		register("torch", 4, RecipeTechRegistry.WORKSTATION, ingredient(woodenshaftStringID, 1), ingredient("charcoal", 1), ingredient("firemone", 1));
 
-		register("torch", 4, RecipeTechRegistry.WORKSTATION,
-				ingredient(woodenshaftStringID, 1),
-				ingredient("charcoal", 1),
-				ingredient("firemone", 1));
+		register("woodshovel", 1, CrudeWorkbenchFeature.tech, ingredient("dsanyplank", 1));
+		register("woodshovel", 1, RecipeTechRegistry.WORKSTATION, ingredient("dsanyplank", 1));
+		register("woodsword", 1, CrudeWorkbenchFeature.tech, ingredient("dsanyplank", 1));
+		register("woodsword", 1, RecipeTechRegistry.WORKSTATION, ingredient("dsanyplank", 1));
+		register("forge", 1, CrudeWorkbenchFeature.tech, ingredient("brick", 1));
+		register("forge", 1, RecipeTechRegistry.WORKSTATION, ingredient("brick", 1));
 	}
 
 	private static void registerCraftingMaterialRecipes() {

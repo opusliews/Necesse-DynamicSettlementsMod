@@ -43,7 +43,22 @@ public class VanillaRecipeRework {
 					|| "ladderdown".equals(resultID)
 					|| "deepladderdown".equals(resultID)
 					|| "brickwall".equals(resultID)
-					|| "torch".equals(resultID)) return true;
+					|| "torch".equals(resultID)
+					|| "woodshovel".equals(resultID)
+					|| "woodsword".equals(resultID)
+					|| "woodpickaxe".equals(resultID)
+					|| "forge".equals(resultID)) return true;
+
+			if (recipe.tech == RecipeTechRegistry.NONE) {
+				switch (resultID) {
+					case "torch":
+					case "workstationduo":
+					case "woodboat":
+					case "stonearrow":
+						return true;
+				}
+			}
+
 			return isLegacyBarRecipe(recipe);
 		});
 

@@ -13,14 +13,17 @@ import net.bytebuddy.asm.Advice;
 		name = "addItem",
 		arguments = {Level.class, PlayerMob.class, InventoryItem.class, String.class, InventoryAddConsumer.class}
 )
-public class RemoveWoodAxeStarterPatch {
+public class RemoveStarterItemsPatch {
 	@Advice.OnMethodEnter(skipOn = Advice.OnNonDefaultValue.class)
 	public static boolean onEnter(
 			@Advice.Argument(2) InventoryItem item,
 			@Advice.Argument(3) String purpose
 	) {
 		return item != null
-				&& "woodaxe".equals(item.item.getStringID())
+				&& (
+						"woodaxe".equals(item.item.getStringID())
+						|| "woodsword".equals(item.item.getStringID())
+				)
 				&& "startitem".equals(purpose);
 	}
 

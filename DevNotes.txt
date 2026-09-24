@@ -48,3 +48,35 @@ ItemRegistry.registerItem(
 ---
 
 CraftingTime.setMilliseconds("ironpickaxe", 5000L);
+
+---
+
+Story objectives:
+
+/*
+Example: objective before the first vanilla objective, with no reward.
+Rewardless objectives are automatically claimed when completed.
+
+GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
+        "exampleguide",
+        new LocalMessage("storyguide", "exampleguidetitle"),
+        new LocalMessage("storyguide", "exampleguideobjective"),
+        objective -> objective.getPlayer().getInv().hasAnyItem(
+                false, false, false, false, "storyguide",
+                item -> item.item.getStringID().equals("woodenshaft")
+        )
+);
+
+Example: objective directly after an existing vanilla objective.
+
+GuideStoryObjectiveRegistry.registerAfter(
+        "exampleaftermining",
+        "gomining",
+        new LocalMessage("storyguide", "exampleafterminingtitle"),
+        new LocalMessage("storyguide", "exampleafterminingobjective"),
+        null
+);
+
+A null completion condition means the objective is completed manually:
+GuideStoryObjectiveRegistry.complete(serverClient, "exampleaftermining");
+*/

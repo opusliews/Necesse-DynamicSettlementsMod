@@ -2,12 +2,14 @@ package opusliews.item;
 
 import necesse.engine.network.gameNetworkData.GNDItemMap;
 import necesse.engine.util.GameMath;
+import necesse.entity.mobs.GameDamage;
 import necesse.entity.mobs.PlayerMob;
 import necesse.entity.mobs.itemAttacker.ItemAttackSlot;
 import necesse.entity.mobs.itemAttacker.ItemAttackerMob;
 import necesse.inventory.InventoryItem;
 import necesse.inventory.item.Item;
 import necesse.level.gameObject.GameObject;
+import necesse.level.gameObject.SurfaceGrassObject;
 import necesse.level.maps.Level;
 
 public class SharpenedStoneItem extends Item {
@@ -35,7 +37,7 @@ public class SharpenedStoneItem extends Item {
 		}
 
 		GameObject object = level.getObject(tileX, tileY);
-		if (object == null || !object.isTree) {
+		if (object == null || (!object.isTree && !(object instanceof SurfaceGrassObject))) {
 			return "";
 		}
 
@@ -61,27 +63,37 @@ public class SharpenedStoneItem extends Item {
 
 		int tileX = GameMath.getTileCoordinate(x);
 		int tileY = GameMath.getTileCoordinate(y);
-		if (!level.isTileWithinBounds(tileX, tileY) || level.isProtected(tileX, tileY) || !level.getObject(tileX, tileY).isTree) {
+		if (!level.isTileWithinBounds(tileX, tileY)
+				|| level.isProtected(tileX, tileY)
+				|| (!level.getObject(tileX, tileY).isTree
+					&& !(level.getObject(tileX, tileY) instanceof SurfaceGrassObject))) {
 			return item;
 		}
 
 		if (level.isClient()) {
-			level.getObject(tileX, tileY).playDamageSound(level, tileX, tileY, true);
+			if (level.getObject(tileX, tileY).isTree) {
+				level.getObject(tileX, tileY).playDamageSound(level, tileX, tileY, true);
+			}
 		}
 
 		if (!level.isServer()) {
 			return item;
 		}
 
-		int hits = item.getGndData().getInt(hitCountKey, 0) + 1;
+		if (level.getObject(tileX, tileY).isTree) {
+			int hits = item.getGndData().getInt(hitCountKey, 0) + 1;
 
-		if (hits >= requiredHits) {
-			item.setAmount(item.getAmount() - 1);
-			item.getGndData().setInt(hitCountKey, 0);
-			InventoryItem shaft = new InventoryItem("woodenshaft", 1);
-			level.entityManager.pickups.add(shaft.getPickupEntity(level, tileX * 32.0F + 16.0F, tileY * 32.0F + 16.0F));
-		} else {
-			item.getGndData().setInt(hitCountKey, hits);
+			if (hits >= requiredHits) {
+				item.setAmount(item.getAmount() - 1);
+				item.getGndData().setInt(hitCountKey, 0);
+				InventoryItem shaft = new InventoryItem("woodenshaft", 1);
+				level.entityManager.pickups.add(shaft.getPickupEntity(level, tileX * 32.0F + 16.0F, tileY * 32.0F + 16.0F));
+			} else {
+				item.getGndData().setInt(hitCountKey, hits);
+			}
+		}
+		else {
+			level.getLevelObject(tileX, tileY).attackThrough(new GameDamage(10000.0F), attackerMob);
 		}
 
 		return item;
