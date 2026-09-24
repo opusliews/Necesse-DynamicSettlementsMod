@@ -31,6 +31,14 @@ public class GuideStoryObjectiveRegistry {
 		registerBefore(stringID, firstVanillaObjectiveStringID, title, objectives, completionCondition, rewards, true);
 	}
 
+	public static void registerButtonBeforeFirstVanilla(String stringID, GameMessage title, GameMessage objective, GameMessage buttonText) {
+		registerButtonBefore(stringID, firstVanillaObjectiveStringID, title, new GameMessage[]{objective}, buttonText);
+	}
+
+	public static void registerButtonBeforeFirstVanilla(String stringID, GameMessage title, GameMessage[] objectives, GameMessage buttonText) {
+		registerButtonBefore(stringID, firstVanillaObjectiveStringID, title, objectives, buttonText);
+	}
+
 	public static void registerBefore(String stringID, String beforeObjectiveStringID, GameMessage title, GameMessage objective, CompletionCondition completionCondition) {
 		registerBefore(stringID, beforeObjectiveStringID, title, new GameMessage[]{objective}, completionCondition, null, true);
 	}
@@ -41,7 +49,19 @@ public class GuideStoryObjectiveRegistry {
 
 	public static void registerBefore(String stringID, String beforeObjectiveStringID, GameMessage title, GameMessage[] objectives, CompletionCondition completionCondition, LootTable rewards, boolean autoClaimWithoutRewards) {
 		validateRegistration(stringID, beforeObjectiveStringID, title, objectives);
-		Entry entry = new Entry(title, objectives, completionCondition, rewards, autoClaimWithoutRewards, beforeObjectiveStringID, true);
+		Entry entry = new Entry(title, objectives, completionCondition, rewards, autoClaimWithoutRewards, beforeObjectiveStringID, true, null);
+		entries.put(stringID, entry);
+		StoryObjectiveRegistry.registerObjective(stringID, GuideStoryObjective.class, false).showBeforeObjective(beforeObjectiveStringID);
+	}
+
+	public static void registerButtonBefore(String stringID, String beforeObjectiveStringID, GameMessage title, GameMessage objective, GameMessage buttonText) {
+		registerButtonBefore(stringID, beforeObjectiveStringID, title, new GameMessage[]{objective}, buttonText);
+	}
+
+	public static void registerButtonBefore(String stringID, String beforeObjectiveStringID, GameMessage title, GameMessage[] objectives, GameMessage buttonText) {
+		validateRegistration(stringID, beforeObjectiveStringID, title, objectives);
+		validateButtonText(stringID, buttonText);
+		Entry entry = new Entry(title, objectives, null, null, true, beforeObjectiveStringID, true, buttonText);
 		entries.put(stringID, entry);
 		StoryObjectiveRegistry.registerObjective(stringID, GuideStoryObjective.class, false).showBeforeObjective(beforeObjectiveStringID);
 	}
@@ -64,7 +84,19 @@ public class GuideStoryObjectiveRegistry {
 
 	public static void registerAfter(String stringID, String afterObjectiveStringID, GameMessage title, GameMessage[] objectives, CompletionCondition completionCondition, LootTable rewards, boolean autoClaimWithoutRewards) {
 		validateRegistration(stringID, afterObjectiveStringID, title, objectives);
-		Entry entry = new Entry(title, objectives, completionCondition, rewards, autoClaimWithoutRewards, afterObjectiveStringID, false);
+		Entry entry = new Entry(title, objectives, completionCondition, rewards, autoClaimWithoutRewards, afterObjectiveStringID, false, null);
+		entries.put(stringID, entry);
+		StoryObjectiveRegistry.registerObjective(stringID, GuideStoryObjective.class, false).showAfterObjective(afterObjectiveStringID);
+	}
+
+	public static void registerButtonAfter(String stringID, String afterObjectiveStringID, GameMessage title, GameMessage objective, GameMessage buttonText) {
+		registerButtonAfter(stringID, afterObjectiveStringID, title, new GameMessage[]{objective}, buttonText);
+	}
+
+	public static void registerButtonAfter(String stringID, String afterObjectiveStringID, GameMessage title, GameMessage[] objectives, GameMessage buttonText) {
+		validateRegistration(stringID, afterObjectiveStringID, title, objectives);
+		validateButtonText(stringID, buttonText);
+		Entry entry = new Entry(title, objectives, null, null, true, afterObjectiveStringID, false, buttonText);
 		entries.put(stringID, entry);
 		StoryObjectiveRegistry.registerObjective(stringID, GuideStoryObjective.class, false).showAfterObjective(afterObjectiveStringID);
 	}
@@ -142,6 +174,11 @@ public class GuideStoryObjectiveRegistry {
 		}
 	}
 
+	public static boolean isButtonObjective(String stringID) {
+		Entry entry = entries.get(stringID);
+		return entry != null && entry.completionButton != null;
+	}
+
 	static Entry getEntry(String stringID) {
 		return entries.get(stringID);
 	}
@@ -169,6 +206,12 @@ public class GuideStoryObjectiveRegistry {
 		}
 	}
 
+	private static void validateButtonText(String stringID, GameMessage buttonText) {
+		if (buttonText == null) {
+			throw new IllegalArgumentException("Guide story objective completion button cannot be null: " + stringID);
+		}
+	}
+
 	@FunctionalInterface
 	public interface CompletionCondition {
 		boolean isCompleted(GuideStoryObjective objective);
@@ -182,8 +225,9 @@ public class GuideStoryObjectiveRegistry {
 		final boolean autoClaimWithoutRewards;
 		final String anchorObjectiveStringID;
 		final boolean showBefore;
+		final GameMessage completionButton;
 
-		Entry(GameMessage title, GameMessage[] objectives, CompletionCondition completionCondition, LootTable rewards, boolean autoClaimWithoutRewards, String anchorObjectiveStringID, boolean showBefore) {
+		Entry(GameMessage title, GameMessage[] objectives, CompletionCondition completionCondition, LootTable rewards, boolean autoClaimWithoutRewards, String anchorObjectiveStringID, boolean showBefore, GameMessage completionButton) {
 			this.title = title;
 			this.objectives = objectives.clone();
 			this.completionCondition = completionCondition;
@@ -191,6 +235,7 @@ public class GuideStoryObjectiveRegistry {
 			this.autoClaimWithoutRewards = autoClaimWithoutRewards;
 			this.anchorObjectiveStringID = anchorObjectiveStringID;
 			this.showBefore = showBefore;
+			this.completionButton = completionButton;
 		}
 	}
 }

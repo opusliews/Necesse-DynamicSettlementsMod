@@ -7,7 +7,6 @@ import necesse.entity.mobs.PlayerMob;
 import necesse.gfx.fairType.TypeParsers;
 import necesse.inventory.InventoryItem;
 import necesse.level.maps.Level;
-import opusliews.durability.ItemDurabilityRegistry;
 import opusliews.story.GuideStoryObjectiveRegistry;
 
 import java.util.Arrays;
@@ -226,6 +225,13 @@ public class DSStoryObjectiveRegistry {
 						&& hasItem(objective.getPlayer(), "thickplatemold")
 						&& hasItem(objective.getPlayer(), "charcoal")
 		);
+
+//		GuideStoryObjectiveRegistry.registerButtonBeforeFirstVanilla(
+//				"guide22",
+//				new LocalMessage("storyguide", "guide22title"),
+//				new LocalMessage("storyguide", "guide22objective"),
+//				new LocalMessage("storyguide", "guide22button")
+//		);
 
 		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
 				"guide22",

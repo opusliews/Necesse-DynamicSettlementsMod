@@ -4,8 +4,12 @@ import necesse.engine.localization.message.GameMessage;
 import necesse.engine.storyObjectives.StoryObjective;
 import necesse.engine.storyObjectives.StoryObjectiveManager;
 import necesse.gfx.forms.components.FormFlow;
+import necesse.gfx.forms.components.FormInputSize;
 import necesse.gfx.forms.components.FormStoryObjectiveComponent;
+import necesse.gfx.forms.components.localComponents.FormLocalTextButton;
+import necesse.gfx.ui.ButtonColor;
 import necesse.inventory.lootTable.LootTable;
+import opusliews.network.PacketCompleteGuideObjective;
 
 public class GuideStoryObjective extends StoryObjective {
 	public GuideStoryObjective(StoryObjectiveManager manager) {
@@ -48,6 +52,20 @@ public class GuideStoryObjective extends StoryObjective {
 		for (int i = 0; i < entry.objectives.length; i++) {
 			GameMessage objective = entry.objectives[i];
 			form.addObjective(flow, i + 1, objective, isCompleted());
+		}
+
+		if (entry.completionButton != null && !isCompleted() && manager.isClient()) {
+			flow.next(8);
+			FormLocalTextButton button = form.addComponent(new FormLocalTextButton(
+					entry.completionButton,
+					10,
+					0,
+					form.getWidth() - 20,
+					FormInputSize.SIZE_32,
+					ButtonColor.BASE
+			));
+			button.onClicked(event -> manager.getClient().network.sendPacket(new PacketCompleteGuideObjective(getStringID())));
+			flow.nextY(button);
 		}
 
 		if (entry.rewards != null) {
