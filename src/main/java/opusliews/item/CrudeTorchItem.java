@@ -1,7 +1,9 @@
 package opusliews.item;
 
+import java.awt.geom.Line2D;
 import java.util.function.Consumer;
 import necesse.engine.GameState;
+import necesse.engine.localization.message.LocalMessage;
 import necesse.engine.network.gameNetworkData.GNDItemMap;
 import necesse.engine.network.server.ServerClient;
 import necesse.engine.world.GameClock;
@@ -23,8 +25,36 @@ public class CrudeTorchItem extends TorchObjectItem implements TickItem {
 	public static final String durationGndKey = "crudeTorchDuration";
 	public static final int durabilitySteps = 1000;
 
+	private static final String requiresFirestarterError = "requiresfirestarter";
+
 	public CrudeTorchItem(GameObject object) {
 		super(object, false);
+	}
+
+	@Override
+	public String canPlace(Level level, int x, int y, PlayerMob player, Line2D playerPositionLine, InventoryItem item, GNDItemMap mapContent) {
+		if (!isRunning(item) && !hasFirestarter(player)) return requiresFirestarterError;
+		return super.canPlace(level, x, y, player, playerPositionLine, item, mapContent);
+	}
+
+	@Override
+	public InventoryItem onAttemptPlace(Level level, int x, int y, PlayerMob player, InventoryItem item, GNDItemMap mapContent, String error) {
+		if (requiresFirestarterError.equals(error)) {
+			if (level.isServer() && player != null && player.isServerClient()) {
+				player.getServerClient().sendChatMessage(new LocalMessage("misc", "crudetorchrequiresfirestarter"));
+				player.endAttackHandler(false);
+			}
+			return item;
+		}
+
+		return super.onAttemptPlace(level, x, y, player, item, mapContent, error);
+	}
+
+	private static boolean hasFirestarter(PlayerMob player) {
+		return player != null && player.getInv().hasAnyItem(
+				false, false, false, false, "crudetorchplacement",
+				item -> item != null && FirestarterItem.stringID.equals(item.item.getStringID())
+		);
 	}
 
 	@Override

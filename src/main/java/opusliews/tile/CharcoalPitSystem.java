@@ -13,6 +13,7 @@ import necesse.inventory.item.toolItem.shovelToolItem.ShovelToolItem;
 import necesse.level.maps.Level;
 import opusliews.item.DirtPileItem;
 import opusliews.item.FirestarterItem;
+import opusliews.item.CrudeTorchItem;
 import opusliews.item.FireableMatItem;
 import opusliews.deephole.DeepHoleSystem;
 import opusliews.network.PacketCharcoalPitInteract;
@@ -51,15 +52,15 @@ public final class CharcoalPitSystem {
 			allowedAction = isDirtPile(selected);
 		} else if (getFiringPitCount(tileID) > 0) {
 			allowedAction = isShovel(selected) || isLog(selected) || isFireableItem(selected)
-					|| isTorch(selected) || isFirestarter(selected);
+					|| isIgnitionTorch(level, selected) || isFirestarter(selected);
 		} else if (tileID == TileRegistry.getTileID(FiringPitLogTile.stringID)) {
-			allowedAction = isShovel(selected) || isTorch(selected) || isFirestarter(selected);
+			allowedAction = isShovel(selected) || isIgnitionTorch(level, selected) || isFirestarter(selected);
 		} else if (tileID == TileRegistry.getTileID(BurningFiringPitTile.stringID)) {
 			return true;
 		} else if (tileID == TileRegistry.getTileID(CharcoalPitTile.stringID)) {
-			allowedAction = isDirtPile(selected) || isShovel(selected) || isTorch(selected);
+			allowedAction = isDirtPile(selected) || isShovel(selected) || isIgnitionTorch(level, selected);
 		} else if (tileID == TileRegistry.getTileID(CoveredCharcoalPitTile.stringID)) {
-			allowedAction = isShovel(selected) || isTorch(selected) || isFirestarter(selected);
+			allowedAction = isShovel(selected) || isIgnitionTorch(level, selected) || isFirestarter(selected);
 		} else if (tileID == TileRegistry.getTileID(BurningCharcoalPitTile.stringID)) {
 			return true;
 		}
@@ -107,7 +108,7 @@ public final class CharcoalPitSystem {
 				addFireableItem(level, player, selected, tileX, tileY);
 			} else if (isLog(selected)) {
 				addFiringLogs(level, player, selected, tileX, tileY);
-			} else if ((isTorch(selected) && isTorchInRange(level, player, selected, tileX, tileY))
+			} else if ((isIgnitionTorch(level, selected) && isTorchInRange(level, player, selected, tileX, tileY))
 					|| (isFirestarter(selected) && isWithinRange(player, tileX, tileY))) {
 				igniteFiringPit(level, tileX, tileY);
 			}
@@ -117,7 +118,7 @@ public final class CharcoalPitSystem {
 		if (tileID == TileRegistry.getTileID(FiringPitLogTile.stringID)) {
 			if (isShovel(selected) && isShovelInRange(level, player, selected, tileX, tileY)) {
 				extractFiringPit(level, tileX, tileY);
-			} else if ((isTorch(selected) && isTorchInRange(level, player, selected, tileX, tileY))
+			} else if ((isIgnitionTorch(level, selected) && isTorchInRange(level, player, selected, tileX, tileY))
 					|| (isFirestarter(selected) && isWithinRange(player, tileX, tileY))) {
 				igniteFiringPit(level, tileX, tileY);
 			}
@@ -137,7 +138,7 @@ public final class CharcoalPitSystem {
 		if (tileID == TileRegistry.getTileID(CoveredCharcoalPitTile.stringID)) {
 			if (isShovel(selected) && isShovelInRange(level, player, selected, tileX, tileY)) {
 				extractPit(level, tileX, tileY, true);
-			} else if ((isTorch(selected) && isTorchInRange(level, player, selected, tileX, tileY))
+			} else if ((isIgnitionTorch(level, selected) && isTorchInRange(level, player, selected, tileX, tileY))
 					|| (isFirestarter(selected) && isWithinRange(player, tileX, tileY))) {
 				ignitePit(level, tileX, tileY);
 			}
@@ -401,8 +402,12 @@ public final class CharcoalPitSystem {
 		return item != null && item.item instanceof ShovelToolItem;
 	}
 
-	private static boolean isTorch(InventoryItem item) {
-		return item != null && item.item instanceof TorchItem;
+	private static boolean isIgnitionTorch(Level level, InventoryItem item) {
+		if (item == null || !(item.item instanceof TorchItem)) return false;
+		if (!(item.item instanceof CrudeTorchItem)) return true;
+
+		long expireWorldTime = CrudeTorchItem.getExpireWorldTime(item);
+		return expireWorldTime > 0L && level.getWorldTime() < expireWorldTime;
 	}
 
 	private static boolean isFirestarter(InventoryItem item) {

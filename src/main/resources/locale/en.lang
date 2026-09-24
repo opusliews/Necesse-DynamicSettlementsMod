@@ -355,6 +355,7 @@ treasureshovel=Can dig holes in caves.\n
 
 
 [misc]
+crudetorchrequiresfirestarter=You need a Firestarter in your inventory to light a fresh Crude Torch.
 blueprintcreatedempty=Can't create an empty blueprint
 blueprintcreatedempty2=Can't create a blueprint with no tiles or objects
 blueprintcreatednameless=Can't create a blueprint with no name
