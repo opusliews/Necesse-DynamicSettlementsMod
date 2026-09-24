@@ -147,6 +147,10 @@ public class DSItemRegistry {
 	public static final String swordBladeMoldStringID = "swordblademold";
 	public static final String unfiredThickPlateMoldStringID = "unfiredthickplatemold";
 	public static final String thickPlateMoldStringID = "thickplatemold";
+	public static final String unfiredSawBladeMoldStringID = "unfiredsawblademold";
+	public static final String sawBladeMoldStringID = "sawblademold";
+	public static final String sawBladeStringID = "sawblade";
+	public static final String sawStringID = "saw";
 	public static final String thickIronPlateStringID = "thickironplate";
 	public static final String clayPackageStringID = "claypackage";
 
@@ -299,6 +303,10 @@ public class DSItemRegistry {
 		registerMaterial(shearsBladeMoldStringID, new FiredClayMatItem(500, Item.Rarity.NORMAL), 2.0F, null, null, null);
 		registerMaterial(unfiredSwordBladeMoldStringID, new FireableMatItem(500, Item.Rarity.NORMAL, swordBladeMoldStringID), 1.0F, null, null, null);
 		registerMaterial(swordBladeMoldStringID, new FiredClayMatItem(500, Item.Rarity.NORMAL), 2.0F, null, null, null);
+		registerMaterial(unfiredSawBladeMoldStringID, new FireableMatItem(500, Item.Rarity.NORMAL, sawBladeMoldStringID), 1.0F, null, null, null);
+		registerMaterial(sawBladeMoldStringID, new FiredClayMatItem(500, Item.Rarity.NORMAL), 2.0F, null, null, null);
+		registerMaterial(sawBladeStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL), 8.0F, "blade", "metal", "iron");
+		registerMaterial(sawStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL), 12.0F, null, "metal", "iron");
 		registerMaterial(unfiredThickPlateMoldStringID, new FireableMatItem(500, Item.Rarity.NORMAL, thickPlateMoldStringID), 1.0F, null, null, null);
 		registerMaterial(thickPlateMoldStringID, new FiredClayMatItem(500, Item.Rarity.NORMAL), 2.0F, null, null, null);
 		registerMaterial(thickIronPlateStringID, new MatItem(500, Item.Rarity.NORMAL), 20.0F, null, null, null);

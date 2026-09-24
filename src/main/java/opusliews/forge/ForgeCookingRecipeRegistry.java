@@ -20,6 +20,7 @@ public final class ForgeCookingRecipeRegistry {
 		registerMoldedBars();
 		registerMoldedToolHeads();
 		registerMoldedBlades();
+		registerSawBlade();
 		registerThickIronPlateRecipes();
 		registerOtherRecipes();
 	}
@@ -115,6 +116,17 @@ public final class ForgeCookingRecipeRegistry {
 		registerMoldedPart("quartzblade", "swordblademold", "quartz", 20, null, 0);
 		registerMoldedPart("glacialblade", "swordblademold", "glacialbar", 20, "glacialore", 80);
 		registerMoldedPart("amethystblade", "swordblademold", "amethyst", 15, null, 0);
+	}
+
+	private static void registerSawBlade() {
+		register(new ForgeCookingRecipe(
+				"sawblade_from_ironbar",
+				ForgeCookingInput.consume("ironbar", 2),
+				ForgeCookingInput.durabilityUse(DSItemRegistry.sawBladeMoldStringID),
+				DSItemRegistry.sawBladeStringID,
+				1,
+				DEFAULT_PROCESS_TIME
+		));
 	}
 
 	private static void registerToolSet(String material, String inputItem, int inputAmount, String oreItem, int oreAmount) {

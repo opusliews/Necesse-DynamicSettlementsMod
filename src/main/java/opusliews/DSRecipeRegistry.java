@@ -5,6 +5,7 @@ import necesse.inventory.recipe.Ingredient;
 import necesse.inventory.recipe.Recipe;
 import necesse.inventory.recipe.Recipes;
 import necesse.inventory.recipe.Tech;
+import opusliews.earlygame.CrudeAnvilFeature;
 import opusliews.earlygame.CrudeWorkbenchFeature;
 import opusliews.item.CrudeAxeItem;
 import opusliews.item.FirestarterItem;
@@ -65,6 +66,9 @@ public class DSRecipeRegistry {
 		register(unfiredSwordBladeMoldStringID, 1, CrudeWorkbenchFeature.tech, ingredient("clay", 1));
 		register(unfiredSwordBladeMoldStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("clay", 1));
 
+		register(unfiredSawBladeMoldStringID, 1, CrudeWorkbenchFeature.tech, ingredient("clay", 1));
+		register(unfiredSawBladeMoldStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("clay", 1));
+
 		register(unfiredThickPlateMoldStringID, 1, CrudeWorkbenchFeature.tech, ingredient("clay", 1));
 		register(unfiredThickPlateMoldStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("clay", 1));
 
@@ -83,6 +87,9 @@ public class DSRecipeRegistry {
 				ingredient(woodenshaftStringID, 1),
 				ingredient("firemone", 1),
 				ingredient("grass", 1));
+
+		register(sawStringID, 1, CrudeAnvilFeature.tech, ingredient(sawBladeStringID, 1), ingredient("dsanyplank", 1));
+		register(sawStringID, 1, RecipeTechRegistry.IRON_ANVIL, ingredient(sawBladeStringID, 1), ingredient("dsanyplank", 1));
 	}
 
 	private static void registerVanillaRecipes() {

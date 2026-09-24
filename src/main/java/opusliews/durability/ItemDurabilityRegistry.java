@@ -55,6 +55,7 @@ public final class ItemDurabilityRegistry {
 		registerCraftingMold("sickleblademold");
 		registerCraftingMold("shearsblademold");
 		registerCraftingMold("swordblademold");
+		registerCraftingMold("sawblademold");
 		registerCraftingMold("thickplatemold");
 
 		registerBrokenTool("brokencoppertool");
