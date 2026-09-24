@@ -58,6 +58,7 @@ dirtpile=Pile of Dirt
 charcoal=Charcoal
 firestarter=Firestarter
 crudeaxe=Crude Axe
+crudepickaxe=Crude Pickaxe
 crudetorch=Crude Torch
 treasureshovel=Treasure Shovel
 trapdoor=Trapdoor
@@ -482,3 +483,29 @@ guide7title=Obtain some logs
 guide7objective=Cut a few trees with your [item=crudeaxe] crude axe.
 guide8title=Obtain some planks
 guide8objective=With some <logicon> logs in hand, place them [input=mouse2] on the ground, then use your axe [input=mouse2] on them to cut some <plankicon> planks.
+guide9title=Craft some tools
+guide9objective=Craft a [item=woodsword] wooden sword to protect yourself.\n\nYou will also need to craft a [item=woodshovel] wooden shovel.
+guide10title=Make a hole
+guide10objective=With [item=woodshovel] shovel in hand, dig [input=mouse1] to uncover dirt, and then [input=mouse2] with the shovel on the dirt to dig a [item=shallowholetile] shallow hole.\n\nThese holes are very practical. You can use them for crafting, for accessing caves, and to protect yourself in a pinch.
+guide11title=Make a trapdoor
+guide11objective=Craft a [item=trapdoor] trapdoor in your workbench. You can put this trapdoor over a [item=shallowholetile] shallow hole to create a hiding spot from enemies. However, you will need to remove the trapdoor with an axe if you want to use the hole for other purposes.
+guide12title=Find some Firemone
+guide12objective=Look for some [item=firemone] Firemone flowers. They spawn in forest biomes, you should be able to find some nearby.
+guide13title=Fire!
+guide13objective=Craft a [item=firestarter] firestarter.
+guide14title=Make some crude torches
+guide14objective=You will need some [item=crudetorch] crude torches soon, for cave explorations. You need [item=firemone] Firemone flowers to make them. To place a crude torch, you'll need to have a [item=firestarter] firestarter somewhere in your inventory. But remember these torches will last about a day and night cycle period before going out. Don't get yourself stranded in the darkness.
+guide15title=Craft a crude pickaxe
+guide15objective=Craft a [item=crudepickaxe] crude pickaxe in your workbench.
+guide16title=Make a cave ladder
+guide16objective=Craft a [item=holecaveladder] Cave Ladder in your workbench. You can put the ladder in the [item=shallowholetile] shallow hole that you dug. You can remove the ladder from the hole at any time.
+guide17title=Go spelunking
+guide17objective=Jump into the hole you dug, and [input=mouse2] interact on it with a [item=crudepickaxe] pickaxe to dig further down. But only do this after you placed a [item=holecaveladder] ladder. You'll regret it if you forget.
+guide18title=Dig some clay
+guide18objective=Inside a cave you can find some [item=clayrock] clay walls. Dig 16 pieces of [item=clay] clay with your [item=woodshovel] shovel.
+guide19title=Make some bricks and molds
+guide19objective=Use the [item=clay] clay you found to make 8 [item=unfiredbrick] Unfired Bricks. Also make a [item=unfiredsawblademold] Saw Blade Mold, a [item=unfiredthickplatemold] Thick Plate Mold, and other molds you may want later on.
+guide20title=Lets cook some food
+guide20objective=Craft a [item=campfire] campfire and a [item=roastingstation] roasting station.
+guide21title=Lets cook some clay
+guide21objective=Dig three more [item=shallowholetile] holes. In the first hole, place [input=mouse2] a stack of 32 <logicon> logs. Afterwards, cover the hole with a [item=dirtpile] pile of dirt. Use a [item=firestarter] firestarter on the covered hole to set it on fire.\n\nOn the second and third holes, fill them up with [item=unfiredbrick] bricks and molds by placing them [input=mouse2] one by one (Maximum 8 per hole). Afterwards, add 8 <logicon> logs on top, and set them on fire as previously.\n\nThe cooking process will take an amount of time equivalent to a day and night cycle period, starting from when they were ignited.\n\nUse that time to collect as much [item=ironore] iron as you can, and gather some food if you need.

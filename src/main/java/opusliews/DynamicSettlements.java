@@ -190,6 +190,7 @@ public class DynamicSettlements {
 		ItemRegistry.registerItem(SharpenedStoneItem.stringID, new SharpenedStoneItem(), 0.5F, true);
 		ItemRegistry.registerItem(FirestarterItem.stringID, new FirestarterItem(), 8.0F, true);
 		ItemRegistry.registerItem(CrudeAxeItem.stringID, new CrudeAxeItem(), 6.0F, true);
+		ItemRegistry.registerItem(CrudePickaxeItem.stringID, new CrudePickaxeItem(), 6.0F, true);
 		TileRegistry.registerTile(ShallowHoleTile.stringID, new ShallowHoleTile(), 0.0F, false);
 		TileRegistry.registerTile(DeepHoleTile.stringID, new DeepHoleTile(), 0.0F, false);
 		for (int itemCount = 1; itemCount <= FiringPitTile.maxItems; itemCount++) {

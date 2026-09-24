@@ -8,6 +8,7 @@ import necesse.inventory.recipe.Tech;
 import opusliews.earlygame.CrudeAnvilFeature;
 import opusliews.earlygame.CrudeWorkbenchFeature;
 import opusliews.item.CrudeAxeItem;
+import opusliews.item.CrudePickaxeItem;
 import opusliews.item.FirestarterItem;
 import opusliews.item.SharpenedStoneItem;
 import opusliews.object.*;
@@ -32,6 +33,11 @@ public class DSRecipeRegistry {
 				ingredient(woodenshaftStringID, 1),
 				ingredient(SharpenedStoneItem.stringID, 1));
 
+		register(CrudePickaxeItem.stringID, 1, CrudeWorkbenchFeature.tech,
+				ingredient(stringStringID, 8),
+				ingredient(SharpenedStoneItem.stringID, 2),
+				ingredient(woodenshaftStringID, 1));
+
 		register(FirestarterItem.stringID, 1, RecipeTechRegistry.WORKSTATION,
 				ingredient(stringStringID, 1),
 				ingredient("dsanyplank", 1),
@@ -41,6 +47,11 @@ public class DSRecipeRegistry {
 				ingredient(stringStringID, 4),
 				ingredient(woodenshaftStringID, 1),
 				ingredient(SharpenedStoneItem.stringID, 1));
+
+		register(CrudePickaxeItem.stringID, 1, RecipeTechRegistry.WORKSTATION,
+				ingredient(stringStringID, 8),
+				ingredient(SharpenedStoneItem.stringID, 2),
+				ingredient(woodenshaftStringID, 1));
 
 		register(unfiredBrickStringID, 1, CrudeWorkbenchFeature.tech, ingredient("clay", 1));
 		register(unfiredBrickStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("clay", 1));
