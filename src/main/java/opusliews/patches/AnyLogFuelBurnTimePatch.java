@@ -22,12 +22,11 @@ public class AnyLogFuelBurnTimePatch {
 			@Advice.Argument(0) boolean useFuel,
 			@Advice.Return(readOnly = false) int result
 	) {
-		result = CharcoalFuelSystem.consumeFuel(
+		result = CharcoalFuelSystem.consumeCookingFuel(
 				objectEntity.getInventory(),
 				0,
 				objectEntity.getInventory().getSize() - 1,
-				useFuel,
-				120000
+				useFuel
 		);
 	}
 }

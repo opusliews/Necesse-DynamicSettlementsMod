@@ -12,6 +12,7 @@ import net.bytebuddy.asm.Advice;
 import opusliews.breaching.WarningBellSystem;
 import opusliews.breaching.ZombieBreaching;
 import opusliews.damage.DamageRepairLevelData;
+import opusliews.progression.EarlyHealthProgressionSystem;
 
 @ModMethodPatch(
 		target = Level.class,
@@ -27,6 +28,7 @@ public class LevelObjectDamagedPatch {
 			@Advice.Argument(2) int tileX,
 			@Advice.Argument(3) int tileY,
 			@Advice.Argument(4) Attacker attacker,
+			@Advice.Argument(5) ServerClient client,
 			@Advice.Argument(6) ObjectDamageResult result
 	) {
 		if (!level.isServer() || result == null) {
@@ -35,6 +37,10 @@ public class LevelObjectDamagedPatch {
 
 		DamageRepairLevelData data = DamageRepairLevelData.get(level, true);
 		data.recordDamage(result, objectLayerID);
+
+		if (result.destroyed && client != null && object != null) {
+			EarlyHealthProgressionSystem.onOreMined(client, object.getStringID());
+		}
 
 		if (!result.destroyed || attacker == null || object == null || !(object.isFence || object instanceof DoorObject)) {
 			return;

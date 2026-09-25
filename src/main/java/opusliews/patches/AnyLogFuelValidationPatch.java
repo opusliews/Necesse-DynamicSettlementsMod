@@ -17,6 +17,6 @@ public class AnyLogFuelValidationPatch {
 			@Advice.Argument(1) InventoryItem item,
 			@Advice.Return(readOnly = false) boolean result
 	) {
-		result = CharcoalFuelSystem.isCharcoal(item);
+		result = CharcoalFuelSystem.isCookingFuel(item);
 	}
 }

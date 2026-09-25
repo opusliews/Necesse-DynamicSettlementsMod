@@ -17,12 +17,35 @@ import opusliews.trapdoor.TrapdoorSystem;
 public class TrapdoorPlayerInteractPatch {
 	@Advice.OnMethodEnter(skipOn = Advice.OnNonDefaultValue.class)
 	public static boolean onEnter(
-			@Advice.This PlayerMob player,
-			@Advice.Argument(0) int levelX,
-			@Advice.Argument(1) int levelY,
-			@Advice.Argument(2) boolean onlyItemInteract
+		@Advice.This PlayerMob player,
+		@Advice.Argument(0) int levelX,
+		@Advice.Argument(1) int levelY,
+		@Advice.Argument(2) boolean onlyItemInteract
 	) {
 		if (player.getLevel() == null) return false;
+
+		boolean trapdoorHidden = TrapdoorSystem.isTrapdoorHidden(player);
+		if (trapdoorHidden) {
+			if (onlyItemInteract) return true;
+
+			int tileX = player.getTileX();
+			int tileY = player.getTileY();
+			if (!(player.getLevel().getObject(tileX, tileY) instanceof TrapdoorObject)) return true;
+
+			LevelObject trapdoor = player.getLevel().getLevelObject(tileX, tileY);
+			if (!trapdoor.isInInteractRange(player) || !trapdoor.canInteract(player)) return true;
+
+			boolean mouseOverTrapdoor = false;
+			for (ObjectHoverHitbox box : trapdoor.getHoverHitboxes()) {
+				if (box.contains(levelX, levelY)) {
+					mouseOverTrapdoor = true;
+					break;
+				}
+			}
+
+			if (!mouseOverTrapdoor) return true;
+			return interactWithTrapdoor(player, trapdoor, tileX, tileY, levelX, levelY);
+		}
 
 		if (DeepHoleSystem.tryClientLadderInteract(player, levelX, levelY)) return true;
 		if (DeepHoleSystem.tryClientInteract(player, levelX, levelY)) return true;
@@ -47,7 +70,10 @@ public class TrapdoorPlayerInteractPatch {
 		}
 
 		if (!mouseOverTrapdoor) return hidden;
+		return interactWithTrapdoor(player, trapdoor, tileX, tileY, levelX, levelY);
+	}
 
+	public static boolean interactWithTrapdoor(PlayerMob player, LevelObject trapdoor, int tileX, int tileY, int levelX, int levelY) {
 		if (Logging.logEnabled) {
 			Logging.logMessage(
 					"[TrapdoorInteractPatch] Direct trapdoor interaction at "
@@ -60,7 +86,7 @@ public class TrapdoorPlayerInteractPatch {
 		GameEvents.triggerEvent(event);
 		if (event.isPrevented()) {
 			if (Logging.logEnabled) Logging.logMessage("[TrapdoorInteractPatch] ObjectInteractEvent was prevented");
-			return false;
+			return true;
 		}
 
 		trapdoor.interact(player);

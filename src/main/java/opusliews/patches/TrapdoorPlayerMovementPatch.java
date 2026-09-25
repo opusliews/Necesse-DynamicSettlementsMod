@@ -10,6 +10,7 @@ import opusliews.trapdoor.TrapdoorSystem;
 public class TrapdoorPlayerMovementPatch {
 	@Advice.OnMethodEnter
 	public static void onEnter(@Advice.This PlayerMob player) {
+		TrapdoorSystem.reconcilePlayerState(player);
 		DeepHoleSystem.tick(player);
 		if (!TrapdoorSystem.isHidden(player) && !DeepHoleSystem.isTransitioning(player)) return;
 		player.moveX = 0.0F;

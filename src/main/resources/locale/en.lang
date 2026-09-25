@@ -471,56 +471,73 @@ wooden=Wooden
 
 [storyguide]
 guide1title=Getting started with\nDynamic Settlements
-guide1objective=These quests will act as a guide for explaining Dynamic Settlements features.\n\nTo get started, interact [input=mouse2] a [item=surfacerocksmall] small rock
-guide2title=Sharpen the stone
-guide2objective=Obtain a [item=sharpenedstone] sharpened stone by striking [input=mouse1] a [item=surfacerocksmall] [item=surfacerock] surface rock with a [item=stone] stone.
-guide3title=Obtain wood shafts
-guide3objective=Hit [input=mouse1] a tree with a [item=sharpenedstone] sharpened stone to obtain some [item=woodenshaft] wooden shafts.
-guide4title=Obtain some grass
-guide4objective=Cut some [item=grass] surface grasses with a [item=sharpenedstone] sharpened stone.
-guide5title=Craft strings
-guide5objective=With a [item=sharpenedstone] sharpened stone in hand, interact [input=mouse2] with any tree stump to use it as a crude workbench.\n\nUse the [item=grass] grass you cut to craft [item=string] strings.
-guide6title=Craft a crude axe
-guide6objective=Use the crude workbench to craft a [item=crudeaxe] crude axe.
-guide7title=Obtain some logs
-guide7objective=Cut a few trees with your [item=crudeaxe] crude axe.
-guide8title=Obtain some planks
-guide8objective=With some <logicon> logs in hand, place them [input=mouse2] on the ground, then use your axe [input=mouse2] on them to cut some <plankicon> planks.\n\nThe same process can be used to cut planks into shafts.
-guide9title=Craft some tools
-guide9objective=Craft a [item=woodsword] wooden sword to protect yourself.\n\nYou will also need to craft a [item=woodshovel] wooden shovel.
-guide10title=Make a hole
-guide10objective=With [item=woodshovel] shovel in hand, dig [input=mouse1] to uncover dirt, and then [input=mouse2] with the shovel on the dirt to dig a [item=shallowholetile] shallow hole.\n\nThese holes are very practical. You can use them for crafting, for accessing caves, and to protect yourself in a pinch.
-guide11title=Make a trapdoor
-guide11objective=Craft a [item=trapdoor] trapdoor in your workbench. You can put this trapdoor over a [item=shallowholetile] shallow hole to create a hiding spot from enemies. However, you will need to remove the trapdoor with an axe if you want to use the hole for other purposes.
-guide12title=Find some Firemone
-guide12objective=Look for some [item=firemone] Firemone flowers. They spawn in forest biomes, you should be able to find some nearby.
-guide13title=Fire!
-guide13objective=Craft a [item=firestarter] firestarter.
-guide14title=Make some crude torches
-guide14objective=You will need some [item=crudetorch] crude torches soon, for cave explorations. You need [item=firemone] Firemone flowers to make them. To place a crude torch, you'll need to have a [item=firestarter] firestarter somewhere in your inventory. But remember these torches will last about a day and night cycle period before going out. Don't get yourself stranded in the darkness.
-guide15title=Craft a crude pickaxe
-guide15objective=Craft a [item=crudepickaxe] crude pickaxe in your workbench.
-guide16title=Make a cave ladder
-guide16objective=Craft a [item=holecaveladder] Cave Ladder in your workbench. You can put the ladder in the [item=shallowholetile] shallow hole that you dug. You can remove the ladder from the hole at any time.
-guide17title=Go spelunking
-guide17objective=Jump into the hole you dug, and [input=mouse2] interact on it with a [item=crudepickaxe] pickaxe to dig further down. But only do this after you placed a [item=holecaveladder] ladder. You'll regret it if you forget.
-guide18title=Dig some clay
-guide18objective=Inside a cave you can find some [item=clayrock] clay walls. Dig 16 pieces of [item=clay] clay with your [item=woodshovel] shovel.
-guide19title=Make some bricks and molds
-guide19objective=Use the [item=clay] clay you found to make 8 [item=unfiredbrick] Unfired Bricks. Also make a [item=unfiredsawblademold] Saw Blade Mold, a [item=unfiredthickplatemold] Thick Plate Mold, and other molds you may want later on.
-guide20title=Lets cook some food
-guide20objective=Craft a [item=campfire] campfire and a [item=roastingstation] roasting station.
-guide21title=Lets cook some clay
-guide21objective=Dig three more [item=shallowholetile] holes. In the first hole, place [input=mouse2] a stack of 32 <logicon> logs. Afterwards, cover the hole with a [item=dirtpile] pile of dirt. Use a [item=firestarter] firestarter on the covered hole to set it on fire. This will produce charcoal.\n\nFor the second and third holes, fill them up with [item=unfiredbrick] bricks and <moldicon> molds by placing them [input=mouse2] one by one (Maximum 8 per hole). Afterwards, add 16 <logicon> logs on top, and set them on fire as previously.\n\nThe cooking process will take an amount of time equivalent to a day and night cycle period, starting from when they were ignited.\n\nUse that time to collect as much [item=ironore] iron as you can, and gather some food if you need.\n\nComplete this objective by retrieving the [item=charcoal] charcoal, the [item=brick] bricks, the [item=thickplatemold] thick plate mold, and the [item=sawblademold] saw blade mold.
-
-
+guide1objective=You feel very weak. Open your Journal in the Dynamic Settlements category to learn how to get strong.\n\nPress this button to acknowledge.
+guide1button=Proceed
+guide2title=Primitive tools
+guide2objective=These quests will act as a guide for explaining Dynamic Settlements features.\n\nTo get started, interact [input=mouse2] a [item=surfacerocksmall] small rock
+guide3title=Sharpen the stone
+guide3objective=Obtain a [item=sharpenedstone] sharpened stone by striking [input=mouse1] a [item=surfacerocksmall] [item=surfacerock] surface rock with a [item=stone] stone.
+guide4title=Obtain wood shafts
+guide4objective=Hit [input=mouse1] a tree with a [item=sharpenedstone] sharpened stone to obtain some [item=woodenshaft] wooden shafts.
+guide5title=Obtain some grass
+guide5objective=Cut some [item=grass] surface grasses with a [item=sharpenedstone] sharpened stone.
+guide6title=Craft strings
+guide6objective=With a [item=sharpenedstone] sharpened stone in hand, interact [input=mouse2] with any tree stump to use it as a crude workbench.\n\nUse the [item=grass] grass you cut to craft [item=string] strings.
+guide7title=Craft a crude axe
+guide7objective=Use the crude workbench to craft a [item=crudeaxe] crude axe.
+guide8title=Obtain some logs
+guide8objective=Cut a few trees with your [item=crudeaxe] crude axe.
+guide9title=Obtain some planks
+guide9objective=With some <logicon> logs in hand, place them [input=mouse2] on the ground, then use your axe [input=mouse2] on them to cut some <plankicon> planks.\n\nThe same process can be used to cut planks into shafts.
+guide10title=Craft some tools
+guide10objective=Craft a [item=woodsword] wooden sword to protect yourself.\n\nYou will also need to craft a [item=woodshovel] wooden shovel.
+guide11title=Make a hole
+guide11objective=With [item=woodshovel] shovel in hand, dig [input=mouse1] to uncover dirt, and then [input=mouse2] with the shovel on the dirt to dig a [item=shallowholetile] shallow hole.\n\nThese holes are very practical. You can use them for crafting, for accessing caves, and to protect yourself in a pinch.
+guide12title=Make a trapdoor
+guide12objective=Craft a [item=trapdoor] trapdoor in your workbench. You can put this trapdoor over a [item=shallowholetile] shallow hole to create a hiding spot from enemies. However, you will need to remove the trapdoor with an axe if you want to use the hole for other purposes.
+guide13title=Find some Firemone
+guide13objective=Look for some [item=firemone] Firemone flowers. They spawn in forest biomes, you should be able to find some nearby.
+guide14title=Fire!
+guide14objective=Craft a [item=firestarter] firestarter.
+guide15title=Make some crude torches
+guide15objective=You will need some [item=crudetorch] crude torches soon, for cave explorations. You need [item=firemone] Firemone flowers to make them. To place a crude torch, you'll need to have a [item=firestarter] firestarter somewhere in your inventory. But remember these torches will last about a day and night cycle period before going out. Don't get yourself stranded in the darkness.
+guide16title=Craft a crude pickaxe
+guide16objective=Craft a [item=crudepickaxe] crude pickaxe in your workbench.
+guide17title=Make a cave ladder
+guide17objective=Craft a [item=holecaveladder] Cave Ladder in your workbench. You can put the ladder in the [item=shallowholetile] shallow hole that you dug. You can remove the ladder from the hole at any time.
+guide18title=Go spelunking
+guide18objective=Jump into the hole you dug, and [input=mouse2] interact on it with a [item=crudepickaxe] pickaxe to dig further down. But only do this after you placed a [item=holecaveladder] ladder. You'll regret it if you forget.
+guide19title=Dig some clay
+guide19objective=Inside a cave you can find some [item=clayrock] clay walls. Dig 16 pieces of [item=clay] clay with your [item=woodshovel] shovel.
+guide20title=Make some bricks and molds
+guide20objective=Use the [item=clay] clay you found to make 8 [item=unfiredbrick] Unfired Bricks. Also make a [item=unfiredsawblademold] Saw Blade Mold, a [item=unfiredthickplatemold] Thick Plate Mold, and other molds you may want later on.
+guide21title=Lets cook some food
+guide21objective=Craft a [item=campfire] campfire and a [item=roastingstation] roasting station.
 guide22title=Lets cook some clay
-guide22objective=Dig three more [item=shallowholetile] holes. In the first hole, place [input=mouse2] a stack of 32 <logicon> logs. Afterwards, cover the hole with a [item=dirtpile] pile of dirt. Use a [item=firestarter] firestarter on the covered hole to set it on fire. This will produce charcoal.\n\nFor the second and third holes, fill them up with [item=unfiredbrick] bricks and <moldicon> molds by placing them [input=mouse2] one by one (Maximum 8 per hole). Afterwards, add 16 <logicon> logs on top, and set them on fire as previously.\n\nThe cooking process will take an amount of time equivalent to a day and night cycle period, starting from when they were ignited.\n\nUse that time to collect as much [item=ironore] iron as you can, and gather some food if you need.\n\nComplete this objective by retrieving the [item=charcoal] charcoal, the [item=brick] bricks, the [item=thickplatemold] thick plate mold, and the [item=sawblademold] saw blade mold.
-
-
-guide24title=Lets cook some metal
-guide24objective=Craft a [item=forge] forge.\n\nForges require charcoal to run. Use the crafting guide book to see what you can make with each mold. For now, make a [item=thickironplate] thick iron plate, and a [item=sawblade] saw blade.
+guide22objective=You have a new Journal entry for Dynamic Settlements. These will help guide you through some mechanics.\n\nTo complete this objective, complete the new Journal entry.
+guide23title=Lets cook some metal
+guide23objective=Craft a [item=forge] forge.\n\nForges require charcoal to run. Use the crafting guide book to see what you can make with each mold. For now, make a [item=thickironplate] thick iron plate, and a [item=sawblade] saw blade.
+guide24title=Lets work with metal
+guide24objective=Make a crude anvil by placing [input=mouse2] a [item=thickironplate] thick iron plate over a tree stump.\n\nYou don't have a hammer, so you'll have to make do. With a [item=stone] stone in hand, interact with the crude anvil to use it.
 guide25title=Lets cook together
-guide25objective=A core feature of Dynamic Settlements is Workstation Linking. Lets start easy, an example scenario.\n\nTo craft a metal plate in an anvil, it is required to heat up the metal, and shape it while softer. We call this a Forge Requiring Recipe, or FRR for short.\n\nTo setup crafting an FRR, all you need to do is open the anvil UI and link the anvil to a nearby forge. This allows you to craft FRRs.\n\nTo proceed, craft a [item=metalworkinghammer] Metalworking hammer.
+guide25objective=Complete the new Journal Entry to proceed.
 guide26title=Make a proper anvil
 guide26objective=Craft an [item=iron anvil] iron anvil.
+
+[journalguide]
+categorytitle=Dynamic Settlements
+earlyhealthtitle=Growing Stronger
+earlyhealthbody=You don't feel healthy. Complete the goals below to grow stronger.
+earlyhealthkills=Kill hostile mobs
+earlyhealthore=Mine copper, iron, or gold ore rocks
+earlyhealthfoods=Eat different foods (no raw meat)
+earlyhealthcave=Spent time in caves without dying
+journalguide22=Lets cook some clay
+journalguide22title=Lets cook some clay
+journalguide22body=In Dynamic Settlements you can make charcoal using a Charcoal Pit, and you can cook bricks and molds using a Clay Firing Pit. They work similarly, by digging holes and filling them with the items you want to process.\n\nDig three [item=shallowholetile] holes. In the first hole, place [input=mouse2] a stack of 32 <logicon> logs. Afterwards, cover the hole with a [item=dirtpile] pile of dirt. Use a [item=firestarter] firestarter on the covered hole to set it on fire. This will produce charcoal.\n\nFor the second and third holes, fill them up with [item=unfiredbrick] bricks and <moldicon> molds by placing them [input=mouse2] one by one (Maximum 8 per hole). Afterwards, add 16 <logicon> logs on top, and set them on fire as previously.\n\nThe cooking process will take an amount of time equivalent to a day and night cycle period, starting from when they were ignited.\n\nUse that time to collect as much [item=ironore] iron as you can, and gather some food if you need.\n\nComplete this objective by retrieving the items below.
+journalguide25=Lets cook together
+journalguide25title=Lets cook together
+journalguide25body=A core feature of Dynamic Settlements is Workstation Linking. Lets start easy, with an example scenario.\n\nTo craft a metal plate in an anvil, it is required to heat up the metal, and shape it while softer. We call this a Forge Requiring Recipe, or FRR for short.\n\nTo setup crafting a FRR, all you need to do is open the anvil UI and link the anvil to a nearby forge. This allows you to craft FRRs.\n\nTo proceed, craft a [item=metalworkhammer] Metalworking hammer.
+completedbutton=Completed
+continuebutton=Continue
+requireditems=Required items:

@@ -20,6 +20,44 @@ public class TrapdoorSystem {
 		);
 	}
 
+
+	public static boolean hasHiddenPlayerAt(Level level, int tileX, int tileY) {
+		if (level == null) return false;
+		return level.entityManager.players.streamInRegionsInTileRange(tileX * 32 + 16, tileY * 32 + 16, 1)
+				.anyMatch(player -> isTrapdoorHidden(player)
+						&& player.getTileX() == tileX
+						&& player.getTileY() == tileY);
+	}
+
+	public static void reconcilePlayerState(PlayerMob player) {
+		if (player == null || !player.isServer() || player.getLevel() == null) return;
+
+		Level level = player.getLevel();
+		int tileX = player.getTileX();
+		int tileY = player.getTileY();
+		boolean hidden = isTrapdoorHidden(player);
+		boolean openTrapdoor = level.getObjectID(tileX, tileY) == ObjectRegistry.getObjectID(TrapdoorObject.openStringID);
+		boolean closedTrapdoor = level.getObjectID(tileX, tileY) == ObjectRegistry.getObjectID(TrapdoorObject.closedStringID);
+
+		if (hidden) {
+			if (closedTrapdoor) return;
+
+			if (openTrapdoor) {
+				level.setObject(tileX, tileY, ObjectRegistry.getObjectID(TrapdoorObject.closedStringID), 0);
+				level.sendObjectUpdatePacket(tileX, tileY);
+				return;
+			}
+
+			player.buffManager.removeBuff(TrapdoorHiddenBuff.stringID, true);
+			return;
+		}
+
+		if (closedTrapdoor && !hasHiddenPlayerAt(level, tileX, tileY)) {
+			level.setObject(tileX, tileY, ObjectRegistry.getObjectID(TrapdoorObject.openStringID), 0);
+			level.sendObjectUpdatePacket(tileX, tileY);
+		}
+	}
+
 	public static void enterTrapdoor(Level level, int tileX, int tileY, PlayerMob player) {
 		if (player == null || isHidden(player)) return;
 		if (player.getTileX() != tileX || player.getTileY() != tileY) return;

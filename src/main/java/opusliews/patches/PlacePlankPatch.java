@@ -6,6 +6,8 @@ import necesse.engine.registries.ObjectRegistry;
 import necesse.engine.util.GameMath;
 import necesse.entity.mobs.PlayerMob;
 import necesse.inventory.InventoryItem;
+import necesse.inventory.PlayerInventory;
+import necesse.inventory.PlayerInventorySlot;
 import necesse.inventory.item.toolItem.axeToolItem.AxeToolItem;
 import necesse.level.gameObject.GameObject;
 import necesse.level.maps.Level;
@@ -50,6 +52,7 @@ public class PlacePlankPatch {
 		}
 
 		if (!item.item.isGlobalIngredient("dsanyplank")) return false;
+		if (level.isProtected(tileX, tileY)) return true;
 
 		int placedObjectID = PlacedPlankRegistry.getObjectID(item.item.getStringID());
 		if (placedObjectID < 0) return false;
@@ -62,6 +65,12 @@ public class PlacePlankPatch {
 
 		placedObject.playPlaceSound(tileX, tileY);
 		level.getClient().network.sendPacket(new PacketPlacePlank(tileX, tileY));
+
+		PlayerInventorySlot selectedSlot = player.getSelectedItemSlot();
+		PlayerInventory inventory = selectedSlot.getInv(player.getInv());
+		if (inventory != null) {
+			inventory.setAmount(selectedSlot.slot, item.getAmount() - 1);
+		}
 		return true;
 	}
 

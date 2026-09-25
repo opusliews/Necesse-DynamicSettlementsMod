@@ -63,6 +63,8 @@ public final class DeepHoleSystem {
 	private static final String caveFallStartKey = "caveFallStartTime";
 	private static final String ladderDescentStartKey = "ladderDescentStartTime";
 	private static final String ladderDescentTravelStartedKey = "ladderDescentTravelStarted";
+	private static final String ladderDescentTileXKey = "ladderDescentTileX";
+	private static final String ladderDescentTileYKey = "ladderDescentTileY";
 	private static final Map<PlayerMob, Long> clientFallStartTimes = Collections.synchronizedMap(new WeakHashMap<>());
 	private static final Map<PlayerMob, Long> clientCaveFallStartTimes = Collections.synchronizedMap(new WeakHashMap<>());
 	private static final Map<PlayerMob, Long> clientLadderDescentStartTimes = Collections.synchronizedMap(new WeakHashMap<>());
@@ -478,6 +480,8 @@ public final class DeepHoleSystem {
 		ActiveBuff buff = new ActiveBuff(DeepHoleLadderDescentBuff.stringID, player, Integer.MAX_VALUE, null);
 		buff.getGndData().setLong(ladderDescentStartKey, level.getWorldEntity().getTime());
 		buff.getGndData().setLong(ladderDescentTravelStartedKey, 0L);
+		buff.getGndData().setInt(ladderDescentTileXKey, tileX);
+		buff.getGndData().setInt(ladderDescentTileYKey, tileY);
 		player.buffManager.addBuff(buff, true);
 	}
 
@@ -523,6 +527,19 @@ public final class DeepHoleSystem {
 		Level level = player.getLevel();
 		if (level == null) return;
 
+		ActiveBuff buff = player.buffManager.getBuff(DeepHoleLadderDescentBuff.stringID);
+		if (buff == null) return;
+
+		int tileX = buff.getGndData().getInt(ladderDescentTileXKey, player.getTileX());
+		int tileY = buff.getGndData().getInt(ladderDescentTileYKey, player.getTileY());
+		float centerX = tileX * 32.0F + 16.0F;
+		float centerY = tileY * 32.0F + 16.0F;
+
+		if (Math.abs(player.getX() - centerX) > 0.1F || Math.abs(player.getY() - centerY) > 0.1F) {
+			player.setPos(centerX, centerY, true);
+			if (level.isServer()) player.sendMovementPacket(true);
+		}
+
 		player.moveX = 0.0F;
 		player.moveY = 0.0F;
 		player.dx = 0.0F;
@@ -530,8 +547,6 @@ public final class DeepHoleSystem {
 		player.setDir(0);
 
 		if (!level.isServer()) return;
-		ActiveBuff buff = player.buffManager.getBuff(DeepHoleLadderDescentBuff.stringID);
-		if (buff == null) return;
 
 		long startTime = buff.getGndData().getLong(ladderDescentStartKey, level.getWorldEntity().getTime());
 		if (level.getWorldEntity().getTime() - startTime < ladderDescentDuration) return;
@@ -548,8 +563,13 @@ public final class DeepHoleSystem {
 		Level sourceLevel = player.getLevel();
 		if (sourceLevel == null || !sourceLevel.isServer()) return;
 
-		int tileX = player.getTileX();
-		int tileY = player.getTileY();
+		ActiveBuff descentBuff = player.buffManager.getBuff(DeepHoleLadderDescentBuff.stringID);
+		int tileX = descentBuff == null
+				? player.getTileX()
+				: descentBuff.getGndData().getInt(ladderDescentTileXKey, player.getTileX());
+		int tileY = descentBuff == null
+				? player.getTileY()
+				: descentBuff.getGndData().getInt(ladderDescentTileYKey, player.getTileY());
 		int ladderUpID = ObjectRegistry.getObjectID(HoleCaveLadderUpObject.stringID);
 		int vanillaLadderUpID = ObjectRegistry.getObjectID(sourceLevel.isBasicCaveLevel() ? "deepcaveladder" : "ladderup");
 

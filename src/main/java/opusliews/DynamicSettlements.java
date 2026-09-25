@@ -371,12 +371,16 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketCrudeWorkbenchOutput.class);
 		PacketRegistry.registerPacket(PacketCrudeAnvilOutput.class);
 		PacketRegistry.registerPacket(PacketCompleteGuideObjective.class);
+		PacketRegistry.registerPacket(PacketCompleteJournalSection.class);
+		PacketRegistry.registerPacket(PacketEarlyProgressionSync.class);
 		PacketRegistry.registerPacket(PacketSettlementStockRequest.class);
 		PacketRegistry.registerPacket(PacketSettlementStockUpdate.class);
 		PacketRegistry.registerPacket(PacketSettlementStockSync.class);
 
 		CraftingStationFeature.register();
 		CraftingTasksFeature.register();
+
+		DSJournalEntryRegistry.registerEntries();
 	}
 
 	public void postInit() {

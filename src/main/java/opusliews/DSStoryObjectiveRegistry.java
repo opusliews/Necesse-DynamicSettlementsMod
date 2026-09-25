@@ -17,14 +17,11 @@ import static necesse.engine.storyObjectives.objectives.CraftPickaxeStoryObjecti
 
 public class DSStoryObjectiveRegistry {
 	public static void registerObjectives() {
-		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
+		GuideStoryObjectiveRegistry.registerButtonBeforeFirstVanilla(
 				"guide1",
 				new LocalMessage("storyguide", "guide1title"),
 				new LocalMessage("storyguide", "guide1objective"),
-				objective -> objective.getPlayer().getInv().hasAnyItem(
-						false, false, false, false, "storyguide",
-						item -> item.item.getStringID().equals("stone")
-				)
+				new LocalMessage("storyguide", "guide1button")
 		);
 
 		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
@@ -33,7 +30,7 @@ public class DSStoryObjectiveRegistry {
 				new LocalMessage("storyguide", "guide2objective"),
 				objective -> objective.getPlayer().getInv().hasAnyItem(
 						false, false, false, false, "storyguide",
-						item -> item.item.getStringID().equals("sharpenedstone")
+						item -> item.item.getStringID().equals("stone")
 				)
 		);
 
@@ -43,7 +40,7 @@ public class DSStoryObjectiveRegistry {
 				new LocalMessage("storyguide", "guide3objective"),
 				objective -> objective.getPlayer().getInv().hasAnyItem(
 						false, false, false, false, "storyguide",
-						item -> item.item.getStringID().equals("woodenshaft")
+						item -> item.item.getStringID().equals("sharpenedstone")
 				)
 		);
 
@@ -53,7 +50,7 @@ public class DSStoryObjectiveRegistry {
 				new LocalMessage("storyguide", "guide4objective"),
 				objective -> objective.getPlayer().getInv().hasAnyItem(
 						false, false, false, false, "storyguide",
-						item -> item.item.getStringID().equals("grass")
+						item -> item.item.getStringID().equals("woodenshaft")
 				)
 		);
 
@@ -63,7 +60,7 @@ public class DSStoryObjectiveRegistry {
 				new LocalMessage("storyguide", "guide5objective"),
 				objective -> objective.getPlayer().getInv().hasAnyItem(
 						false, false, false, false, "storyguide",
-						item -> item.item.getStringID().equals("string")
+						item -> item.item.getStringID().equals("grass")
 				)
 		);
 
@@ -73,7 +70,7 @@ public class DSStoryObjectiveRegistry {
 				new LocalMessage("storyguide", "guide6objective"),
 				objective -> objective.getPlayer().getInv().hasAnyItem(
 						false, false, false, false, "storyguide",
-						item -> item.item.getStringID().equals("crudeaxe")
+						item -> item.item.getStringID().equals("string")
 				)
 		);
 
@@ -81,6 +78,16 @@ public class DSStoryObjectiveRegistry {
 				"guide7",
 				new LocalMessage("storyguide", "guide7title"),
 				new LocalMessage("storyguide", "guide7objective"),
+				objective -> objective.getPlayer().getInv().hasAnyItem(
+						false, false, false, false, "storyguide",
+						item -> item.item.getStringID().equals("crudeaxe")
+				)
+		);
+
+		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
+				"guide8",
+				new LocalMessage("storyguide", "guide8title"),
+				new LocalMessage("storyguide", "guide8objective"),
 				objective -> objective.getPlayer().getInv().hasAnyItem(
 						false, false, false, false, "storyguide",
 						item -> item.item.isGlobalIngredient("anylog")
@@ -111,9 +118,9 @@ public class DSStoryObjectiveRegistry {
 				"unfiredsawblademold"
 		);
 				GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
-				"guide8",
-				new LocalMessage("storyguide", "guide8title"),
-				new LocalMessage("storyguide", "guide8objective",
+				"guide9",
+				new LocalMessage("storyguide", "guide9title"),
+				new LocalMessage("storyguide", "guide9objective",
 					new Object[]{
 							"logicon", logIcon,
 							"plankicon", plankIcon
@@ -125,116 +132,96 @@ public class DSStoryObjectiveRegistry {
 		);
 
 		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
-				"guide9",
-				new LocalMessage("storyguide", "guide9title"),
-				new LocalMessage("storyguide", "guide9objective"),
-				objective -> hasItem(objective.getPlayer(), "woodsword")
-						&& hasItem(objective.getPlayer(), "woodshovel")
-		);
-
-		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
 				"guide10",
 				new LocalMessage("storyguide", "guide10title"),
 				new LocalMessage("storyguide", "guide10objective"),
-				objective -> hasNearbyTile(objective.getPlayer(), "shallowholetile", 4)
+				objective -> hasItem(objective.getPlayer(), "woodsword")
+						&& hasItem(objective.getPlayer(), "woodshovel")
 		);
 
 		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
 				"guide11",
 				new LocalMessage("storyguide", "guide11title"),
 				new LocalMessage("storyguide", "guide11objective"),
-				objective -> hasItem(objective.getPlayer(), "trapdoor")
+				objective -> hasNearbyTile(objective.getPlayer(), "shallowholetile", 4)
 		);
 
 		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
 				"guide12",
 				new LocalMessage("storyguide", "guide12title"),
 				new LocalMessage("storyguide", "guide12objective"),
-				objective -> hasItem(objective.getPlayer(), "firemone")
+				objective -> hasItem(objective.getPlayer(), "trapdoor")
 		);
 
 		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
 				"guide13",
 				new LocalMessage("storyguide", "guide13title"),
 				new LocalMessage("storyguide", "guide13objective"),
-				objective -> hasItem(objective.getPlayer(), "firestarter")
+				objective -> hasItem(objective.getPlayer(), "firemone")
 		);
 
 		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
 				"guide14",
 				new LocalMessage("storyguide", "guide14title"),
 				new LocalMessage("storyguide", "guide14objective"),
-				objective -> hasItem(objective.getPlayer(), "crudetorch")
+				objective -> hasItem(objective.getPlayer(), "firestarter")
 		);
 
 		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
 				"guide15",
 				new LocalMessage("storyguide", "guide15title"),
 				new LocalMessage("storyguide", "guide15objective"),
-				objective -> hasItem(objective.getPlayer(), "crudepickaxe")
+				objective -> hasItem(objective.getPlayer(), "crudetorch")
 		);
 
 		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
 				"guide16",
 				new LocalMessage("storyguide", "guide16title"),
 				new LocalMessage("storyguide", "guide16objective"),
-				objective -> hasItem(objective.getPlayer(), "holecaveladder")
+				objective -> hasItem(objective.getPlayer(), "crudepickaxe")
 		);
 
 		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
 				"guide17",
 				new LocalMessage("storyguide", "guide17title"),
 				new LocalMessage("storyguide", "guide17objective"),
-				objective -> objective.getPlayer().getLevel() != null
-						&& objective.getPlayer().getLevel().isBasicCaveLevel()
+				objective -> hasItem(objective.getPlayer(), "holecaveladder")
 		);
 
 		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
 				"guide18",
 				new LocalMessage("storyguide", "guide18title"),
 				new LocalMessage("storyguide", "guide18objective"),
-				objective -> getItemAmount(objective.getPlayer(), "clay") >= 16
+				objective -> objective.getPlayer().getLevel() != null
+						&& objective.getPlayer().getLevel().isBasicCaveLevel()
 		);
 
 		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
 				"guide19",
 				new LocalMessage("storyguide", "guide19title"),
 				new LocalMessage("storyguide", "guide19objective"),
-				objective -> getItemAmount(objective.getPlayer(), "unfiredbrick") >= 8
-						&& hasItem(objective.getPlayer(), "unfiredsawblademold")
-						&& hasItem(objective.getPlayer(), "unfiredthickplatemold")
+				objective -> getItemAmount(objective.getPlayer(), "clay") >= 16
 		);
 
 		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
 				"guide20",
 				new LocalMessage("storyguide", "guide20title"),
 				new LocalMessage("storyguide", "guide20objective"),
-				objective -> hasItem(objective.getPlayer(), "campfire")
-						&& hasItem(objective.getPlayer(), "roastingstation")
+				objective -> getItemAmount(objective.getPlayer(), "unfiredbrick") >= 8
+						&& hasItem(objective.getPlayer(), "unfiredsawblademold")
+						&& hasItem(objective.getPlayer(), "unfiredthickplatemold")
 		);
 
 		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
 				"guide21",
 				new LocalMessage("storyguide", "guide21title"),
-				new LocalMessage("storyguide", "guide21objective",
-						new Object[]{
-								"logicon", logIcon,
-								"moldicon", moldIcon}),
-				objective -> getItemAmount(objective.getPlayer(), "brick") >= 8
-						&& hasItem(objective.getPlayer(), "sawblademold")
-						&& hasItem(objective.getPlayer(), "thickplatemold")
-						&& hasItem(objective.getPlayer(), "charcoal")
+				new LocalMessage("storyguide", "guide21objective"),
+				objective -> hasItem(objective.getPlayer(), "campfire")
+						&& hasItem(objective.getPlayer(), "roastingstation")
 		);
 
-//		GuideStoryObjectiveRegistry.registerButtonBeforeFirstVanilla(
-//				"guide22",
-//				new LocalMessage("storyguide", "guide22title"),
-//				new LocalMessage("storyguide", "guide22objective"),
-//				new LocalMessage("storyguide", "guide22button")
-//		);
-
 		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
-				"guide22",
+					"guide22",
 				new LocalMessage("storyguide", "guide22title"),
 				new LocalMessage("storyguide", "guide22objective"),
 				objective -> false
@@ -244,7 +231,7 @@ public class DSStoryObjectiveRegistry {
 				"guide23",
 				new LocalMessage("storyguide", "guide23title"),
 				new LocalMessage("storyguide", "guide23objective"),
-				objective -> hasItem(objective.getPlayer(), "ironthickplate")
+				objective -> hasItem(objective.getPlayer(), "thickironplate")
 						&& hasItem(objective.getPlayer(), "sawblade")
 		);
 
@@ -252,13 +239,20 @@ public class DSStoryObjectiveRegistry {
 				"guide24",
 				new LocalMessage("storyguide", "guide24title"),
 				new LocalMessage("storyguide", "guide24objective"),
-				objective -> hasItem(objective.getPlayer(), "metalworkinghammer")
+				objective -> false
 		);
 
 		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
 				"guide25",
 				new LocalMessage("storyguide", "guide25title"),
 				new LocalMessage("storyguide", "guide25objective"),
+				objective -> false
+		);
+
+		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
+				"guide26",
+				new LocalMessage("storyguide", "guide26title"),
+				new LocalMessage("storyguide", "guide26objective"),
 				objective -> hasItem(objective.getPlayer(), "ironanvil")
 		);
 	}

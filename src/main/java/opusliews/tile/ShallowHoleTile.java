@@ -13,10 +13,12 @@ import necesse.gfx.drawables.OrderableDrawables;
 import necesse.gfx.gameTexture.GameTexture;
 import necesse.gfx.gameTexture.GameTextureSection;
 import necesse.level.gameTile.DirtTile;
+import necesse.level.gameObject.GameObject;
 import necesse.level.gameTile.GameTile;
 import necesse.level.maps.Level;
 import necesse.level.maps.regionSystem.SimulatePriorityList;
 import opusliews.deephole.DeepHoleSystem;
+import opusliews.object.TrapdoorObject;
 
 public class ShallowHoleTile extends DirtTile {
 	public static final String stringID = "shallowholetile";
@@ -64,6 +66,11 @@ public class ShallowHoleTile extends DirtTile {
 	}
 
 	public boolean shouldMobSinkVisually(Mob mob) {
+		if (mob == null || mob.getLevel() == null) return false;
+
+		GameObject object = mob.getLevel().getObject(mob.getTileX(), mob.getTileY());
+		if (object instanceof TrapdoorObject && ((TrapdoorObject)object).isClosed()) return false;
+
 		return isMobInSinkingArea(mob);
 	}
 

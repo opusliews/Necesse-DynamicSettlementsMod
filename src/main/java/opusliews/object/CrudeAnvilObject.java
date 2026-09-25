@@ -148,10 +148,17 @@ public class CrudeAnvilObject extends IronAnvilObject {
 
 	@Override
 	public void interact(Level level, int tileX, int tileY, PlayerMob player) {
+		System.out.println(
+				"CrudeAnvil interact: server=" + level.isServer()
+						+ ", serverClient=" + player.isServerClient()
+		);
+
 		if (level.isServer() && player.isServerClient()) {
+			System.out.println("Trying to complete guide24");
+
 			GuideStoryObjectiveRegistry.complete(
 					player.getServerClient(),
-					"guide22"
+					"guide24"
 			);
 		}
 

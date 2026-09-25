@@ -5,6 +5,8 @@ import necesse.engine.registries.ObjectRegistry;
 import necesse.engine.util.GameMath;
 import necesse.entity.mobs.PlayerMob;
 import necesse.inventory.InventoryItem;
+import necesse.inventory.PlayerInventory;
+import necesse.inventory.PlayerInventorySlot;
 import necesse.level.gameObject.GameObject;
 import necesse.level.maps.Level;
 import net.bytebuddy.asm.Advice;
@@ -37,7 +39,7 @@ public class PlaceLogPatch {
 		int tileX = GameMath.getTileCoordinate(levelX);
 		int tileY = GameMath.getTileCoordinate(levelY);
 
-		if (!level.isTileWithinBounds(tileX, tileY)) {
+		if (!level.isTileWithinBounds(tileX, tileY) || level.isProtected(tileX, tileY)) {
 			return true;
 		}
 
@@ -65,6 +67,12 @@ public class PlaceLogPatch {
 		level.getClient().network.sendPacket(
 				new opusliews.network.PacketPlaceLog(tileX, tileY)
 		);
+
+		PlayerInventorySlot selectedSlot = player.getSelectedItemSlot();
+		PlayerInventory inventory = selectedSlot.getInv(player.getInv());
+		if (inventory != null) {
+			inventory.setAmount(selectedSlot.slot, item.getAmount() - 1);
+		}
 
 		return true;
 	}

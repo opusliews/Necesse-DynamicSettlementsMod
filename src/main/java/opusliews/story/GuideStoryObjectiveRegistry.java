@@ -163,14 +163,38 @@ public class GuideStoryObjectiveRegistry {
 	}
 
 	public static void complete(ServerClient client, String stringID) {
-		if (client == null) return;
+		if (client == null) {
+			System.out.println("complete(" + stringID + "): client is null");
+			return;
+		}
 
 		int objectiveID = StoryObjectiveRegistry.getObjectiveID(stringID);
-		if (objectiveID < 0) return;
+		System.out.println("complete(" + stringID + "): objectiveID=" + objectiveID);
+
+		if (objectiveID < 0) {
+			System.out.println("Objective is not registered");
+			return;
+		}
 
 		StoryObjective objective = client.storyManager.getObjective(objectiveID);
+
+		System.out.println(
+				"Objective=" + objective
+						+ ", class=" + (objective == null ? "null" : objective.getClass().getName())
+						+ ", completed=" + (objective != null && objective.isCompleted())
+						+ ", claimed=" + (objective != null && objective.isClaimed())
+		);
+
 		if (objective instanceof GuideStoryObjective) {
+			System.out.println("Calling completeGuide()");
 			((GuideStoryObjective)objective).completeGuide();
+
+			System.out.println(
+					"After completeGuide: completed=" + objective.isCompleted()
+							+ ", claimed=" + objective.isClaimed()
+			);
+		} else {
+			System.out.println("NOT a GuideStoryObjective");
 		}
 	}
 

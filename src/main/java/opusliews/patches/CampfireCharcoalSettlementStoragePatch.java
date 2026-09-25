@@ -2,6 +2,7 @@ package opusliews.patches;
 
 import necesse.engine.modLoader.annotations.ModMethodPatch;
 import necesse.entity.objectEntity.CampfireObjectEntity;
+import necesse.inventory.InventoryItem;
 import necesse.inventory.item.Item;
 import net.bytebuddy.asm.Advice;
 import opusliews.earlygame.CharcoalFuelSystem;
@@ -17,6 +18,6 @@ public class CampfireCharcoalSettlementStoragePatch {
 			@Advice.Argument(0) Item item,
 			@Advice.Return(readOnly = false) boolean result
 	) {
-		result = item == null || !CharcoalFuelSystem.charcoalStringID.equals(item.getStringID());
+		result = item == null || !CharcoalFuelSystem.isCookingFuel(new InventoryItem(item));
 	}
 }

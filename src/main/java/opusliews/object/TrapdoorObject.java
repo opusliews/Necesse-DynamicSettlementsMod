@@ -98,18 +98,17 @@ public class TrapdoorObject extends GameObject {
 	}
 
 	@Override
+	public void tick(Level level, int x, int y) {
+		if (!closed || !level.isServer()) return;
+		if (TrapdoorSystem.hasHiddenPlayerAt(level, x, y)) return;
+
+		level.setObject(x, y, necesse.engine.registries.ObjectRegistry.getObjectID(openStringID), 0);
+		level.sendObjectUpdatePacket(x, y);
+	}
+
+	@Override
 	public boolean canInteract(Level level, int x, int y, PlayerMob player) {
-		boolean sameTile = player.getTileX() == x && player.getTileY() == y;
-		if (Logging.logEnabled) {
-			Logging.logMessage(
-					"[TrapdoorObject] canInteract: object=" + x + "," + y
-							+ " player=" + player.getTileX() + "," + player.getTileY()
-							+ " closed=" + closed
-							+ " hidden=" + TrapdoorSystem.isHidden(player)
-							+ " result=" + sameTile
-			);
-		}
-		return sameTile;
+		return player.getTileX() == x && player.getTileY() == y;
 	}
 
 	@Override

@@ -113,8 +113,8 @@ public class DSRecipeRegistry {
 		register("woodshovel", 1, RecipeTechRegistry.WORKSTATION, ingredient("dsanyplank", 1));
 		register("woodsword", 1, CrudeWorkbenchFeature.tech, ingredient("dsanyplank", 1));
 		register("woodsword", 1, RecipeTechRegistry.WORKSTATION, ingredient("dsanyplank", 1));
-		register("forge", 1, CrudeWorkbenchFeature.tech, ingredient("brick", 1));
-		register("forge", 1, RecipeTechRegistry.WORKSTATION, ingredient("brick", 1));
+		register("forge", 1, CrudeWorkbenchFeature.tech, ingredient("brick", 8));
+		register("forge", 1, RecipeTechRegistry.WORKSTATION, ingredient("brick", 8));
 		register("campfire", 1, CrudeWorkbenchFeature.tech, ingredientsFromScript("{{anylog, 10}}"));
 		register("roastingstation", 1, CrudeWorkbenchFeature.tech, ingredientsFromScript("{{woodenshaft, 5}, {string, 4}}"));
 		register("workstationduo", 1, CrudeWorkbenchFeature.tech, ingredientsFromScript("{{woodenshaft, 4}, {nail, 16}, {dsanyplank, 4}, {saw, 1}}"));
@@ -202,6 +202,8 @@ public class DSRecipeRegistry {
 		register(waxStringID, 1, RecipeTechRegistry.COOKING_POT, ingredient(honeycombFragmentStringID, 1));
 		register("metalworkhammer", 1, CrudeAnvilFeature.tech, ingredient("ironbar", 2), ingredient(woodenshaftStringID, 1));
 		register("metalworkhammer", 1, RecipeTechRegistry.IRON_ANVIL, ingredient("ironbar", 2), ingredient(woodenshaftStringID, 1));
+		register("metalworkhammer", 1, CrudeAnvilFeature.tech, ingredient("copperbar", 2), ingredient(woodenshaftStringID, 1));
+		register("metalworkhammer", 1, RecipeTechRegistry.IRON_ANVIL, ingredient("copperbar", 2), ingredient(woodenshaftStringID, 1));
 		register("ironanvil", 1, CrudeAnvilFeature.tech, ingredientsFromScript("{{thickironplate, 2},{metalworkhammer, 1}}"));
 		register("ironanvil", 1, RecipeTechRegistry.IRON_ANVIL, ingredientsFromScript("{{thickironplate, 2},{metalworkhammer, 1}}"));
 
