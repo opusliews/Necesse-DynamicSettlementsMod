@@ -25,6 +25,7 @@ public final class WorldgenEquipmentTierMap {
 				"mousebeam", "mousetest", "ninjastar", "nunchucks", "rollingpin", "sapphirerevolver",
 				"sapphirestaff", "sharkarmorboots", "sharkarmorchestplate", "sharkarmorhelmet", "sickle", "snowlauncher",
 				"soldierboots", "soldiercap", "soldierchestplate", "soldierhelmet", "sparkler", "spiderboomerang",
+				"stealthbaskethelmet",
 				"spiderboots", "spiderchestplate", "spiderclaw", "spiderhelmet", "spiderstaff", "sprinkler",
 				"stabbybush", "survivorwhip", "syndicatebat", "thiefsboots", "thiefscloak", "thiefscowl",
 				"venomstaff", "voidboomerang", "voidboots", "voidgreatbow", "voidhat", "voidmask",

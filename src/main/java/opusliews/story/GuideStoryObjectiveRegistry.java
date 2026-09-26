@@ -10,6 +10,7 @@ import necesse.engine.network.server.ServerClient;
 import necesse.engine.registries.StoryObjectiveRegistry;
 import necesse.engine.storyObjectives.StoryObjective;
 import necesse.inventory.lootTable.LootTable;
+import opusliews.logging.Logging;
 
 public class GuideStoryObjectiveRegistry {
 	public static final String firstVanillaObjectiveStringID = "gettingstarted";
@@ -164,21 +165,21 @@ public class GuideStoryObjectiveRegistry {
 
 	public static void complete(ServerClient client, String stringID) {
 		if (client == null) {
-			System.out.println("complete(" + stringID + "): client is null");
+			Logging.logMessage("complete(" + stringID + "): client is null");
 			return;
 		}
 
 		int objectiveID = StoryObjectiveRegistry.getObjectiveID(stringID);
-		System.out.println("complete(" + stringID + "): objectiveID=" + objectiveID);
+		Logging.logMessage("complete(" + stringID + "): objectiveID=" + objectiveID);
 
 		if (objectiveID < 0) {
-			System.out.println("Objective is not registered");
+			Logging.logMessage("Objective is not registered");
 			return;
 		}
 
 		StoryObjective objective = client.storyManager.getObjective(objectiveID);
 
-		System.out.println(
+		Logging.logMessage(
 				"Objective=" + objective
 						+ ", class=" + (objective == null ? "null" : objective.getClass().getName())
 						+ ", completed=" + (objective != null && objective.isCompleted())
@@ -186,15 +187,15 @@ public class GuideStoryObjectiveRegistry {
 		);
 
 		if (objective instanceof GuideStoryObjective) {
-			System.out.println("Calling completeGuide()");
+			Logging.logMessage("Calling completeGuide()");
 			((GuideStoryObjective)objective).completeGuide();
 
-			System.out.println(
+			Logging.logMessage(
 					"After completeGuide: completed=" + objective.isCompleted()
 							+ ", claimed=" + objective.isClaimed()
 			);
 		} else {
-			System.out.println("NOT a GuideStoryObjective");
+			Logging.logMessage("NOT a GuideStoryObjective");
 		}
 	}
 

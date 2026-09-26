@@ -37,7 +37,12 @@ public final class WorldgenLockedContainerSystem {
 
 	public static boolean handleInteract(LevelObject levelObject, PlayerMob player) {
 		if (levelObject == null || player == null) return false;
+
 		Level level = levelObject.level;
+		if (level.isServer()) {
+			logContainerContents(level, levelObject.tileX, levelObject.tileY);
+		}
+
 		String objectID = levelObject.object == null ? "null" : levelObject.object.getStringID();
 		Logging.logMessage("[WorldgenGatingDebug] INTERACT hook side=" + side(level)
 				+ " level=" + level.getIdentifier()
@@ -442,5 +447,50 @@ public final class WorldgenLockedContainerSystem {
 				GameResources.cling,
 				SoundEffect.effect(tileX * 32 + 16, tileY * 32 + 16).volume(0.65F).pitch(0.85F)
 		);
+	}
+
+	private static void logContainerContents(Level level, int tileX, int tileY) {
+		if (!Logging.logEnabled)
+			return;
+
+		ObjectEntity entity = level.entityManager.getObjectEntity(tileX, tileY);
+
+		if (entity == null) {
+			Logging.logMessage("[WorldgenGatingDebug] CONTAINER CONTENTS pos="
+					+ tileX + "," + tileY + " no-object-entity");
+			return;
+		}
+
+		if (!entity.implementsOEInventory()) {
+			Logging.logMessage("[WorldgenGatingDebug] CONTAINER CONTENTS pos="
+					+ tileX + "," + tileY + " not-inventory");
+			return;
+		}
+
+		Inventory inventory = ((OEInventory)entity).getInventory();
+
+		if (inventory == null) {
+			Logging.logMessage("[WorldgenGatingDebug] CONTAINER CONTENTS pos="
+					+ tileX + "," + tileY + " inventory=null");
+			return;
+		}
+
+		Logging.logMessage("[WorldgenGatingDebug] CONTAINER CONTENTS BEGIN pos="
+				+ tileX + "," + tileY + " size=" + inventory.getSize());
+
+		for (int slot = 0; slot < inventory.getSize(); slot++) {
+			InventoryItem item = inventory.getItem(slot);
+			if (item == null) continue;
+
+			Logging.logMessage("[WorldgenGatingDebug] CONTAINER ITEM pos="
+					+ tileX + "," + tileY
+					+ " slot=" + slot
+					+ " item=" + item.item.getStringID()
+					+ " amount=" + item.getAmount()
+					+ " resolvedTier=" + WorldgenContentTierResolver.getItemTier(item));
+		}
+
+		Logging.logMessage("[WorldgenGatingDebug] CONTAINER CONTENTS END pos="
+				+ tileX + "," + tileY);
 	}
 }

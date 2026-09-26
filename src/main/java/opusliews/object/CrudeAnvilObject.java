@@ -1,8 +1,5 @@
 package opusliews.object;
 
-import java.awt.Color;
-import java.awt.Rectangle;
-import java.util.List;
 import necesse.engine.gameLoop.tickManager.Performance;
 import necesse.engine.gameLoop.tickManager.TickManager;
 import necesse.engine.localization.message.GameMessage;
@@ -24,9 +21,12 @@ import necesse.level.gameObject.container.IronAnvilObject;
 import necesse.level.maps.Level;
 import necesse.level.maps.light.GameLight;
 import opusliews.DSItemRegistry;
-import opusliews.container.CrudeAnvilContainer;
 import opusliews.earlygame.CrudeAnvilFeature;
+import opusliews.logging.Logging;
 import opusliews.story.GuideStoryObjectiveRegistry;
+
+import java.awt.*;
+import java.util.List;
 
 public class CrudeAnvilObject extends IronAnvilObject {
 	private final String stumpTextureName;
@@ -148,13 +148,13 @@ public class CrudeAnvilObject extends IronAnvilObject {
 
 	@Override
 	public void interact(Level level, int tileX, int tileY, PlayerMob player) {
-		System.out.println(
+		Logging.logMessage(
 				"CrudeAnvil interact: server=" + level.isServer()
 						+ ", serverClient=" + player.isServerClient()
 		);
 
 		if (level.isServer() && player.isServerClient()) {
-			System.out.println("Trying to complete guide24");
+			Logging.logMessage("Trying to complete guide24");
 
 			GuideStoryObjectiveRegistry.complete(
 					player.getServerClient(),

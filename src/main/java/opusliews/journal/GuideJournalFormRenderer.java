@@ -218,6 +218,10 @@ public class GuideJournalFormRenderer {
 				y = addProgressObjectives(section, client, contentBox, width, y, textColor);
 			}
 
+			if (section.hasItemRequirements()) {
+				y = addRequiredItems(section, client, contentBox, width, y, textColor);
+			}
+
 			if (section.hasAnyItemRequirements()) {
 				y = addAnyRequiredItems(section, client, contentBox, width, y, textColor);
 			}

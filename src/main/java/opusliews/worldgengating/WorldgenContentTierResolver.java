@@ -30,6 +30,14 @@ public final class WorldgenContentTierResolver {
 	public static WorldgenLootTier getItemTier(InventoryItem item) {
 		if (item == null || item.item == null) return null;
 
+		String itemStringID = item.item.getStringID();
+
+		WorldgenLootTier toolMapped = WorldgenToolTierMap.getTier(itemStringID);
+		if (toolMapped != null) return toolMapped;
+
+		WorldgenLootTier equipmentMapped = WorldgenEquipmentTierMap.getTier(itemStringID);
+		if (equipmentMapped != null) return equipmentMapped;
+
 		if (item.item instanceof ToolDamageItem) {
 			ToolDamageItem tool = (ToolDamageItem)item.item;
 			if (tool.getToolType(item) != ToolType.NONE) {
@@ -37,9 +45,6 @@ public final class WorldgenContentTierResolver {
 				return WorldgenLootTier.fromRequiredToolTier(toolTier);
 			}
 		}
-
-		WorldgenLootTier mapped = WorldgenEquipmentTierMap.getTier(item.item.getStringID());
-		if (mapped != null) return mapped;
 
 		if (item.item instanceof ToolItem) return fromEquipmentValue(((ToolItem)item.item).getEnchantCost(item));
 		if (item.item instanceof ArmorItem) return fromEquipmentValue(((ArmorItem)item.item).getEnchantCost(item));

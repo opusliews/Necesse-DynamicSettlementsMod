@@ -206,7 +206,7 @@ public class WorldgenGatingLevelData extends LevelData implements
 
 		WorldgenLootTier tier = WorldgenObjectClassifier.getRequiredTier(level, tileX, tileY, objectStringID, type);
 		if (tier == null) tier = WorldgenLootTier.DEMONIC;
-		tier = WorldgenLootTier.max(tier, getContentTier(tileX, tileY));
+		if (usesContentTier(type)) tier = WorldgenLootTier.max(tier, getContentTier(tileX, tileY));
 		entries.put(key(objectLayerID, tileX, tileY), new Entry(objectLayerID, tileX, tileY, objectStringID, type, tier));
 		logClassification(source, object, objectLayerID, tileX, tileY, type, tier);
 	}
@@ -221,6 +221,7 @@ public class WorldgenGatingLevelData extends LevelData implements
 	}
 
 	private void upgradeEntryTierFromContents(Entry entry, String source, boolean sync) {
+		if (!usesContentTier(entry.type)) return;
 		WorldgenLootTier contentTier = getContentTier(entry.tileX, entry.tileY);
 		WorldgenLootTier upgraded = WorldgenLootTier.max(entry.tier, contentTier);
 		if (upgraded == null || upgraded == entry.tier) return;
@@ -230,6 +231,11 @@ public class WorldgenGatingLevelData extends LevelData implements
 		if (sync && level.isServer()) {
 			level.getServer().network.sendToClientsWithTile(new PacketWorldgenGatingState(level, entry), level, entry.tileX, entry.tileY);
 		}
+	}
+
+	private static boolean usesContentTier(WorldgenGatingData.NaturalType type) {
+		return type == WorldgenGatingData.NaturalType.LOCKED_CONTAINER
+				|| type == WorldgenGatingData.NaturalType.TIED_SACK;
 	}
 
 	private WorldgenLootTier getContentTier(int tileX, int tileY) {
