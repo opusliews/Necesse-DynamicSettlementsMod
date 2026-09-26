@@ -133,10 +133,16 @@ public class EarlyHealthProgressionSystem {
 
 	public static void onPlayerDeath(PlayerMob player) {
 		if (player == null || !player.isServerClient()) return;
+		ServerClient client = player.getServerClient();
 		ProgressData data = getData(player);
-		if (!data.caveTimeRewarded) data.caveTime = 0L;
+		if (data.caveTimeRewarded) {
+			data.caveTime = Math.max(data.caveTime, getCaveTarget(client));
+		}
+		else {
+			data.caveTime = 0L;
+		}
 		data.lastWorldTime = -1L;
-		sendSync(player.getServerClient(), data, getUniqueFoodCount(player.getServerClient()));
+		sendSync(client, data, getUniqueFoodCount(client));
 	}
 
 	private static boolean isValidFoodForProgress(Item item) {
@@ -287,7 +293,9 @@ public class EarlyHealthProgressionSystem {
 			case HOSTILE_KILLS: return data.hostileKills;
 			case ORE_MINED: return data.oreMined;
 			case UNIQUE_FOODS: return getUniqueFoodCount(client);
-			case CAVE_TIME: return (int)Math.min(Integer.MAX_VALUE, data.caveTime / 1000L);
+			case CAVE_TIME:
+				if (data.caveTimeRewarded) return getGoalTarget(Goal.CAVE_TIME);
+				return (int)Math.min(Integer.MAX_VALUE, data.caveTime / 1000L);
 			default: return 0;
 		}
 	}
