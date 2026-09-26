@@ -30,6 +30,7 @@ import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
 import necesse.level.maps.levelData.settlementData.settler.romancePersonalities.PlayerRomanceManager;
 import opusliews.object.DynamicCraftingStationObjectEntity;
+import opusliews.worldgengating.WorldgenStationProgressionSystem;
 import opusliews.object.AnvilObjectEntity;
 import opusliews.crafting.CraftingTime;
 import opusliews.crafting.CraftingStoragePool;
@@ -250,6 +251,7 @@ public class DynamicCraftingStationContainer extends CraftingStationContainer {
 		resultItem.setNew(true);
 		stationEntity.setOutput(resultItem);
 		stationEntity.onPlayerCraftCompleted(client.playerMob, recipe, resultItem);
+		WorldgenStationProgressionSystem.recordCraftedRecipe(client.playerMob, recipe);
 
 		ServerClient serverClient = client.getServerClient();
 		serverClient.newStats.crafted_items.increment(1);

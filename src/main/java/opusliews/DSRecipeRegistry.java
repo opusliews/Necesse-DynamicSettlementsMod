@@ -145,6 +145,7 @@ public class DSRecipeRegistry {
 		register(goldshaftStringID, 2, RecipeTechRegistry.IRON_ANVIL, ingredient("goldbar", 1));
 		register(tungstenshaftStringID, 2, RecipeTechRegistry.TUNGSTEN_ANVIL, ingredient("tungstenbar", 1));
 		register(demonicshaftStringID, 2, RecipeTechRegistry.DEMONIC_ANVIL, ingredient("demonicbar", 1));
+		register(runicshaftStringID, 2, RecipeTechRegistry.DEMONIC_ANVIL, ingredient("runestone", 1));
 		register(ivyshaftStringID, 2, RecipeTechRegistry.DEMONIC_ANVIL, ingredient("ivybar", 1));
 		register(quartzshaftStringID, 2, RecipeTechRegistry.DEMONIC_ANVIL, ingredient("quartz", 1));
 		register(slimeshaftStringID, 2, RecipeTechRegistry.FALLEN_ANVIL, ingredient("slimematter", 1));
@@ -154,6 +155,17 @@ public class DSRecipeRegistry {
 		register(spideriteshaftStringID, 2, RecipeTechRegistry.FALLEN_ANVIL, ingredient("spideritebar", 1));
 		register(arcanicshaftStringID, 2, RecipeTechRegistry.FALLEN_ANVIL, ingredient("electrifiedmana", 1));
 		register(voidshaftStringID, 2, RecipeTechRegistry.DEMONIC_ANVIL, ingredient("demonicbar", 1), ingredient("voidshard", 1));
+
+		// Worldgen container keys. Shaft-based keys are Forge Requiring Recipes; Fossil uses its bar directly.
+		register(demonickeyStringID, 4, RecipeTechRegistry.DEMONIC_ANVIL, ingredient(demonicshaftStringID, 1));
+		register(runickeyStringID, 4, RecipeTechRegistry.DEMONIC_ANVIL, ingredient(runicshaftStringID, 1));
+		register(ivykeyStringID, 4, RecipeTechRegistry.DEMONIC_ANVIL, ingredient(ivyshaftStringID, 1));
+		register(quartzkeyStringID, 4, RecipeTechRegistry.DEMONIC_ANVIL, ingredient(quartzshaftStringID, 1));
+		register(tungstenkeyStringID, 4, RecipeTechRegistry.TUNGSTEN_ANVIL, ingredient(tungstenshaftStringID, 1));
+		register(glacialkeyStringID, 4, RecipeTechRegistry.TUNGSTEN_ANVIL, ingredient(glacialshaftStringID, 1));
+		register(dryadkeyStringID, 4, RecipeTechRegistry.TUNGSTEN_ANVIL, ingredient(dryadshaftStringID, 1));
+		register(myceliumkeyStringID, 4, RecipeTechRegistry.TUNGSTEN_ANVIL, ingredient(myceliumshaftStringID, 1));
+		register(ancientfossilkeyStringID, 4, RecipeTechRegistry.TUNGSTEN_ANVIL, ingredient("ancientfossilbar", 1));
 
 		// Plates
 		register(copperplateStringID, 1, RecipeTechRegistry.IRON_ANVIL, ingredient("copperbar", 2));

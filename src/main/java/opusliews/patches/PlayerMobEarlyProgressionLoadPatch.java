@@ -5,11 +5,14 @@ import necesse.engine.save.LoadData;
 import necesse.entity.mobs.PlayerMob;
 import net.bytebuddy.asm.Advice;
 import opusliews.progression.EarlyHealthProgressionSystem;
+import opusliews.worldgengating.WorldgenStationProgressionSystem;
 
 @ModMethodPatch(target = PlayerMob.class, name = "applyLoadData", arguments = {LoadData.class})
 public class PlayerMobEarlyProgressionLoadPatch {
 	@Advice.OnMethodExit
 	public static void onExit(@Advice.This PlayerMob player, @Advice.Argument(0) LoadData save) {
 		EarlyHealthProgressionSystem.applyLoadData(player, save);
+		WorldgenStationProgressionSystem.applyLoadData(player, save);
+		opusliews.logging.InventoryPersistenceDebug.logPlayer("WORLD_LOAD", player);
 	}
 }

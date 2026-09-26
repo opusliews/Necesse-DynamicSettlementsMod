@@ -30,6 +30,7 @@ import necesse.gfx.forms.presets.containerComponent.journal.FormJournalEntryComp
 import necesse.gfx.forms.presets.containerComponent.journal.JournalContainerForm;
 import necesse.gfx.gameFont.FontOptions;
 import necesse.gfx.ui.ButtonColor;
+import necesse.inventory.item.Item;
 import necesse.inventory.lootTable.LootList;
 import opusliews.network.PacketCompleteJournalSection;
 
@@ -59,6 +60,61 @@ public class GuideJournalFormRenderer {
 		FormBreakLine line = entries.addComponent(new FormBreakLine(FormBreakLine.ALIGN_BEGINNING, x + 10, y + height + 2, entries.getWidth() - 30, true));
 		line.color = new Color(80, 80, 80);
 		return height + 12;
+	}
+
+	public static int addAnyRequiredItems(
+			GuideJournalRegistry.SectionEntry section,
+			Client client,
+			FormContentBox contentBox,
+			int width,
+			int y,
+			Color textColor
+	) {
+		if (section.anyRequiredItemsText != null) {
+			FormLocalLabel title = new FormLocalLabel(
+					section.anyRequiredItemsText,
+					new FontOptions(16).color(textColor),
+					-1,
+					14,
+					y,
+					width - 38
+			);
+
+			contentBox.addComponent(title);
+			y += title.getHeight() + 5;
+		}
+
+		for (String itemStringID : section.anyRequiredItemStringIDs) {
+			Item item = ItemRegistry.getItem(itemStringID);
+			if (item == null) continue;
+
+			String itemName = item.getNewLocalization().translate();
+
+			FormFairTypeLabel itemLabel = new FormFairTypeLabel(
+					new StaticMessage("[item=" + itemStringID + "] " + itemName),
+					new FontOptions(16),
+					FairType.TextAlign.LEFT,
+					22,
+					y
+			);
+
+			itemLabel.setMaxWidth(width - 46);
+			itemLabel.setParsers(
+					TypeParsers.GAME_COLOR,
+					TypeParsers.ItemIcon(16, true, FairItemGlyph::onlyShowNameTooltip)
+			);
+
+			itemLabel.setColor(() ->
+					client.characterStats.items_obtained.isItemObtained(itemStringID)
+							? Settings.UI.successTextColor
+							: textColor
+			);
+
+			contentBox.addComponent(itemLabel);
+			y += Math.max(22, itemLabel.getBoundingBox().height) + 3;
+		}
+
+		return y + 7;
 	}
 
 	public static void openEntry(JournalContainerForm journalForm, GuideJournalEntry entry, Client client) {
@@ -162,8 +218,8 @@ public class GuideJournalFormRenderer {
 				y = addProgressObjectives(section, client, contentBox, width, y, textColor);
 			}
 
-			if (section.hasItemRequirements()) {
-				y = addRequiredItems(section, client, contentBox, width, y, textColor);
+			if (section.hasAnyItemRequirements()) {
+				y = addAnyRequiredItems(section, client, contentBox, width, y, textColor);
 			}
 
 			if (section.challenge != null) {

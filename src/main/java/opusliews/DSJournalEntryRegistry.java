@@ -3,9 +3,10 @@ package opusliews;
 import necesse.engine.localization.message.LocalMessage;
 import necesse.gfx.fairType.TypeParsers;
 import necesse.inventory.InventoryItem;
-import opusliews.journal.GuideJournalRegistry;
 import opusliews.journal.GuideJournalProgressObjective;
+import opusliews.journal.GuideJournalRegistry;
 import opusliews.progression.EarlyHealthProgressionSystem;
+import opusliews.worldgengating.WorldgenLockedContainerSystem;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -95,6 +96,32 @@ public class DSJournalEntryRegistry {
 				"guide25",
 				"guide24",
 				"metalworkhammer"
+		);
+
+
+		// IMPORTANT, KEEP THIS REGISTRATION AT THE VERY END OF JOURNAL REGISTRATIONS
+		GuideJournalRegistry.registerDiscoveryChallenge(
+				WorldgenLockedContainerSystem.discoveryChallengeStringID
+		);
+
+		GuideJournalRegistry.registerAnyItemProgressSectionAfterChallenge(
+				categoryStringID,
+				"lockedcontainers",
+				new LocalMessage("journalguide", "lockedcontainerstitle"),
+				new LocalMessage[]{
+						new LocalMessage("journalguide", "lockedcontainersbody")
+				},
+				new LocalMessage("journalguide", "lockedcontainersfindkey"),
+				WorldgenLockedContainerSystem.discoveryChallengeStringID,
+				"demonickey",
+				"runickey",
+				"ivykey",
+				"quartzkey",
+				"tungstenkey",
+				"glacialkey",
+				"dryadkey",
+				"myceliumkey",
+				"ancientfossilkey"
 		);
 
 

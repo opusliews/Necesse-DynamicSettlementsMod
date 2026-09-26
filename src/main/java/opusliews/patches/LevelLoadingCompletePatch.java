@@ -7,11 +7,14 @@ import opusliews.damage.DamageRepairLevelData;
 import opusliews.damage.WeatheringLevelData;
 import opusliews.settler.BuilderRequestLevelData;
 import opusliews.tile.CharcoalPitLevelData;
+import opusliews.worldgengating.WorldgenGatingLevelData;
 
 @ModMethodPatch(target = Level.class, name = "onLoadingComplete", arguments = {})
 public class LevelLoadingCompletePatch {
 	@Advice.OnMethodEnter
 	static void onEnter(@Advice.This Level level) {
+		WorldgenGatingLevelData.get(level, true);
+
 		if (!level.isServer()) {
 			return;
 		}

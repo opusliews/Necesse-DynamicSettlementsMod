@@ -36,6 +36,7 @@ public class DSItemRegistry {
     public static final String goldshaftStringID = "goldshaft";
     public static final String tungstenshaftStringID = "tungstenshaft";
     public static final String demonicshaftStringID = "demonicshaft";
+    public static final String runicshaftStringID = "runicshaft";
     public static final String ivyshaftStringID = "ivyshaft";
     public static final String quartzshaftStringID = "quartzshaft";
     public static final String slimeshaftStringID = "slimeshaft";
@@ -45,6 +46,15 @@ public class DSItemRegistry {
     public static final String spideriteshaftStringID = "spideriteshaft";
     public static final String arcanicshaftStringID = "arcanicshaft";
     public static final String voidshaftStringID = "voidshaft";
+    public static final String demonickeyStringID = "demonickey";
+    public static final String runickeyStringID = "runickey";
+    public static final String ivykeyStringID = "ivykey";
+    public static final String quartzkeyStringID = "quartzkey";
+    public static final String tungstenkeyStringID = "tungstenkey";
+    public static final String glacialkeyStringID = "glacialkey";
+    public static final String dryadkeyStringID = "dryadkey";
+    public static final String myceliumkeyStringID = "myceliumkey";
+    public static final String ancientfossilkeyStringID = "ancientfossilkey";
     public static final String copperplateStringID = "copperplate";
     public static final String ironplateStringID = "ironplate";
     public static final String goldplateStringID = "goldplate";
@@ -193,6 +203,7 @@ public class DSItemRegistry {
        registerMaterial(goldshaftStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanyshaft", "dsanymetalshaft"), 5.0F, "shaft", "metal", "gold");
        registerMaterial(tungstenshaftStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanyshaft", "dsanymetalshaft"), 10.0F, "shaft", "metal", "tungsten");
        registerMaterial(demonicshaftStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanyshaft", "dsanymetalshaft"), 5.0F, "shaft", "metal", "demonic");
+       registerMaterial(runicshaftStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanyshaft"), 7.0F, "shaft", "magic", "runic");
        registerMaterial(ivyshaftStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanyshaft"), 6.0F, "shaft", "organic", "ivy");
        registerMaterial(quartzshaftStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanyshaft"), 7.5F, "shaft", "gem", "quartz");
        registerMaterial(slimeshaftStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanyshaft"), 7.5F, "shaft", "organic", "slime");
@@ -202,6 +213,16 @@ public class DSItemRegistry {
        registerMaterial(spideriteshaftStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanyshaft", "dsanymetalshaft"), 14.0F, "shaft", "metal", "spiderite");
        registerMaterial(arcanicshaftStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanyshaft"), 7.5F, "shaft", "magic", "arcanic");
        registerMaterial(voidshaftStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanyshaft"), 10.0F, "shaft", "magic", "void");
+
+       registerMaterial(demonickeyStringID, new MatItem(500, Item.Rarity.NORMAL), 1.0F, null, "metal", "demonic");
+       registerMaterial(runickeyStringID, new MatItem(500, Item.Rarity.NORMAL), 1.0F, null, "magic", "runic");
+       registerMaterial(ivykeyStringID, new MatItem(500, Item.Rarity.NORMAL), 1.0F, null, "organic", "ivy");
+       registerMaterial(quartzkeyStringID, new MatItem(500, Item.Rarity.NORMAL), 1.0F, null, "gem", "quartz");
+       registerMaterial(tungstenkeyStringID, new MatItem(500, Item.Rarity.NORMAL), 1.0F, null, "metal", "tungsten");
+       registerMaterial(glacialkeyStringID, new MatItem(500, Item.Rarity.NORMAL), 1.0F, null, "metal", "glacial");
+       registerMaterial(dryadkeyStringID, new MatItem(500, Item.Rarity.NORMAL), 1.0F, null, "wood", "dryad");
+       registerMaterial(myceliumkeyStringID, new MatItem(500, Item.Rarity.NORMAL), 1.0F, null, "organic", "mycelium");
+       registerMaterial(ancientfossilkeyStringID, new MatItem(500, Item.Rarity.NORMAL), 1.0F, null, "metal", "ancientfossil");
        registerMaterial(copperplateStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanyplate", "dsanymetalplate"), 8.0F, "plate", "metal", "copper");
        registerMaterial(ironplateStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanyplate", "dsanymetalplate"), 12.0F, "plate", "metal", "iron");
        registerMaterial(goldplateStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanyplate", "dsanymetalplate"), 20.0F, "plate", "metal", "gold");

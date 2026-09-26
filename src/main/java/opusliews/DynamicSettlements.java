@@ -57,6 +57,7 @@ import opusliews.sleep.SettlementSleepSettingsLevelData;
 import opusliews.story.GuideStoryObjectiveRegistry;
 import opusliews.tile.*;
 import opusliews.torch.CrudeTorchLevelData;
+import opusliews.worldgengating.WorldgenGatingLevelData;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -267,6 +268,7 @@ public class DynamicSettlements {
 		LevelDataRegistry.registerLevelData(ClayFiringAutomationLevelData.managerKey, ClayFiringAutomationLevelData.class);
 		LevelDataRegistry.registerLevelData(EarlyGameLevelData.managerKey, EarlyGameLevelData.class);
 		LevelDataRegistry.registerLevelData(CrudeTorchLevelData.managerKey, CrudeTorchLevelData.class);
+		LevelDataRegistry.registerLevelData(WorldgenGatingLevelData.managerKey, WorldgenGatingLevelData.class);
 
 		JobTypeRegistry.registerType(
 				"construction",
@@ -376,6 +378,10 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketSettlementStockRequest.class);
 		PacketRegistry.registerPacket(PacketSettlementStockUpdate.class);
 		PacketRegistry.registerPacket(PacketSettlementStockSync.class);
+		PacketRegistry.registerPacket(PacketWorldgenGatingState.class);
+		PacketRegistry.registerPacket(PacketWorldgenMimicGatingState.class);
+		PacketRegistry.registerPacket(PacketRequestWorldgenGatingData.class);
+		PacketRegistry.registerPacket(PacketSyncWorldgenGatingData.class);
 
 		CraftingStationFeature.register();
 		CraftingTasksFeature.register();
