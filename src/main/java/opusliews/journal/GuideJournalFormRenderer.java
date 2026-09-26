@@ -118,6 +118,7 @@ public class GuideJournalFormRenderer {
 	}
 
 	public static void openEntry(JournalContainerForm journalForm, GuideJournalEntry entry, Client client) {
+		GuideJournalSelectionState.remember(entry);
 		try {
 			Field field = JournalContainerForm.class.getDeclaredField("formJournalEntryComponent");
 			field.setAccessible(true);
@@ -133,6 +134,7 @@ public class GuideJournalFormRenderer {
 	}
 
 	public static void renderEntry(GuideJournalEntry entry, Client client, FormContentBox contentBox) {
+		GuideJournalSelectionState.remember(entry);
 		JournalContainerForm.lastOpenBiomeEntry = entry.getStringID();
 		JournalContainerForm.lastOpenMobEntry = null;
 		contentBox.clearComponents();
