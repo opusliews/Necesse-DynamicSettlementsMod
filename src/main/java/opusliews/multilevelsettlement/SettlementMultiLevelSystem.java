@@ -1,6 +1,8 @@
 package opusliews.multilevelsettlement;
 
+import necesse.engine.network.server.Server;
 import necesse.engine.util.LevelIdentifier;
+import necesse.engine.world.worldData.SettlementsWorldData;
 import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import opusliews.logging.Logging;
 
@@ -31,6 +33,22 @@ public final class SettlementMultiLevelSystem {
 			if (Logging.logEnabled) Logging.logMessage("[MultiLevelSettlement] Registered " + created);
 			return created;
 		}
+	}
+
+
+	public static SettlementLevelDomain findDomain(Server server, LevelIdentifier levelIdentifier, int tileX, int tileY) {
+		if (server == null || levelIdentifier == null) {
+			if (Logging.logEnabled) Logging.logMessage("[MultiLevelSettlement] Cannot find domain with null server/level identifier level=" + levelIdentifier + " tile=" + tileX + "," + tileY);
+			return null;
+		}
+
+		LevelIdentifier surfaceIdentifier = getSurfaceIdentifier(levelIdentifier);
+		if (surfaceIdentifier == null) return null;
+		ServerSettlementData settlement = SettlementsWorldData.getSettlementsData(server).getServerDataAtTile(surfaceIdentifier, tileX, tileY);
+		if (settlement == null) return null;
+		SettlementLevelDomain domain = get(settlement);
+		if (domain == null || !domain.containsLevel(levelIdentifier) || !domain.isTileWithinBounds(levelIdentifier, tileX, tileY)) return null;
+		return domain;
 	}
 
 	public static void remove(ServerSettlementData settlement) {

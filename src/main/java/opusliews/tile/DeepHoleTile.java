@@ -25,6 +25,6 @@ public class DeepHoleTile extends ShallowHoleTile {
 				== ObjectRegistry.getObjectID(HoleCaveLadderObject.stringID);
 		if (!hasLadder) return true;
 
-		return mob instanceof PlayerMob && DeepHoleSystem.isTransitioning((PlayerMob)mob);
+		return mob instanceof PlayerMob;
 	}
 }

@@ -49,6 +49,7 @@ import opusliews.jobs.ClayFiringCleanupLevelJob;
 import opusliews.jobs.ConstructionLevelJob;
 import opusliews.jobs.RepairLevelJob;
 import opusliews.mobs.BuilderHumanMob;
+import opusliews.multilevelsettlement.SettlementLadderLevelData;
 import opusliews.network.*;
 import opusliews.object.*;
 import opusliews.settler.BuilderRequestLevelData;
@@ -269,6 +270,7 @@ public class DynamicSettlements {
 		LevelDataRegistry.registerLevelData(EarlyGameLevelData.managerKey, EarlyGameLevelData.class);
 		LevelDataRegistry.registerLevelData(CrudeTorchLevelData.managerKey, CrudeTorchLevelData.class);
 		LevelDataRegistry.registerLevelData(WorldgenGatingLevelData.managerKey, WorldgenGatingLevelData.class);
+		LevelDataRegistry.registerLevelData(SettlementLadderLevelData.managerKey, SettlementLadderLevelData.class);
 
 		JobTypeRegistry.registerType(
 				"construction",
@@ -382,6 +384,7 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketWorldgenMimicGatingState.class);
 		PacketRegistry.registerPacket(PacketRequestWorldgenGatingData.class);
 		PacketRegistry.registerPacket(PacketSyncWorldgenGatingData.class);
+		PacketRegistry.registerPacket(PacketToggleSettlementLadder.class);
 
 		CraftingStationFeature.register();
 		CraftingTasksFeature.register();

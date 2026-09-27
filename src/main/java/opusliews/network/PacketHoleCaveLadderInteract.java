@@ -7,6 +7,8 @@ import necesse.engine.network.PacketWriter;
 import necesse.engine.network.server.Server;
 import necesse.engine.network.server.ServerClient;
 import opusliews.deephole.DeepHoleSystem;
+import opusliews.logging.Logging;
+import opusliews.multilevelsettlement.SettlementLadderSystem;
 
 public class PacketHoleCaveLadderInteract extends Packet {
 	private final int tileX;
@@ -31,6 +33,12 @@ public class PacketHoleCaveLadderInteract extends Packet {
 	public void processServer(NetworkPacket packet, Server server, ServerClient client) {
 		if (!client.checkHasRequestedSelf() || client.isDead()) return;
 		client.checkSpawned();
+
+		if (SettlementLadderSystem.isHoldingSettlementFlag(client.playerMob)) {
+			if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] Suppressed deep-hole ladder descent packet because Settlement Flag is selected player=" + client.authentication + " tile=" + tileX + "," + tileY);
+			return;
+		}
+
 		DeepHoleSystem.tryStartSafeLadderDescent(client.playerMob, tileX, tileY);
 	}
 }

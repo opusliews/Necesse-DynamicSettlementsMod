@@ -30,8 +30,10 @@ import opusliews.buff.DeepHoleHiddenBuff;
 import opusliews.buff.DeepHoleLadderDescentBuff;
 import opusliews.item.DirtPileItem;
 import opusliews.logging.Logging;
+import opusliews.multilevelsettlement.SettlementLadderSystem;
 import opusliews.network.PacketDeepHoleInteract;
 import opusliews.network.PacketHoleCaveLadderInteract;
+import opusliews.network.PacketToggleSettlementLadder;
 import opusliews.object.DeepHoleCeilingLightObject;
 import opusliews.object.HoleCaveLadderObject;
 import opusliews.object.HoleCaveLadderUpObject;
@@ -242,6 +244,12 @@ public final class DeepHoleSystem {
 			}
 		}
 		if (!mouseOverLadder) return false;
+
+		if (SettlementLadderSystem.isHoldingSettlementFlag(player)) {
+			level.getClient().network.sendPacket(new PacketToggleSettlementLadder(level.getIdentifierHashCode(), tileX, tileY));
+			if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] Deep-hole ladder client intercept sent settlement-ladder toggle level=" + level.getIdentifier() + " tile=" + tileX + "," + tileY);
+			return true;
+		}
 
 		level.getClient().network.sendPacket(new PacketHoleCaveLadderInteract(tileX, tileY));
 		return true;
@@ -459,7 +467,7 @@ public final class DeepHoleSystem {
 		if (!ladder.isInInteractRange(player) || !ladder.canInteract(player)) return false;
 		if (!ensureCustomHoleLadder(level, tileX, tileY)) return false;
 
-		startSafeLadderDescent(level, tileX, tileY, player);
+		useSafeLadderDescent(player, tileX, tileY);
 		return true;
 	}
 
@@ -509,7 +517,8 @@ public final class DeepHoleSystem {
 		if (!isPlayerInSinkingArea(level, tileX, tileY, player)) return;
 
 		if (hasSafeHoleLadder(level, tileX, tileY)) {
-			if (ensureCustomHoleLadder(level, tileX, tileY)) startSafeLadderDescent(level, tileX, tileY, player);
+			// Placed ladders are interaction-only. Walking over one keeps the visual hole
+			// sinking effect, but must never initiate traversal.
 			return;
 		}
 
@@ -557,12 +566,6 @@ public final class DeepHoleSystem {
 	}
 
 	private static void useSafeLadderDescent(PlayerMob player) {
-		if (!player.isServerClient()) return;
-
-		ServerClient client = player.getServerClient();
-		Level sourceLevel = player.getLevel();
-		if (sourceLevel == null || !sourceLevel.isServer()) return;
-
 		ActiveBuff descentBuff = player.buffManager.getBuff(DeepHoleLadderDescentBuff.stringID);
 		int tileX = descentBuff == null
 				? player.getTileX()
@@ -570,6 +573,16 @@ public final class DeepHoleSystem {
 		int tileY = descentBuff == null
 				? player.getTileY()
 				: descentBuff.getGndData().getInt(ladderDescentTileYKey, player.getTileY());
+		useSafeLadderDescent(player, tileX, tileY);
+	}
+
+	private static void useSafeLadderDescent(PlayerMob player, int tileX, int tileY) {
+		if (!player.isServerClient()) return;
+
+		ServerClient client = player.getServerClient();
+		Level sourceLevel = player.getLevel();
+		if (sourceLevel == null || !sourceLevel.isServer()) return;
+
 		int ladderUpID = ObjectRegistry.getObjectID(HoleCaveLadderUpObject.stringID);
 		int vanillaLadderUpID = ObjectRegistry.getObjectID(sourceLevel.isBasicCaveLevel() ? "deepcaveladder" : "ladderup");
 
