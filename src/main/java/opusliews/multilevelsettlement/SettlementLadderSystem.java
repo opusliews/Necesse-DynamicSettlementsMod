@@ -107,10 +107,14 @@ public final class SettlementLadderSystem {
 	}
 
 	public static List<SettlementLadderLink> getValidLinks(SettlementLevelDomain domain) {
+		return getValidLinks(domain, false);
+	}
+
+	public static List<SettlementLadderLink> getValidLinks(SettlementLevelDomain domain, boolean loadLevels) {
 		ArrayList<SettlementLadderLink> valid = new ArrayList<>();
 		if (domain == null) return valid;
 		for (SettlementLadderLink link : getDesignatedLinks(domain)) {
-			if (validateLink(domain, link, false)) valid.add(link);
+			if (validateLink(domain, link, loadLevels)) valid.add(link);
 		}
 		return valid;
 	}
@@ -264,7 +268,13 @@ public final class SettlementLadderSystem {
 			return;
 		}
 
-		if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] Enabled " + link + " by player=" + client.authentication);
+		if (Logging.logEnabled) {
+			Logging.logMessage("[SettlementLadder] Enabled " + link + " by player=" + client.authentication);
+			SettlementLevelType oppositeType = levelType == SettlementLevelType.SURFACE ? SettlementLevelType.CAVE : SettlementLevelType.SURFACE;
+			SettlementLevelPosition oppositeEndpoint = new SettlementLevelPosition(domain.getLevelIdentifier(oppositeType), link.getTileX(oppositeType), link.getTileY(oppositeType));
+			SettlementCrossLevelRoute routeCheck = SettlementCrossLevelRouting.findBestRoute(client.playerMob, domain, oppositeEndpoint, false);
+			Logging.logMessage("[SettlementRouting] Designation self-check " + (routeCheck == null ? "FAILED" : "OK") + " player=" + client.authentication + " link=" + link + " route=" + routeCheck);
+		}
 		sendMessage(client, "Settlement ladder enabled.");
 	}
 
