@@ -108,6 +108,67 @@ public final class SettlementCrossLevelRouting {
 		return best;
 	}
 
+
+	public static SettlementCrossLevelRoute findBestTransitionRoute(Mob mob, SettlementLevelDomain domain, SettlementLevelType targetType) {
+		return findBestTransitionRoute(mob, domain, targetType, SettlementRouteRestriction.ALLOW_ALL);
+	}
+
+	public static SettlementCrossLevelRoute findBestTransitionRoute(Mob mob, SettlementLevelDomain domain, SettlementLevelType targetType, SettlementRouteRestriction restriction) {
+		if (mob == null || domain == null || targetType == null) {
+			if (Logging.logEnabled) Logging.logMessage("[SettlementRouting] Transition route rejected due to null argument mob=" + mob + " domain=" + domain + " targetType=" + targetType);
+			return null;
+		}
+		Level currentLevel = mob.getLevel();
+		if (currentLevel == null || currentLevel.getServer() == null) {
+			if (Logging.logEnabled) Logging.logMessage("[SettlementRouting] Transition route rejected because mob has no server level mob=" + mob.getUniqueID());
+			return null;
+		}
+
+		SettlementLevelType sourceType = domain.getLevelType(currentLevel.getIdentifier());
+		if (sourceType == null || sourceType == targetType || domain.getLevelIdentifier(targetType) == null) return null;
+		Level targetLevel = getOrLoadLevel(domain, targetType);
+		if (targetLevel == null) {
+			if (Logging.logEnabled) Logging.logMessage("[SettlementRouting] Transition route rejected because target level could not be loaded mob=" + mob.getUniqueID() + " targetType=" + targetType);
+			return null;
+		}
+
+		SettlementRouteRestriction effectiveRestriction = restriction == null ? SettlementRouteRestriction.ALLOW_ALL : restriction;
+		SettlementLevelPosition source = new SettlementLevelPosition(currentLevel.getIdentifier(), mob.getTileX(), mob.getTileY());
+		List<SettlementLadderLink> links = SettlementLadderSystem.getValidLinks(domain, true);
+		SettlementCrossLevelRoute best = null;
+
+		for (SettlementLadderLink link : links) {
+			int sourceLadderX = link.getTileX(sourceType);
+			int sourceLadderY = link.getTileY(sourceType);
+			int targetLadderX = link.getTileX(targetType);
+			int targetLadderY = link.getTileY(targetType);
+			if (!effectiveRestriction.isTileAllowed(currentLevel.getIdentifier(), sourceLadderX, sourceLadderY)) {
+				if (Logging.logEnabled) Logging.logMessage("[SettlementRouting] Transition ladder rejected by source restriction mob=" + mob.getUniqueID() + " link=" + link + " sourceType=" + sourceType);
+				continue;
+			}
+			if (!effectiveRestriction.isTileAllowed(targetLevel.getIdentifier(), targetLadderX, targetLadderY)) {
+				if (Logging.logEnabled) Logging.logMessage("[SettlementRouting] Transition ladder rejected by destination restriction mob=" + mob.getUniqueID() + " link=" + link + " targetType=" + targetType);
+				continue;
+			}
+			if (!canMoveOnLevel(mob, currentLevel, source.tileX, source.tileY, sourceLadderX, sourceLadderY, false)) {
+				if (Logging.logEnabled) Logging.logMessage("[SettlementRouting] Transition ladder unreachable on source level mob=" + mob.getUniqueID() + " source=" + source + " link=" + link);
+				continue;
+			}
+
+			SettlementLevelPosition target = new SettlementLevelPosition(targetLevel.getIdentifier(), targetLadderX, targetLadderY);
+			int sourceDistance = getTileDistance(source.tileX, source.tileY, sourceLadderX, sourceLadderY);
+			SettlementCrossLevelRoute candidate = SettlementCrossLevelRoute.crossLevel(source, target, link, sourceDistance, 0);
+			if (best == null || candidate.totalDistance < best.totalDistance) best = candidate;
+		}
+
+		if (best == null) {
+			if (Logging.logEnabled) Logging.logMessage("[SettlementRouting] No accessible transition ladder found mob=" + mob.getUniqueID() + " sourceType=" + sourceType + " targetType=" + targetType + " candidateCount=" + links.size());
+			return null;
+		}
+		if (Logging.logEnabled) Logging.logMessage("[SettlementRouting] Selected preferred-level transition route mob=" + mob.getStringID() + "#" + mob.getUniqueID() + " route=" + best);
+		return best;
+	}
+
 	public static boolean canReach(Mob mob, SettlementLevelDomain domain, SettlementLevelPosition target, boolean acceptAdjacentTarget) {
 		return findBestRoute(mob, domain, target, acceptAdjacentTarget) != null;
 	}

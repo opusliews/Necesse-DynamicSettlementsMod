@@ -218,16 +218,18 @@ public final class SettlementCaveBedSystem {
 	}
 
 	public static void updateHome(LevelSettler settler) {
-		if (settler == null || !(settler.getBed() instanceof SettlementCaveBed)) return;
+		updateAssignedBedHome(settler);
+	}
+
+	public static void updateAssignedBedHome(LevelSettler settler) {
+		if (settler == null || settler.getBed() == null) return;
 		SettlerMob mob = settler.getMob();
-		if (mob == null) return;
-		SettlementCaveBed bed = (SettlementCaveBed)settler.getBed();
+		if (mob == null || mob.getMob() == null) return;
+		SettlementBed bed = settler.getBed();
+		LevelIdentifier bedLevel = getBedLevelIdentifier(settler, bed);
 		Level currentLevel = mob.getMob().getLevel();
-		if (currentLevel != null && currentLevel.getIdentifier().equals(bed.getBedLevel().getIdentifier())) {
-			mob.setHome(new Point(bed.tileX, bed.tileY));
-		} else {
-			mob.setHome(null);
-		}
+		if (currentLevel != null && bedLevel != null && currentLevel.getIdentifier().equals(bedLevel)) mob.setHome(new Point(bed.tileX, bed.tileY));
+		else mob.setHome(null);
 	}
 
 	public static boolean isStranded(HumanMob human) {
