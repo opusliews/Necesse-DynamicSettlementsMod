@@ -94,6 +94,8 @@ public final class SettlementMultiLevelSystem {
 		}
 
 		SettlementCaveBedSystem.restoreAssignments(settlement);
+		SettlementLevelStorageManager.restorePersisted(settlement);
+		SettlementLevelStorageManager.clearInvalids(settlement);
 
 		if (Logging.logEnabled && !Boolean.TRUE.equals(caveLoadedLogged.get(settlement))) {
 			SettlementCaveBedSystem.logCaveBedScan(settlement);
@@ -122,6 +124,7 @@ public final class SettlementMultiLevelSystem {
 		SettlementLevelDomain removed = domains.remove(settlement);
 		caveMissingLogged.remove(settlement);
 		caveLoadedLogged.remove(settlement);
+		SettlementLevelStorageManager.remove(settlement);
 		if (removed != null && Logging.logEnabled) Logging.logMessage("[MultiLevelSettlement] Removed domain settlement=" + settlement.uniqueID);
 	}
 
