@@ -190,7 +190,10 @@ public final class SettlementLadderSystem {
 		SettlementLadderLevelData data = SettlementLadderLevelData.get(surface, false);
 		if (data == null) return;
 		int removed = data.removeLinksAt(domain, levelType, tileX, tileY);
-		if (removed > 0 && Logging.logEnabled) Logging.logMessage("[SettlementLadder] Removed " + removed + " designation(s) because ladder endpoint was destroyed settlement=" + domain.getSettlementUniqueID() + " levelType=" + levelType + " tile=" + tileX + "," + tileY);
+		if (removed > 0) {
+			if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] Removed " + removed + " designation(s) because ladder endpoint was destroyed settlement=" + domain.getSettlementUniqueID() + " levelType=" + levelType + " tile=" + tileX + "," + tileY);
+			SettlementResidentSystem.onLadderAvailabilityChanged(domain);
+		}
 	}
 
 	public static boolean isSupportedLadderObject(GameObject object) {
@@ -252,6 +255,7 @@ public final class SettlementLadderSystem {
 				return;
 			}
 			if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] Disabled " + existing + " by player=" + client.authentication);
+			SettlementResidentSystem.onLadderAvailabilityChanged(domain);
 			sendMessage(client, "Settlement ladder disabled.");
 			return;
 		}
@@ -275,6 +279,7 @@ public final class SettlementLadderSystem {
 			SettlementCrossLevelRoute routeCheck = SettlementCrossLevelRouting.findBestRoute(client.playerMob, domain, oppositeEndpoint, false);
 			Logging.logMessage("[SettlementRouting] Designation self-check " + (routeCheck == null ? "FAILED" : "OK") + " player=" + client.authentication + " link=" + link + " route=" + routeCheck);
 		}
+		SettlementResidentSystem.onLadderAvailabilityChanged(domain);
 		sendMessage(client, "Settlement ladder enabled.");
 	}
 
