@@ -52,6 +52,7 @@ import opusliews.mobs.BuilderHumanMob;
 import opusliews.multilevelsettlement.SettlementLadderLevelData;
 import opusliews.multilevelsettlement.SettlementCaveBedLevelData;
 import opusliews.multilevelsettlement.SettlementCaveBedSystem;
+import opusliews.multilevelsettlement.SettlementLevelPreferenceSystem;
 import opusliews.network.*;
 import opusliews.object.*;
 import opusliews.settler.BuilderRequestLevelData;
@@ -181,6 +182,7 @@ public class DynamicSettlements {
 		BuffRegistry.registerBuff(DeepHoleLadderDescentBuff.stringID, new DeepHoleLadderDescentBuff());
 		SettlerRegistry.registerSettler("builder", new BuilderSettler());
 		SettlementCaveBedSystem.registerThought();
+		SettlementLevelPreferenceSystem.registerThought();
 		MobRegistry.registerMob("builderhuman",
 				BuilderHumanMob.class, true);
 
@@ -389,6 +391,7 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketRequestWorldgenGatingData.class);
 		PacketRegistry.registerPacket(PacketSyncWorldgenGatingData.class);
 		PacketRegistry.registerPacket(PacketToggleSettlementLadder.class);
+		PacketRegistry.registerPacket(PacketSettlerLevelPreference.class);
 
 		CraftingStationFeature.register();
 		CraftingTasksFeature.register();

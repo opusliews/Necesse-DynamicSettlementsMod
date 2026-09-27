@@ -8,11 +8,14 @@ import net.bytebuddy.asm.Advice;
 import opusliews.guard.GuardDuty;
 import opusliews.guard.GuardDutySystem;
 import opusliews.guard.GuardFatigueSystem;
+import opusliews.multilevelsettlement.SettlementLevelPreference;
+import opusliews.multilevelsettlement.SettlementLevelPreferenceSystem;
 
 @ModMethodPatch(target = HumanMob.class, name = "applyLoadData", arguments = {LoadData.class})
 public class GuardDutyLoadPatch {
 	@Advice.OnMethodExit
 	public static void onExit(@Advice.This HumanMob mob, @Advice.Argument(0) LoadData save) {
+		SettlementLevelPreferenceSystem.setPreference(mob, SettlementLevelPreference.fromOrdinal(save.getInt("dynamicSettlementsLevelPreference", 0, false)));
 		if (mob instanceof GuardHumanMob) {
 			GuardHumanMob guard = (GuardHumanMob)mob;
 			boolean nightDuty = save.getBoolean("dynamicSettlementsNightGuardDuty", false, false);

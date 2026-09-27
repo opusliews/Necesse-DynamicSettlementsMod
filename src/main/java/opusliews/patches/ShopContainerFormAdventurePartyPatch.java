@@ -9,8 +9,11 @@ import net.bytebuddy.asm.Advice;
 import opusliews.guard.GuardDutyDialogueRefresh;
 import opusliews.guard.GuardDutySystem;
 import opusliews.mobs.BuilderHumanMob;
+import opusliews.multilevelsettlement.SettlementLevelPreference;
+import opusliews.multilevelsettlement.SettlementLevelPreferenceSystem;
 import opusliews.network.PacketBuilderRoadRepairToggle;
 import opusliews.network.PacketGuardDutyToggle;
+import opusliews.network.PacketSettlerLevelPreference;
 
 @ModMethodPatch(
 		target = ShopContainerForm.class,
@@ -20,8 +23,27 @@ import opusliews.network.PacketGuardDutyToggle;
 public class ShopContainerFormAdventurePartyPatch {
 	@Advice.OnMethodEnter(skipOn = Advice.OnNonDefaultValue.class)
 	static boolean onEnter(@Advice.This ShopContainerForm form) {
+		addLevelPreferenceOption(form);
 		addGuardDutyOption(form);
 		return handleBuilderAdventurePartyOptions(form);
+	}
+
+	public static void addLevelPreferenceOption(ShopContainerForm form) {
+		ShopContainer container = (ShopContainer)form.getContainer();
+		if (!container.hasSettlerAccess || container.isInYourAdventureParty || container.isSettlerOutsideSettlement) return;
+		if (!(container.humanShop instanceof necesse.entity.mobs.friendly.human.HumanMob)) return;
+
+		necesse.entity.mobs.friendly.human.HumanMob human = container.humanShop;
+		SettlementLevelPreference preference = SettlementLevelPreferenceSystem.getPreference(human);
+		String key = preference == SettlementLevelPreference.SURFACE ? "levelpreferencesurface"
+				: preference == SettlementLevelPreference.CAVE ? "levelpreferencecave"
+				: "levelpreferenceauto";
+		form.dialogueForm.addDialogueOption(new LocalMessage("ui", key), () -> {
+			SettlementLevelPreference next = SettlementLevelPreferenceSystem.getPreference(human).next();
+			SettlementLevelPreferenceSystem.setPreference(human, next);
+			form.getClient().network.sendPacket(new PacketSettlerLevelPreference(human.getUniqueID(), next));
+			form.updateDialogue();
+		});
 	}
 
 	public static void addGuardDutyOption(ShopContainerForm form) {
