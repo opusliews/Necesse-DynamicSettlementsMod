@@ -50,6 +50,8 @@ import opusliews.jobs.ConstructionLevelJob;
 import opusliews.jobs.RepairLevelJob;
 import opusliews.mobs.BuilderHumanMob;
 import opusliews.multilevelsettlement.SettlementLadderLevelData;
+import opusliews.multilevelsettlement.SettlementCaveBedLevelData;
+import opusliews.multilevelsettlement.SettlementCaveBedSystem;
 import opusliews.network.*;
 import opusliews.object.*;
 import opusliews.settler.BuilderRequestLevelData;
@@ -178,6 +180,7 @@ public class DynamicSettlements {
 		BuffRegistry.registerBuff(DeepHoleCaveFallBuff.stringID, new DeepHoleCaveFallBuff());
 		BuffRegistry.registerBuff(DeepHoleLadderDescentBuff.stringID, new DeepHoleLadderDescentBuff());
 		SettlerRegistry.registerSettler("builder", new BuilderSettler());
+		SettlementCaveBedSystem.registerThought();
 		MobRegistry.registerMob("builderhuman",
 				BuilderHumanMob.class, true);
 
@@ -271,6 +274,7 @@ public class DynamicSettlements {
 		LevelDataRegistry.registerLevelData(CrudeTorchLevelData.managerKey, CrudeTorchLevelData.class);
 		LevelDataRegistry.registerLevelData(WorldgenGatingLevelData.managerKey, WorldgenGatingLevelData.class);
 		LevelDataRegistry.registerLevelData(SettlementLadderLevelData.managerKey, SettlementLadderLevelData.class);
+		LevelDataRegistry.registerLevelData(SettlementCaveBedLevelData.managerKey, SettlementCaveBedLevelData.class);
 
 		JobTypeRegistry.registerType(
 				"construction",

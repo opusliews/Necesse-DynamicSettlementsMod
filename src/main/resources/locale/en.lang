@@ -40,6 +40,8 @@ buildertalk7=Strong walls make for peaceful nights
 
 [settlement]
 buildertip=test string
+strandedfromsurface=I cannot reach my bed on the surface
+strandedfromcave=I cannot reach my bed underground
 
 [item]
 builderhat=Builder Hat

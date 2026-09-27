@@ -85,6 +85,7 @@ public final class SettlementResidentSystem {
 
 	public static void onLadderAvailabilityChanged(SettlementLevelDomain domain) {
 		if (domain == null) return;
+		SettlementCaveBedSystem.invalidateStrandedCache(domain.getSettlement());
 		boolean isolated = SettlementLadderSystem.getValidLinks(domain, false).isEmpty();
 		if (!Logging.logEnabled) return;
 

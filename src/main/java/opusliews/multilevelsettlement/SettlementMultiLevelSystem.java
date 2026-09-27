@@ -93,7 +93,10 @@ public final class SettlementMultiLevelSystem {
 			}
 		}
 
+		SettlementCaveBedSystem.restoreAssignments(settlement);
+
 		if (Logging.logEnabled && !Boolean.TRUE.equals(caveLoadedLogged.get(settlement))) {
+			SettlementCaveBedSystem.logCaveBedScan(settlement);
 			caveLoadedLogged.put(settlement, true);
 			Logging.logMessage("[MultiLevelSettlement] Cave settlement domain is now kept loaded settlement=" + settlement.uniqueID + " cave=" + caveIdentifier + " regions=" + keptRegions + " bounds=" + bounds);
 		}
