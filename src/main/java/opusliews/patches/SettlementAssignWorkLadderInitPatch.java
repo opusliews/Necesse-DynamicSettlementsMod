@@ -5,6 +5,7 @@ import necesse.gfx.forms.presets.containerComponent.settlement.SettlementAssignW
 import net.bytebuddy.asm.Advice;
 import opusliews.multilevelsettlement.SettlementLadderAssignUI;
 import opusliews.multilevelsettlement.SettlementStorageAssignUI;
+import opusliews.multilevelsettlement.SettlementWorkstationAssignUI;
 
 @ModMethodPatch(target = SettlementAssignWorkForm.class, name = "init", arguments = {})
 public class SettlementAssignWorkLadderInitPatch {
@@ -12,5 +13,6 @@ public class SettlementAssignWorkLadderInitPatch {
 	public static void onExit(@Advice.This SettlementAssignWorkForm form) {
 		SettlementLadderAssignUI.onInit(form);
 		SettlementStorageAssignUI.onInit(form);
+		SettlementWorkstationAssignUI.onInit(form);
 	}
 }

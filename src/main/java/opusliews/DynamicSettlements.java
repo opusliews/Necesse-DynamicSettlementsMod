@@ -401,6 +401,10 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketSettlementStorageSync.class);
 		PacketRegistry.registerPacket(PacketToggleSettlementStorage.class);
 		PacketRegistry.registerPacket(PacketOpenSettlementStorage.class);
+		PacketRegistry.registerPacket(PacketSettlementWorkstationRequest.class);
+		PacketRegistry.registerPacket(PacketSettlementWorkstationSync.class);
+		PacketRegistry.registerPacket(PacketToggleSettlementWorkstation.class);
+		PacketRegistry.registerPacket(PacketOpenSettlementWorkstation.class);
 		PacketRegistry.registerPacket(PacketOpenMultiLevelSettlement.class);
 		PacketRegistry.registerPacket(PacketSettlerLevelPreference.class);
 

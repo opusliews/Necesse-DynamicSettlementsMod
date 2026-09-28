@@ -8,6 +8,7 @@ import necesse.engine.save.SaveData;
 import necesse.engine.util.LevelIdentifier;
 import necesse.inventory.itemFilter.ItemCategoriesFilter;
 import necesse.level.maps.Level;
+import necesse.level.maps.levelData.settlementData.SettlementWorkstationRecipe;
 import necesse.level.maps.levelData.LevelData;
 import opusliews.logging.Logging;
 
@@ -36,7 +37,7 @@ public class SettlementLevelManagerLevelData extends LevelData {
 
 	public synchronized void setEntry(int settlementUniqueID, EntryType type, LevelIdentifier levelIdentifier, int tileX, int tileY, boolean present) {
 		entries.removeIf(entry -> entry.settlementUniqueID == settlementUniqueID && entry.type == type && entry.levelIdentifier.equals(levelIdentifier) && entry.tileX == tileX && entry.tileY == tileY);
-		if (present) entries.add(new Entry(settlementUniqueID, type, levelIdentifier, tileX, tileY, 0, null));
+		if (present) entries.add(new Entry(settlementUniqueID, type, levelIdentifier, tileX, tileY, 0, null, null));
 	}
 
 	public synchronized void setStorageConfig(int settlementUniqueID, LevelIdentifier levelIdentifier, int tileX, int tileY, int priority, ItemCategoriesFilter filter) {
@@ -44,7 +45,18 @@ public class SettlementLevelManagerLevelData extends LevelData {
 			Entry entry = entries.get(i);
 			if (entry.settlementUniqueID == settlementUniqueID && entry.type == EntryType.STORAGE
 					&& entry.levelIdentifier.equals(levelIdentifier) && entry.tileX == tileX && entry.tileY == tileY) {
-				entries.set(i, new Entry(settlementUniqueID, EntryType.STORAGE, levelIdentifier, tileX, tileY, priority, copyFilter(filter)));
+				entries.set(i, new Entry(settlementUniqueID, EntryType.STORAGE, levelIdentifier, tileX, tileY, priority, copyFilter(filter), entry.workstationRecipes));
+				return;
+			}
+		}
+	}
+
+	public synchronized void setWorkstationRecipes(int settlementUniqueID, LevelIdentifier levelIdentifier, int tileX, int tileY, List<SettlementWorkstationRecipe> recipes) {
+		for (int i = 0; i < entries.size(); i++) {
+			Entry entry = entries.get(i);
+			if (entry.settlementUniqueID == settlementUniqueID && entry.type == EntryType.WORKSTATION
+					&& entry.levelIdentifier.equals(levelIdentifier) && entry.tileX == tileX && entry.tileY == tileY) {
+				entries.set(i, new Entry(settlementUniqueID, EntryType.WORKSTATION, levelIdentifier, tileX, tileY, 0, null, copyRecipes(recipes)));
 				return;
 			}
 		}
@@ -80,6 +92,15 @@ public class SettlementLevelManagerLevelData extends LevelData {
 					if (!filterSave.isEmpty()) entrySave.addSaveData(filterSave);
 				}
 			}
+			else if (entry.type == EntryType.WORKSTATION && entry.workstationRecipes != null) {
+				SaveData recipesSave = new SaveData("recipes");
+				for (SettlementWorkstationRecipe recipe : entry.workstationRecipes) {
+					SaveData recipeSave = new SaveData("recipe");
+					recipe.addSaveData(recipeSave, true);
+					recipesSave.addSaveData(recipeSave);
+				}
+				entrySave.addSaveData(recipesSave);
+			}
 			save.addSaveData(entrySave);
 		}
 	}
@@ -104,7 +125,22 @@ public class SettlementLevelManagerLevelData extends LevelData {
 					filter = new ItemCategoriesFilter(true);
 					filter.applyLoadData(filterSave);
 				}
-				entries.add(new Entry(settlementUniqueID, type, new LevelIdentifier(levelName), tileX, tileY, priority, filter));
+				ArrayList<SettlementWorkstationRecipe> workstationRecipes = null;
+				if (type == EntryType.WORKSTATION) {
+					workstationRecipes = new ArrayList<>();
+					LoadData recipesSave = entrySave.getFirstLoadDataByName("recipes");
+					if (recipesSave != null) {
+						for (LoadData recipeSave : recipesSave.getLoadDataByName("recipe")) {
+							try {
+								workstationRecipes.add(new SettlementWorkstationRecipe(recipeSave, true));
+							}
+							catch (Exception recipeError) {
+								if (Logging.logEnabled) Logging.logMessage("[LevelManager] Ignored invalid persisted workstation recipe tile=" + tileX + "," + tileY + " error=" + recipeError.getMessage());
+							}
+						}
+					}
+				}
+				entries.add(new Entry(settlementUniqueID, type, new LevelIdentifier(levelName), tileX, tileY, priority, filter, workstationRecipes));
 			} catch (IllegalArgumentException ignored) {
 				if (Logging.logEnabled) Logging.logMessage("[LevelManager] Ignored invalid persisted entry type=" + typeName + " level=" + levelName + " tile=" + tileX + "," + tileY);
 			}
@@ -125,8 +161,9 @@ public class SettlementLevelManagerLevelData extends LevelData {
 		public final int tileY;
 		public final int priority;
 		public final ItemCategoriesFilter filter;
+		public final ArrayList<SettlementWorkstationRecipe> workstationRecipes;
 
-		public Entry(int settlementUniqueID, EntryType type, LevelIdentifier levelIdentifier, int tileX, int tileY, int priority, ItemCategoriesFilter filter) {
+		public Entry(int settlementUniqueID, EntryType type, LevelIdentifier levelIdentifier, int tileX, int tileY, int priority, ItemCategoriesFilter filter, List<SettlementWorkstationRecipe> workstationRecipes) {
 			this.settlementUniqueID = settlementUniqueID;
 			this.type = type;
 			this.levelIdentifier = levelIdentifier;
@@ -134,7 +171,24 @@ public class SettlementLevelManagerLevelData extends LevelData {
 			this.tileY = tileY;
 			this.priority = priority;
 			this.filter = copyFilter(filter);
+			this.workstationRecipes = copyRecipes(workstationRecipes);
 		}
+	}
+
+	private static ArrayList<SettlementWorkstationRecipe> copyRecipes(List<SettlementWorkstationRecipe> recipes) {
+		if (recipes == null) return null;
+		ArrayList<SettlementWorkstationRecipe> result = new ArrayList<>();
+		for (SettlementWorkstationRecipe recipe : recipes) {
+			if (recipe == null) continue;
+			try {
+				Packet packet = new Packet();
+				recipe.writePacket(new PacketWriter(packet));
+				result.add(new SettlementWorkstationRecipe(recipe.uniqueID, new PacketReader(packet)));
+			}
+			catch (Exception ignored) {
+			}
+		}
+		return result;
 	}
 
 	private static ItemCategoriesFilter copyFilter(ItemCategoriesFilter filter) {

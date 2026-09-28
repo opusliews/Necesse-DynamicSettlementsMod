@@ -5,12 +5,14 @@ import necesse.gfx.forms.presets.containerComponent.settlement.SettlementAssignW
 import net.bytebuddy.asm.Advice;
 import opusliews.multilevelsettlement.SettlementLadderAssignUI;
 import opusliews.multilevelsettlement.SettlementStorageAssignUI;
+import opusliews.multilevelsettlement.SettlementWorkstationAssignUI;
 
 @ModMethodPatch(target = SettlementAssignWorkForm.class, name = "updateHudElements", arguments = {})
 public class SettlementAssignWorkLadderHudPatch {
 	@Advice.OnMethodEnter
 	public static void onEnter(@Advice.This SettlementAssignWorkForm form) {
 		SettlementStorageAssignUI.beforeHudUpdate(form);
+		SettlementWorkstationAssignUI.beforeHudUpdate(form);
 	}
 
 	@Advice.OnMethodExit

@@ -101,7 +101,7 @@ public class CraftingStationLevelJob extends TileLevelJob {
 				|| !station.canSettlerPerformCrafting((HumanMob)worker.getMobWorker())) {
 			return false;
 		}
-		boolean canMove = worker.getMobWorker().estimateCanMoveTo(tileX, tileY, true);
+		boolean canMove = worker.estimateCanMoveTo(tileX, tileY, true);
 		Logging.logMessage("[CraftingJob] Worker " + uniqueID + " estimate move to station " + tileX + "," + tileY + " = " + canMove);
 		return canMove;
 	}

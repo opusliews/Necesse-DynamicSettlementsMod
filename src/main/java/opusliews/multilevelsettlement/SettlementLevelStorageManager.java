@@ -6,6 +6,7 @@ import necesse.level.maps.Level;
 import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import necesse.level.maps.levelData.settlementData.SettlementInventory;
 import necesse.level.maps.levelData.jobs.HasStorageLevelJob;
+import necesse.level.maps.levelData.jobs.UseWorkstationLevelJob;
 import necesse.level.maps.levelData.jobs.TileLevelJob;
 import necesse.level.maps.levelData.settlementData.SettlementWorkstation;
 import necesse.level.maps.levelData.settlementData.storage.SettlementStorageRecords;
@@ -156,6 +157,24 @@ public final class SettlementLevelStorageManager {
 		return result;
 	}
 
+	public static ArrayList<Point> getWorkstationPositions(ServerSettlementData settlement, LevelIdentifier levelIdentifier) {
+		ArrayList<Point> result = new ArrayList<>();
+		if (settlement == null || levelIdentifier == null) return result;
+		if (settlement.getLevel().getIdentifier().equals(levelIdentifier)) {
+			for (Object value : settlement.storageManager.getWorkstations()) {
+				if (value instanceof SettlementWorkstation) {
+					SettlementWorkstation workstation = (SettlementWorkstation)value;
+					result.add(new Point(workstation.tileX, workstation.tileY));
+				}
+			}
+			return result;
+		}
+		for (Map.Entry<SettlementLevelPosition, SettlementWorkstation> entry : getState(settlement).workstations.entrySet()) {
+			if (levelIdentifier.equals(entry.getKey().levelIdentifier)) result.add(new Point(entry.getKey().tileX, entry.getKey().tileY));
+		}
+		return result;
+	}
+
 	public static SettlementStorageRecords getStorageRecords(ServerSettlementData settlement, LevelIdentifier levelIdentifier) {
 		if (settlement == null || levelIdentifier == null) return null;
 		if (settlement.getLevel().getIdentifier().equals(levelIdentifier)) return settlement.storageRecords;
@@ -193,6 +212,16 @@ public final class SettlementLevelStorageManager {
 			}
 		}
 
+		for (Map.Entry<SettlementLevelPosition, SettlementWorkstation> entry : state.workstations.entrySet()) {
+			SettlementWorkstation workstation = entry.getValue();
+			if (!(workstation instanceof SettlementLevelWorkstation)) continue;
+			SettlementLevelWorkstation levelWorkstation = (SettlementLevelWorkstation)workstation;
+			Level workstationLevel = levelWorkstation.getLevel();
+			if (workstationLevel == null || !hasWorkstation(settlement, workstation)) continue;
+			workstation.updateAdjacentSolidState();
+			workstationLevel.jobsLayer.addJob(new UseWorkstationLevelJob(workstation, () -> hasWorkstation(settlement, workstation)), true);
+		}
+
 		state.recordsByLevel.clear();
 		state.recordsByLevel.putAll(nextRecords);
 	}
@@ -226,6 +255,13 @@ public final class SettlementLevelStorageManager {
 		if (inventory.level.getIdentifier().equals(settlement.getLevel().getIdentifier())) return;
 		SettlementLevelManagerLevelData data = SettlementLevelManagerLevelData.get(settlement.getLevel(), true);
 		if (data != null) data.setStorageConfig(settlement.uniqueID, inventory.level.getIdentifier(), inventory.tileX, inventory.tileY, inventory.priority, inventory.filter);
+	}
+
+	public static void persistWorkstationRecipes(ServerSettlementData settlement, SettlementWorkstation workstation) {
+		if (settlement == null || workstation == null || !(workstation instanceof SettlementLevelWorkstation)) return;
+		LevelIdentifier levelIdentifier = ((SettlementLevelWorkstation)workstation).getLevel().getIdentifier();
+		SettlementLevelManagerLevelData data = SettlementLevelManagerLevelData.get(settlement.getLevel(), true);
+		if (data != null) data.setWorkstationRecipes(settlement.uniqueID, levelIdentifier, workstation.tileX, workstation.tileY, workstation.recipes);
 	}
 
 	public static void restorePersisted(ServerSettlementData settlement) {
@@ -262,7 +298,12 @@ public final class SettlementLevelStorageManager {
 					restoredStorage++;
 				}
 			} else if (entry.type == SettlementLevelManagerLevelData.EntryType.WORKSTATION) {
-				if (assignWorkstation(settlement, level, entry.tileX, entry.tileY, false) != null) restoredWorkstations++;
+				SettlementWorkstation workstation = assignWorkstation(settlement, level, entry.tileX, entry.tileY, false);
+				if (workstation != null) {
+					workstation.recipes.clear();
+					if (entry.workstationRecipes != null) workstation.recipes.addAll(entry.workstationRecipes);
+					restoredWorkstations++;
+				}
 			}
 		}
 		if (Logging.logEnabled && (restoredStorage > 0 || restoredWorkstations > 0)) {
