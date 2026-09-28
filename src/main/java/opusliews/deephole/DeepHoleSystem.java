@@ -30,10 +30,8 @@ import opusliews.buff.DeepHoleHiddenBuff;
 import opusliews.buff.DeepHoleLadderDescentBuff;
 import opusliews.item.DirtPileItem;
 import opusliews.logging.Logging;
-import opusliews.multilevelsettlement.SettlementLadderSystem;
 import opusliews.network.PacketDeepHoleInteract;
 import opusliews.network.PacketHoleCaveLadderInteract;
-import opusliews.network.PacketToggleSettlementLadder;
 import opusliews.object.DeepHoleCeilingLightObject;
 import opusliews.object.HoleCaveLadderObject;
 import opusliews.object.HoleCaveLadderUpObject;
@@ -244,12 +242,6 @@ public final class DeepHoleSystem {
 			}
 		}
 		if (!mouseOverLadder) return false;
-
-		if (SettlementLadderSystem.isHoldingSettlementFlag(player)) {
-			level.getClient().network.sendPacket(new PacketToggleSettlementLadder(level.getIdentifierHashCode(), tileX, tileY));
-			if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] Deep-hole ladder client intercept sent settlement-ladder toggle level=" + level.getIdentifier() + " tile=" + tileX + "," + tileY);
-			return true;
-		}
 
 		level.getClient().network.sendPacket(new PacketHoleCaveLadderInteract(tileX, tileY));
 		return true;

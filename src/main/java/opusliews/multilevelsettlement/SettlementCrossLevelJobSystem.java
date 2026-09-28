@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -69,6 +70,7 @@ public final class SettlementCrossLevelJobSystem {
 	private static final double PREFERENCE_WEIGHT_MIN = 1.40;
 	private static final double PREFERENCE_WEIGHT_MAX = 2.10;
 	private static final double CURRENT_LEVEL_WEIGHT = 1.15;
+	private static final double RECREATION_RANDOM_KIND_CHANCE = 0.20;
 	private static final long AGED_JOB_MS = 90_000L;
 	private static final long FORCE_OLD_JOB_MS = 180_000L;
 	private static final long STALE_JOB_KEY_MS = 300_000L;
@@ -90,7 +92,7 @@ public final class SettlementCrossLevelJobSystem {
 		if (human.getLevel() == null || !human.getLevel().isServer() || !human.isSettler()) return null;
 
 		// Custom JobFinder constraints are used by following AI and special systems such as
-		// guard breaks. They are intentionally left vanilla until their dedicated roadmap steps.
+		// guard breaks.
 		if (localFinder.zoneTester != null || localFinder.searchBounds != null || localFinder.levelJobPredicate != null) return null;
 		if (human.getJobFollowingMob() != null) return null;
 
@@ -474,7 +476,7 @@ public final class SettlementCrossLevelJobSystem {
 		// Do NOT call JobFinder.streamFoundJobs() here. JobTypeHandler.streamJobs() also
 		// executes registered extra job streamers (chatting/recreation/etc.), which are
 		// built for the real HumanMob and can cast the synthetic RemoteWorker to
-		// specialized worker interfaces. Step 10 only needs persistent jobs that actually
+		// specialized worker interfaces. This step only needs persistent jobs that actually
 		// exist in the remote level's jobsLayer. Generate FoundJob objects for those jobs
 		// manually so vanilla handler predicates, priorities and pre-sequence computes are
 		// still preserved.
@@ -550,46 +552,78 @@ public final class SettlementCrossLevelJobSystem {
 		int index = 0;
 		int groupIndex = 0;
 		while (index < sorted.size()) {
-			PriorityKey key = sorted.get(index).priorityKey;
+			Candidate first = sorted.get(index);
+			PriorityKey key = first.priorityKey;
+
+			// Vanilla recreation preference lives in sameTypePriority. Keep the normal
+			// recreation kind 80% of the time, but 20% of the time choose uniformly from
+			// the reachable recreation kinds before level preference is applied. This keeps
+			// higher-priority job TYPES completely vanilla while preventing one recreation
+			// kind from permanently excluding every other kind on another settlement level.
+			if (first.found.job.jobType.getID() == JobTypeRegistry.recreationID) {
+				int baseEnd = index;
+				ArrayList<Candidate> reachableRecreation = new ArrayList<>();
+				while (baseEnd < sorted.size() && key.sameBeforeRecreationPreference(sorted.get(baseEnd).priorityKey)) {
+					Candidate candidate = sorted.get(baseEnd++);
+					if (evaluateReachability(human, settlement, domain, candidate)) reachableRecreation.add(candidate);
+				}
+
+				if (!reachableRecreation.isEmpty()) {
+					boolean randomKind = GameRandom.globalRandom.nextDouble() < RECREATION_RANDOM_KIND_CHANCE;
+					ArrayList<Candidate> selectedPool;
+					String selectedKind;
+
+					if (randomKind) {
+						LinkedHashMap<String, ArrayList<Candidate>> byKind = new LinkedHashMap<>();
+						for (Candidate candidate : reachableRecreation) {
+							String kind = candidate.found.job.getStringID();
+							byKind.computeIfAbsent(kind, ignored -> new ArrayList<>()).add(candidate);
+						}
+						ArrayList<String> kinds = new ArrayList<>(byKind.keySet());
+						selectedKind = kinds.get(GameRandom.globalRandom.nextInt(kinds.size()));
+						selectedPool = byKind.get(selectedKind);
+					}
+					else {
+						Candidate vanillaBest = reachableRecreation.stream().min(CANDIDATE_PRIORITY_COMPARATOR).orElse(null);
+						selectedKind = vanillaBest == null ? "none" : vanillaBest.found.job.getStringID();
+						selectedPool = new ArrayList<>();
+						if (vanillaBest != null) {
+							for (Candidate candidate : reachableRecreation) {
+								if (candidate.priorityKey.equals(vanillaBest.priorityKey)) selectedPool.add(candidate);
+							}
+						}
+					}
+
+					if (randomKind && !selectedPool.isEmpty()) {
+						Candidate bestInKind = selectedPool.stream().min(CANDIDATE_PRIORITY_COMPARATOR).orElse(null);
+						PriorityKey bestKey = bestInKind == null ? null : bestInKind.priorityKey;
+						if (bestKey != null) selectedPool.removeIf(candidate -> !candidate.priorityKey.equals(bestKey));
+					}
+
+					if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Recreation choice settler=" + human.getUniqueID()
+							+ " mode=" + (randomKind ? "RANDOM_20" : "VANILLA_80")
+							+ " kind=" + selectedKind
+							+ " reachableKinds=" + reachableRecreation.stream().map(candidate -> candidate.found.job.getStringID()).distinct().count()
+							+ " candidates=" + selectedPool.size());
+					if (!selectedPool.isEmpty()) return selectedPool;
+				}
+
+				index = baseEnd;
+				groupIndex++;
+				continue;
+			}
+
 			int groupStart = index;
 			ArrayList<Candidate> reachable = new ArrayList<>();
-			if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Priority group begin settler=" + human.getUniqueID() + " group=" + groupIndex + " key=" + key);
-
 			while (index < sorted.size() && key.equals(sorted.get(index).priorityKey)) {
 				Candidate candidate = sorted.get(index++);
-				boolean isReachable = evaluateReachability(human, settlement, domain, candidate);
-				if (isReachable) reachable.add(candidate);
-
-				if (Logging.logEnabled) {
-					Logging.logMessage("[CrossLevelJobs] Priority candidate settler=" + human.getUniqueID()
-							+ " group=" + groupIndex
-							+ " job=" + describe(candidate)
-							+ " type=" + candidate.found.job.jobType.getStringID()
-							+ " key=" + candidate.priorityKey
-							+ " reachable=" + isReachable
-							+ " travelCost=" + (isReachable ? candidate.travelCost : "n/a")
-							+ " waitingMS=" + candidate.waitingMs(human.getTime()));
-				}
+				if (evaluateReachability(human, settlement, domain, candidate)) reachable.add(candidate);
 			}
-
 			if (!reachable.isEmpty()) {
-				if (Logging.logEnabled) {
-					Logging.logMessage("[CrossLevelJobs] Priority group selected settler=" + human.getUniqueID() + " group=" + groupIndex + " key=" + key + " groupSize=" + (index - groupStart) + " reachable=" + reachable.size());
-
-					for (int lowerIndex = index; lowerIndex < sorted.size(); lowerIndex++) {
-						Candidate excluded = sorted.get(lowerIndex);
-						Logging.logMessage("[CrossLevelJobs] Candidate excluded before level choice due to lower vanilla priority settler=" + human.getUniqueID()
-								+ " job=" + describe(excluded)
-								+ " type=" + excluded.found.job.jobType.getStringID()
-								+ " candidateKey=" + excluded.priorityKey
-								+ " selectedKey=" + key);
-
-					}
-				}
+				if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Priority group selected settler=" + human.getUniqueID()
+						+ " group=" + groupIndex + " key=" + key + " groupSize=" + (index - groupStart) + " reachable=" + reachable.size());
 				return reachable;
 			}
-
-			if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Priority group rejected because no candidate is reachable settler=" + human.getUniqueID() + " group=" + groupIndex + " key=" + key + " groupSize=" + (index - groupStart));
 			groupIndex++;
 		}
 
@@ -822,6 +856,16 @@ public final class SettlementCrossLevelJobSystem {
 			int sameTypePriority = found.job.getSameTypePriority(found);
 			int sameJobPriority = found.job.getSameJobPriority();
 			return new PriorityKey(firstPriority, prioritizeNextOrder, lastPerformedOrder, afterPriority, typePriorityOrder, typeIDOrder, sameTypePriority, sameJobPriority);
+		}
+
+		boolean sameBeforeRecreationPreference(PriorityKey other) {
+			return other != null
+					&& firstPriority == other.firstPriority
+					&& prioritizeNextOrder == other.prioritizeNextOrder
+					&& lastPerformedOrder == other.lastPerformedOrder
+					&& afterPriority == other.afterPriority
+					&& typePriorityOrder == other.typePriorityOrder
+					&& typeIDOrder == other.typeIDOrder;
 		}
 
 		@Override

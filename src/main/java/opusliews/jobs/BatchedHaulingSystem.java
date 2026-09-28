@@ -5,7 +5,6 @@ import necesse.engine.localization.message.LocalMessage;
 import necesse.engine.util.ComputedObjectValue;
 import necesse.engine.util.ComputedValue;
 import necesse.engine.util.GameObjectReservable;
-import necesse.engine.util.PointHashMap;
 import necesse.entity.mobs.PlayerMob;
 import necesse.entity.mobs.friendly.human.HumanMob;
 import necesse.entity.mobs.job.EntityJobWorker;
@@ -28,6 +27,10 @@ import opusliews.clay.ClayPackageSystem;
 import opusliews.logging.Logging;
 import opusliews.mobs.BuilderHumanMob;
 import opusliews.stock.SettlementStockSystem;
+import opusliews.multilevelsettlement.SettlementCrossLevelRoute;
+import opusliews.multilevelsettlement.SettlementLevelDomain;
+import opusliews.multilevelsettlement.SettlementLevelType;
+import opusliews.multilevelsettlement.SettlementMultiLevelSystem;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -107,8 +110,7 @@ public final class BatchedHaulingSystem {
 				.filter(job -> job instanceof HaulFromLevelJob)
 				.map(job -> (HaulFromLevelJob)job)
 				.filter(job -> job != primary)
-				.filter(job -> job.storage == primary.storage
-						|| (job.storage.tileX == primary.storage.tileX && job.storage.tileY == primary.storage.tileY))
+				.filter(job -> sameStorage(job.storage, primary.storage))
 				.filter(job -> job.item != null && job.item.getAmount() > 0)
 				.filter(job -> getMatchingDestination(job, destination.storage, worker) != null)
 				.collect(Collectors.toList());
@@ -218,15 +220,12 @@ public final class BatchedHaulingSystem {
 	}
 
 	private static HaulFromLevelJob.HaulPosition selectDestination(HaulFromLevelJob job, EntityJobWorker worker) {
-		ZoneTester restrictZone = worker.getJobRestrictZone();
-		PointHashMap<Boolean> estimatedCanMoveToCache = new PointHashMap<>();
 		ArrayList<HaulFromLevelJob.HaulPosition> valid = new ArrayList<>();
 
 		for (Object value : job.dropOffPositions) {
 			HaulFromLevelJob.HaulPosition pos = (HaulFromLevelJob.HaulPosition)value;
-			if (!restrictZone.containsTile(pos.storage.tileX, pos.storage.tileY)) continue;
 			if (getSourceRemovalLimit(job, pos.storage) <= 0) continue;
-			if (!canUseDestination(job, pos, worker, estimatedCanMoveToCache)) continue;
+			if (!canUseDestination(job, pos, worker)) continue;
 			valid.add(pos);
 		}
 
@@ -236,12 +235,9 @@ public final class BatchedHaulingSystem {
 				Comparator.comparingInt(value -> -value.object.priority);
 		comparator = comparator.thenComparingDouble(ComputedValue::get);
 
-		Point source = new Point(job.tileX * 32 + 16, job.tileY * 32 + 16);
 		return valid.stream()
-				.map(pos -> new ComputedObjectValue<>(pos, () -> source.distance(
-						pos.storage.tileX * 32 + 16,
-						pos.storage.tileY * 32 + 16
-				)))
+				.map(pos -> new ComputedObjectValue<>(pos, () -> getDestinationTravelCost(job, pos.storage, worker)))
+				.filter(value -> value.get() < Double.MAX_VALUE)
 				.min(comparator)
 				.map(value -> value.object)
 				.orElse(null);
@@ -252,66 +248,73 @@ public final class BatchedHaulingSystem {
 			LevelStorage destination,
 			EntityJobWorker worker
 	) {
-		ZoneTester restrictZone = worker.getJobRestrictZone();
-		if (!restrictZone.containsTile(destination.tileX, destination.tileY)) {
-			if (Logging.logEnabled) Logging.logMessage("[BatchedHauling] Candidate rejected: destination outside restrict zone item="
-					+ job.item.item.getStringID());
-			return null;
-		}
-
 		for (Object value : job.dropOffPositions) {
 			HaulFromLevelJob.HaulPosition pos = (HaulFromLevelJob.HaulPosition)value;
-			if (pos.storage != destination
-					&& (pos.storage.tileX != destination.tileX || pos.storage.tileY != destination.tileY)) {
-				continue;
-			}
+			if (!sameStorage(pos.storage, destination)) continue;
 			if (getDestinationAmount(job, pos) <= 0) continue;
-
-			if (pos.getInventoryRange() == null) {
-				if (Logging.logEnabled) Logging.logMessage("[BatchedHauling] Candidate rejected: destination inventory unavailable item="
-						+ job.item.item.getStringID());
-				return null;
-			}
-			if (!pos.storage.estimateCanMoveTo(worker)) {
-				if (Logging.logEnabled) Logging.logMessage("[BatchedHauling] Candidate rejected: destination unreachable item="
-						+ job.item.item.getStringID());
-				return null;
-			}
-
+			if (!canUseDestination(job, pos, worker)) continue;
 			return pos;
 		}
 
 		if (Logging.logEnabled) Logging.logMessage("[BatchedHauling] Candidate rejected: primary destination is not valid for item="
-				+ job.item.item.getStringID() + " destination=" + destination.tileX + "," + destination.tileY);
+				+ job.item.item.getStringID() + " destination=" + destination.level.getIdentifier() + "@" + destination.tileX + "," + destination.tileY);
 		return null;
 	}
 
 	private static boolean canUseDestination(
 			HaulFromLevelJob job,
 			HaulFromLevelJob.HaulPosition pos,
-			EntityJobWorker worker,
-			PointHashMap<Boolean> estimatedCanMoveToCache
+			EntityJobWorker worker
 	) {
 		InventoryRange range = pos.getInventoryRange();
-		if (range == null) return false;
+		if (range == null || pos.storage == null || pos.storage.level == null) return false;
 		if (getDestinationAmount(job, pos) <= 0) return false;
 
-		int filterAmount = pos.storage.getFilter().getAddAmount(job.getLevel(), job.item, range, false);
+		int filterAmount = pos.storage.getFilter().getAddAmount(pos.storage.level, job.item, range, false);
 		if (filterAmount <= 0) return false;
 		if (range.inventory.canAddItem(
-				job.getLevel(),
+				pos.storage.level,
 				(PlayerMob)null,
 				job.item,
 				range.startSlot,
 				range.endSlot,
 				"hauljob"
-			) <= 0) return false;
+		) <= 0) return false;
 
-		return estimatedCanMoveToCache.compute(
-				pos.storage.tileX,
-				pos.storage.tileY,
-				(x, y, previous) -> previous == null ? pos.storage.estimateCanMoveTo(worker) : previous
+		if (job.storage.level.getIdentifier().equals(pos.storage.level.getIdentifier())) {
+			ZoneTester restrictZone = worker.getJobRestrictZone();
+			return restrictZone.containsTile(pos.storage.tileX, pos.storage.tileY) && pos.storage.estimateCanMoveTo(worker);
+		}
+
+		if (!(job.storage instanceof necesse.level.maps.levelData.settlementData.SettlementInventory)
+				|| !(pos.storage instanceof necesse.level.maps.levelData.settlementData.SettlementInventory)) return false;
+		return CrossLevelHaulingSystem.findRoute(
+				worker,
+				(necesse.level.maps.levelData.settlementData.SettlementInventory)job.storage,
+				(necesse.level.maps.levelData.settlementData.SettlementInventory)pos.storage
+		) != null;
+	}
+
+	private static double getDestinationTravelCost(HaulFromLevelJob job, LevelStorage destination, EntityJobWorker worker) {
+		if (job == null || job.storage == null || destination == null || job.storage.level == null || destination.level == null) return Double.MAX_VALUE;
+		if (job.storage.level.getIdentifier().equals(destination.level.getIdentifier())) {
+			Point source = new Point(job.tileX * 32 + 16, job.tileY * 32 + 16);
+			return source.distance(destination.tileX * 32 + 16, destination.tileY * 32 + 16);
+		}
+		if (!(job.storage instanceof necesse.level.maps.levelData.settlementData.SettlementInventory)
+				|| !(destination instanceof necesse.level.maps.levelData.settlementData.SettlementInventory)) return Double.MAX_VALUE;
+		SettlementCrossLevelRoute route = CrossLevelHaulingSystem.findRoute(
+				worker,
+				(necesse.level.maps.levelData.settlementData.SettlementInventory)job.storage,
+				(necesse.level.maps.levelData.settlementData.SettlementInventory)destination
 		);
+		return route == null ? Double.MAX_VALUE : route.totalDistance * 32.0;
+	}
+
+	private static boolean sameStorage(LevelStorage a, LevelStorage b) {
+		return a == b || a != null && b != null && a.level != null && b.level != null
+				&& a.level.getIdentifier().equals(b.level.getIdentifier())
+				&& a.tileX == b.tileX && a.tileY == b.tileY;
 	}
 
 	private static int getDestinationAmount(HaulFromLevelJob job, HaulFromLevelJob.HaulPosition destination) {
@@ -369,6 +372,45 @@ public final class BatchedHaulingSystem {
 		if (reserved <= 0) return 0;
 
 		for (int i = pickups.size() - 1; i >= 0; i--) sequence.addFirst(pickups.get(i));
+		if (job.storage.level != null && destination.level != null
+				&& !job.storage.level.getIdentifier().equals(destination.level.getIdentifier())) {
+			if (!(job.storage instanceof necesse.level.maps.levelData.settlementData.SettlementInventory)
+					|| !(destination instanceof necesse.level.maps.levelData.settlementData.SettlementInventory)) {
+				removeSlots(slots);
+				return 0;
+			}
+			SettlementCrossLevelRoute route = CrossLevelHaulingSystem.findRoute(
+					worker,
+					(necesse.level.maps.levelData.settlementData.SettlementInventory)job.storage,
+					(necesse.level.maps.levelData.settlementData.SettlementInventory)destination
+			);
+			if (route == null || route.ladder == null) {
+				removeSlots(slots);
+				return 0;
+			}
+			if (!(worker.getMobWorker() instanceof HumanMob)) {
+				removeSlots(slots);
+				return 0;
+			}
+			HumanMob human = (HumanMob)worker.getMobWorker();
+			SettlementLevelDomain domain = SettlementMultiLevelSystem.get(human.getSettlerSettlementServerData());
+			SettlementLevelType sourceType = domain == null || human.getLevel() == null ? null : domain.getLevelType(human.getLevel().getIdentifier());
+			if (sourceType == null) {
+				removeSlots(slots);
+				return 0;
+			}
+			sequence.addLast(new CrossLevelHaulingTransitionActiveJob(
+					worker,
+					priority,
+					route,
+					(necesse.level.maps.levelData.settlementData.SettlementInventory)destination,
+					sourceType
+			));
+			if (Logging.logEnabled) Logging.logMessage("[CrossLevelHauling] Planned cross-level haul source="
+					+ job.storage.level.getIdentifier() + "@" + job.storage.tileX + "," + job.storage.tileY
+					+ " destination=" + destination.level.getIdentifier() + "@" + destination.tileX + "," + destination.tileY
+					+ " item=" + job.item.item.getStringID() + " amount=" + reserved + " route=" + route);
+		}
 		for (DropOffSettlementStorageActiveJob dropOff : dropOffs) sequence.addLast(dropOff);
 		sequence.addLast(new PerformLevelJobEventActiveJob(worker, priority, job));
 		job.item.setAmount(Math.max(0, job.item.getAmount() - reserved));

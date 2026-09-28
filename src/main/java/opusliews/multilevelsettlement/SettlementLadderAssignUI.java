@@ -164,7 +164,7 @@ public final class SettlementLadderAssignUI {
 				if (master == null) return false;
 				form.client.network.sendPacket(new PacketToggleSettlementLadder(
 						form.client.getLevel().getIdentifierHashCode(), master.tileX, master.tileY,
-						true, form.container.getSettlementUniqueID()));
+						form.container.getSettlementUniqueID()));
 				return true;
 			}
 

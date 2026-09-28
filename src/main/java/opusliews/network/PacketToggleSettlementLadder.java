@@ -12,24 +12,17 @@ public class PacketToggleSettlementLadder extends Packet {
 	public final int levelIdentifierHashCode;
 	public final int tileX;
 	public final int tileY;
-	public final boolean assignmentTool;
 	public final int settlementUniqueID;
 
-	public PacketToggleSettlementLadder(int levelIdentifierHashCode, int tileX, int tileY) {
-		this(levelIdentifierHashCode, tileX, tileY, false, 0);
-	}
-
-	public PacketToggleSettlementLadder(int levelIdentifierHashCode, int tileX, int tileY, boolean assignmentTool, int settlementUniqueID) {
+	public PacketToggleSettlementLadder(int levelIdentifierHashCode, int tileX, int tileY, int settlementUniqueID) {
 		this.levelIdentifierHashCode = levelIdentifierHashCode;
 		this.tileX = tileX;
 		this.tileY = tileY;
-		this.assignmentTool = assignmentTool;
 		this.settlementUniqueID = settlementUniqueID;
 		PacketWriter writer = new PacketWriter(this);
 		writer.putNextInt(levelIdentifierHashCode);
 		writer.putNextInt(tileX);
 		writer.putNextInt(tileY);
-		writer.putNextBoolean(assignmentTool);
 		writer.putNextInt(settlementUniqueID);
 	}
 
@@ -39,12 +32,11 @@ public class PacketToggleSettlementLadder extends Packet {
 		levelIdentifierHashCode = reader.getNextInt();
 		tileX = reader.getNextInt();
 		tileY = reader.getNextInt();
-		assignmentTool = reader.getNextBoolean();
 		settlementUniqueID = reader.getNextInt();
 	}
 
 	@Override
 	public void processServer(NetworkPacket packet, Server server, ServerClient client) {
-		SettlementLadderSystem.handleTogglePacket(server, client, levelIdentifierHashCode, tileX, tileY, assignmentTool, settlementUniqueID);
+		SettlementLadderSystem.handleTogglePacket(server, client, levelIdentifierHashCode, tileX, tileY, settlementUniqueID);
 	}
 }

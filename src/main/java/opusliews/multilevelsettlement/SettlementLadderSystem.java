@@ -9,10 +9,8 @@ import necesse.entity.mobs.Mob;
 import necesse.entity.mobs.PlayerMob;
 import necesse.entity.objectEntity.ObjectEntity;
 import necesse.entity.objectEntity.PortalObjectEntity;
-import necesse.inventory.InventoryItem;
 import necesse.level.gameObject.GameObject;
 import necesse.level.maps.Level;
-import necesse.level.maps.LevelObject;
 import necesse.level.maps.levelData.settlementData.CachedSettlementData;
 import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import opusliews.logging.Logging;
@@ -25,82 +23,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class SettlementLadderSystem {
-	private static final String settlementFlagItemID = "settlementflag";
-
 	private SettlementLadderSystem() {
 	}
 
-	public static boolean handlePlayerInteract(LevelObject levelObject, PlayerMob player) {
-		if (levelObject == null || player == null || levelObject.level == null) return false;
-		if (!isSupportedLadderObject(levelObject.object)) return false;
 
-		if (!isHoldingSettlementFlag(player)) {
-			if (Logging.logEnabled && levelObject.level.isClient()) {
-				InventoryItem selected = player.getSelectedItem();
-				Logging.logMessage("[SettlementLadder] Client ladder interaction is ordinary because Settlement Flag is not selected level=" + levelObject.level.getIdentifier() + " tile=" + levelObject.tileX + "," + levelObject.tileY + " selected=" + (selected == null || selected.item == null ? "none" : selected.item.getStringID()));
-			}
-			return false;
-		}
+	public static void handleTogglePacket(Server server, ServerClient client, int levelIdentifierHashCode, int tileX, int tileY, int requestedSettlementUniqueID) {
+		if (server == null || client == null || client.playerMob == null) return;
+		if (!(client.getContainer() instanceof SettlementDependantContainer)) return;
 
-		Level level = levelObject.level;
-		int tileX = levelObject.tileX;
-		int tileY = levelObject.tileY;
-
-		if (level.isClient()) {
-			if (level.getClient() == null) {
-				if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] Client could not send toggle packet because level has no client level=" + level.getIdentifier() + " tile=" + tileX + "," + tileY);
-				return true;
-			}
-			level.getClient().network.sendPacket(new PacketToggleSettlementLadder(level.getIdentifierHashCode(), tileX, tileY));
-			if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] Client sent explicit settlement-ladder toggle request level=" + level.getIdentifier() + " tile=" + tileX + "," + tileY);
-			return true;
-		}
-
-		if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] Suppressed direct server ladder interaction while Settlement Flag is selected level=" + level.getIdentifier() + " tile=" + tileX + "," + tileY);
-		return true;
-	}
-
-	public static void handleTogglePacket(Server server, ServerClient client, int levelIdentifierHashCode, int tileX, int tileY, boolean assignmentTool, int requestedSettlementUniqueID) {
-		if (server == null || client == null || client.playerMob == null) {
-			if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] Toggle packet rejected due to missing server/client/player");
-			return;
-		}
+		SettlementDependantContainer container = (SettlementDependantContainer)client.getContainer();
+		ServerSettlementData settlement = container.getServerData();
+		if (settlement == null || settlement.uniqueID != requestedSettlementUniqueID || !settlement.networkData.doesClientHaveAccess(client)) return;
 
 		Level level = server.world.getLevel(client);
-		if (level == null) {
-			if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] Toggle packet rejected because player level could not be resolved player=" + client.authentication);
-			return;
-		}
-		if (level.getIdentifierHashCode() != levelIdentifierHashCode) {
-			if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] Toggle packet rejected due to level mismatch player=" + client.authentication + " actual=" + level.getIdentifier() + " packetHash=" + levelIdentifierHashCode);
-			return;
-		}
-		if (assignmentTool) {
-			if (!(client.getContainer() instanceof SettlementDependantContainer)) return;
-			SettlementDependantContainer container = (SettlementDependantContainer)client.getContainer();
-			ServerSettlementData settlement = container.getServerData();
-			if (settlement == null || settlement.uniqueID != requestedSettlementUniqueID || !settlement.networkData.doesClientHaveAccess(client)) return;
-		}
-		else if (!isHoldingSettlementFlag(client.playerMob)) {
-			if (Logging.logEnabled) {
-				InventoryItem selected = client.playerMob.getSelectedItem();
-				Logging.logMessage("[SettlementLadder] Toggle packet rejected because Settlement Flag is not selected player=" + client.authentication + " selected=" + (selected == null || selected.item == null ? "none" : selected.item.getStringID()));
-			}
-			return;
-		}
-		if (!isSupportedLadderObject(level.getObject(tileX, tileY))) {
-			if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] Toggle packet rejected because target is not a supported ladder level=" + level.getIdentifier() + " tile=" + tileX + "," + tileY + " object=" + level.getObject(tileX, tileY).getStringID());
-			return;
-		}
-		if (assignmentTool) {
-			SettlementLevelDomain targetDomain = SettlementMultiLevelSystem.findDomain(level.getServer(), level.getIdentifier(), tileX, tileY);
-			if (targetDomain == null || targetDomain.getSettlementUniqueID() != requestedSettlementUniqueID) return;
-		}
-		if (!assignmentTool && !level.getLevelObject(tileX, tileY).isInInteractRange(client.playerMob)) {
-			if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] Toggle packet rejected because ladder is out of interaction range player=" + client.authentication + " level=" + level.getIdentifier() + " tile=" + tileX + "," + tileY);
-			return;
-		}
+		if (level == null || level.getIdentifierHashCode() != levelIdentifierHashCode) return;
+		if (!isSupportedLadderObject(level.getObject(tileX, tileY))) return;
 
+		SettlementLevelDomain targetDomain = SettlementMultiLevelSystem.findDomain(level.getServer(), level.getIdentifier(), tileX, tileY);
+		if (targetDomain == null || targetDomain.getSettlementUniqueID() != requestedSettlementUniqueID) return;
 		toggleDesignation(level, tileX, tileY, client);
 	}
 
@@ -400,11 +340,6 @@ public final class SettlementLadderSystem {
 		if (client == null || domain == null) return;
 		Level level = client.getLevel();
 		if (level != null && domain.getLevelType(level.getIdentifier()) != null) client.sendPacket(getSyncPacket(domain, level));
-	}
-
-	public static boolean isHoldingSettlementFlag(PlayerMob player) {
-		InventoryItem selected = player.getSelectedItem();
-		return selected != null && selected.item != null && settlementFlagItemID.equals(selected.item.getStringID());
 	}
 
 	private static void sendMessage(ServerClient client, String message) {
