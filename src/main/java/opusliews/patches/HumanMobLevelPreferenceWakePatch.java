@@ -1,14 +1,14 @@
 package opusliews.patches;
 
-import necesse.engine.modLoader.annotations.ModMethodPatch;
-import necesse.entity.mobs.friendly.human.HumanMob;
-import net.bytebuddy.asm.Advice;
-import opusliews.multilevelsettlement.SettlementLevelPreferenceAIController;
-
-@ModMethodPatch(target = HumanMob.class, name = "serverTick", arguments = {})
-public class HumanMobLevelPreferenceWakePatch {
-	@Advice.OnMethodEnter
-	public static void onEnter(@Advice.This HumanMob human) {
-		SettlementLevelPreferenceAIController.wakePreferredLevelNode(human);
+/**
+ * Level preference is no longer implemented as a dedicated AI node that needs
+ * waking from HumanMob.serverTick(). The preference is read only when an actual
+ * cross-level job choice is made.
+ *
+ * This intentionally has no ModMethodPatch annotation so older installs that
+ * overwrite this source file stop transforming HumanMob.serverTick().
+ */
+public final class HumanMobLevelPreferenceWakePatch {
+	private HumanMobLevelPreferenceWakePatch() {
 	}
 }

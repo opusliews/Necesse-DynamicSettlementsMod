@@ -12,6 +12,13 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+/**
+ * Stores a settler's soft level preference.
+ *
+ * SURFACE/CAVE do not cause movement, choose beds, or override vanilla AI. The
+ * preference is consumed by cross-level job selection only as a weighting when
+ * otherwise comparable work exists on more than one settlement level.
+ */
 public final class SettlementLevelPreferenceSystem {
 	public static final String caveResidenceThoughtStringID = "dscavelevelpreference";
 	public static final int caveResidenceHappinessModifier = 15;

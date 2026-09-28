@@ -22,7 +22,10 @@ import necesse.entity.mobs.friendly.human.HumanMob;
 import necesse.level.maps.Level;
 
 public final class FireHazardPathing {
+	private static final long GROUND_FIRE_CACHE_INTERVAL_MS = 100L;
 	private static final Map<Level, GroundFireCache> groundFireCaches = Collections.synchronizedMap(new WeakHashMap<>());
+	private static volatile Level hotGroundFireLevel;
+	private static volatile GroundFireCache hotGroundFireCache;
 
 	private FireHazardPathing() {
 	}
@@ -101,24 +104,31 @@ public final class FireHazardPathing {
 		synchronized (groundFireCaches) {
 			groundFireCaches.remove(level);
 		}
+		if (hotGroundFireLevel == level) {
+			hotGroundFireLevel = null;
+			hotGroundFireCache = null;
+		}
 	}
 
 	private static GroundFireCache getGroundFireCache(Level level) {
-		long levelTime = level.getTime();
-		GroundFireCache cache;
+		long timeBucket = level.getTime() / GROUND_FIRE_CACHE_INTERVAL_MS;
+		GroundFireCache cache = hotGroundFireLevel == level ? hotGroundFireCache : null;
+		if (cache != null && cache.timeBucket == timeBucket) return cache;
 
 		synchronized (groundFireCaches) {
 			cache = groundFireCaches.get(level);
-			if (cache != null && cache.levelTime == levelTime) return cache;
-
-			cache = buildGroundFireCache(level, levelTime);
-			groundFireCaches.put(level, cache);
+			if (cache == null || cache.timeBucket != timeBucket) {
+				cache = buildGroundFireCache(level, timeBucket);
+				groundFireCaches.put(level, cache);
+			}
 		}
 
+		hotGroundFireLevel = level;
+		hotGroundFireCache = cache;
 		return cache;
 	}
 
-	private static GroundFireCache buildGroundFireCache(Level level, long levelTime) {
+	private static GroundFireCache buildGroundFireCache(Level level, long timeBucket) {
 		Set<Long> fireTiles = new HashSet<>();
 
 		for (Object eventObject : level.entityManager.events) {
@@ -147,7 +157,7 @@ public final class FireHazardPathing {
 			}
 		}
 
-		return new GroundFireCache(levelTime, fireTiles);
+		return new GroundFireCache(timeBucket, fireTiles);
 	}
 
 	private static long getTileKey(int tileX, int tileY) {
@@ -155,11 +165,11 @@ public final class FireHazardPathing {
 	}
 
 	private static class GroundFireCache {
-		private final long levelTime;
+		private final long timeBucket;
 		private final Set<Long> fireTiles;
 
-		private GroundFireCache(long levelTime, Set<Long> fireTiles) {
-			this.levelTime = levelTime;
+		private GroundFireCache(long timeBucket, Set<Long> fireTiles) {
+			this.timeBucket = timeBucket;
 			this.fireTiles = fireTiles;
 		}
 

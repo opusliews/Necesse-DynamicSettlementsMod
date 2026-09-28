@@ -255,6 +255,9 @@ craftingtaskboard=Crafting Task Board
 openbuilderform=Open Builder Form
 
 [ui]
+settlementassigncaveaccessladder=Assign Cave Access Ladder
+settlementcaveaccessladdertip=Select a cave access ladder to toggle whether settlers may use it for cross-level travel.
+settlementnotcaveaccessladder=This is not a cave access ladder.
 storageadvanced=Advanced
 storagerestock=Restock
 storagestock=Stock

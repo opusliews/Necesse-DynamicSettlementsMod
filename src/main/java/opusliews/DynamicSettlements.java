@@ -395,6 +395,8 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketRequestWorldgenGatingData.class);
 		PacketRegistry.registerPacket(PacketSyncWorldgenGatingData.class);
 		PacketRegistry.registerPacket(PacketToggleSettlementLadder.class);
+		PacketRegistry.registerPacket(PacketSettlementLadderRequest.class);
+		PacketRegistry.registerPacket(PacketSettlementLadderSync.class);
 		PacketRegistry.registerPacket(PacketSettlerLevelPreference.class);
 
 		CraftingStationFeature.register();
