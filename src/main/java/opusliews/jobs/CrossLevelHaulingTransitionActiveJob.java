@@ -38,7 +38,13 @@ public class CrossLevelHaulingTransitionActiveJob extends TileActiveJob {
 
 	@Override
 	public JobMoveToTile getMoveToTile(JobMoveToTile lastTile) {
-		return new JobMoveToTile(tileX, tileY, false);
+		return new JobMoveToTile(tileX, tileY, true);
+	}
+
+	@Override
+	public boolean isAt(JobMoveToTile moveToTile) {
+		if (!(worker.getMobWorker() instanceof HumanMob)) return false;
+		return SettlementLadderSystem.isMobAtOrAdjacentLadder((HumanMob)worker.getMobWorker(), route.ladder, sourceType);
 	}
 
 	@Override

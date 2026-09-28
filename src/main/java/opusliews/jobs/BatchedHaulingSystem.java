@@ -54,10 +54,16 @@ public final class BatchedHaulingSystem {
 		if (primary == null || worker == null || primary.item == null) return null;
 
 		InventoryRange sourceRange = primary.getInventoryRange();
-		if (sourceRange == null) return null;
+		if (sourceRange == null) {
+			logPrimaryFailure(primary, worker, "source inventory range is null");
+			return null;
+		}
 
 		HaulFromLevelJob.HaulPosition destination = selectDestination(primary, worker);
-		if (destination == null) return null;
+		if (destination == null) {
+			logPrimaryFailure(primary, worker, "no valid destination");
+			return null;
+		}
 
 		DestinationCapacity destinationCapacity = new DestinationCapacity(destination.storage);
 		BatchCapacity capacity = new BatchCapacity(worker);
@@ -65,19 +71,28 @@ public final class BatchedHaulingSystem {
 				capacity.getCanPlanAmount(primary.item),
 				getSourceRemovalLimit(primary, destination.storage)
 		);
-		if (primaryCapacity <= 0) return null;
+		if (primaryCapacity <= 0) {
+			logPrimaryFailure(primary, worker, "source removal/worker capacity is zero destination=" + describeStorage(destination.storage));
+			return null;
+		}
 
 		int primaryAmount = Math.min(
 				getReservableAmount(primary, destination, destinationCapacity),
 				primaryCapacity
 		);
-		if (primaryAmount <= 0) return null;
+		if (primaryAmount <= 0) {
+			logPrimaryFailure(primary, worker, "destination reservable amount is zero destination=" + describeStorage(destination.storage));
+			return null;
+		}
 
 		LinkedList<SettlementStoragePickupSlot> primarySlots = findExactUnreservedSlots(
 				primary,
 				primaryAmount
 		);
-		if (primarySlots == null || primarySlots.isEmpty()) return null;
+		if (primarySlots == null || primarySlots.isEmpty()) {
+			logPrimaryFailure(primary, worker, "could not reserve exact source amount=" + primaryAmount + " destination=" + describeStorage(destination.storage));
+			return null;
+		}
 
 		GameMessage targetDescription = primary.storage.getInventoryName();
 		GameMessage itemDescription = primarySlots.getFirst().item.getItemLocalization();
@@ -90,6 +105,7 @@ public final class BatchedHaulingSystem {
 
 		int reservedPrimary = addJobToSequence(sequence, worker, priority, primary, destination.storage, primarySlots);
 		if (reservedPrimary <= 0) {
+			logPrimaryFailure(primary, worker, "sequence construction returned zero destination=" + describeStorage(destination.storage));
 			removeSlots(primarySlots);
 			return null;
 		}
@@ -309,6 +325,25 @@ public final class BatchedHaulingSystem {
 				(necesse.level.maps.levelData.settlementData.SettlementInventory)destination
 		);
 		return route == null ? Double.MAX_VALUE : route.totalDistance * 32.0;
+	}
+
+	private static void logPrimaryFailure(HaulFromLevelJob job, EntityJobWorker worker, String reason) {
+		if (!Logging.logEnabled || job == null || job.storage == null || job.item == null) return;
+		String workerLevel = worker == null || worker.getMobWorker() == null || worker.getMobWorker().getLevel() == null
+				? "null" : worker.getMobWorker().getLevel().getIdentifier().toString();
+		Logging.logMessage("[CrossLevelHaulingDebug] Sequence unavailable worker="
+				+ (worker == null || worker.getMobWorker() == null ? "null" : worker.getMobWorker().getUniqueID())
+				+ " workerLevel=" + workerLevel
+				+ " source=" + describeStorage(job.storage)
+				+ " item=" + job.item.item.getStringID()
+				+ " requested=" + job.item.getAmount()
+				+ " dropOffs=" + job.dropOffPositions.size()
+				+ " reason=" + reason);
+	}
+
+	private static String describeStorage(LevelStorage storage) {
+		if (storage == null) return "null";
+		return (storage.level == null ? "null" : storage.level.getIdentifier()) + "@" + storage.tileX + "," + storage.tileY;
 	}
 
 	private static boolean sameStorage(LevelStorage a, LevelStorage b) {

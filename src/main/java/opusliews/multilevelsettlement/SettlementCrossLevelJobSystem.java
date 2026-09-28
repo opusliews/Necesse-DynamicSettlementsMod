@@ -561,6 +561,20 @@ public final class SettlementCrossLevelJobSystem {
 			// higher-priority job TYPES completely vanilla while preventing one recreation
 			// kind from permanently excluding every other kind on another settlement level.
 			if (first.found.job.jobType.getID() == JobTypeRegistry.recreationID) {
+				if (Logging.logEnabled) {
+					Candidate bestHaul = sorted.stream()
+							.filter(candidate -> candidate.found != null && candidate.found.job instanceof necesse.level.maps.levelData.jobs.HaulFromLevelJob)
+							.min(CANDIDATE_PRIORITY_COMPARATOR)
+							.orElse(null);
+					if (bestHaul != null) {
+						Logging.logMessage("[CrossLevelHaulingDebug] Hauling deferred before reachability settler=" + human.getUniqueID()
+								+ " recreationLevel=" + human.getRecreationLevel()
+								+ " wantsRecreation=" + human.wantsToDoRecreation()
+								+ " timeOfDay=" + human.getWorldEntity().getTimeOfDay()
+								+ " winningRecreation=" + describe(first) + " key=" + first.priorityKey
+								+ " bestHaul=" + describe(bestHaul) + " key=" + bestHaul.priorityKey);
+					}
+				}
 				int baseEnd = index;
 				ArrayList<Candidate> reachableRecreation = new ArrayList<>();
 				while (baseEnd < sorted.size() && key.sameBeforeRecreationPreference(sorted.get(baseEnd).priorityKey)) {

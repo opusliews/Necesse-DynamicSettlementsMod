@@ -112,8 +112,12 @@ public final class SettlementMultiLevelSystem {
 
 		LevelIdentifier surfaceIdentifier = getSurfaceIdentifier(levelIdentifier);
 		if (surfaceIdentifier == null) return null;
-		ServerSettlementData settlement = SettlementsWorldData.getSettlementsData(server).getServerDataAtTile(surfaceIdentifier, tileX, tileY);
-		if (settlement == null) return null;
+		SettlementsWorldData settlements = SettlementsWorldData.getSettlementsData(server);
+		ServerSettlementData settlement = settlements.getOrLoadServerDataAtTile(surfaceIdentifier, tileX, tileY);
+		if (settlement == null) {
+			if (Logging.logEnabled) Logging.logMessage("[MultiLevelSettlement] No settlement found at projected surface tile level=" + levelIdentifier + " surface=" + surfaceIdentifier + " tile=" + tileX + "," + tileY);
+			return null;
+		}
 		SettlementLevelDomain domain = get(settlement);
 		if (domain == null || !domain.containsLevel(levelIdentifier) || !domain.isTileWithinBounds(levelIdentifier, tileX, tileY)) return null;
 		return domain;

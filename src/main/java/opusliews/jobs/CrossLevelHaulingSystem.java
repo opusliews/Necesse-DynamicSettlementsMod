@@ -108,7 +108,23 @@ public final class CrossLevelHaulingSystem {
 			for (HaulFromLevelJob job : sourceJobs) {
 				if (job.dropOffPositions.isEmpty()) continue;
 				HaulFromLevelJob inserted = (HaulFromLevelJob)source.level.jobsLayer.addJob(job, false, true);
-				if (inserted != null) added.add(inserted);
+				if (inserted != null) {
+					added.add(inserted);
+					if (Logging.logEnabled) {
+						StringBuilder destinations = new StringBuilder();
+						for (Object value : inserted.dropOffPositions) {
+							HaulFromLevelJob.HaulPosition pos = (HaulFromLevelJob.HaulPosition)value;
+							if (destinations.length() > 0) destinations.append(";");
+							destinations.append(pos.storage.level.getIdentifier()).append("@").append(pos.storage.tileX).append(",").append(pos.storage.tileY)
+									.append(" priority=").append(pos.priority).append(" amount=").append(pos.amount);
+						}
+						Logging.logMessage("[CrossLevelHaulingDebug] Generated job source=" + source.level.getIdentifier() + "@" + source.tileX + "," + source.tileY
+								+ " sourcePriority=" + source.priority
+								+ " item=" + inserted.item.item.getStringID()
+								+ " amount=" + inserted.item.getAmount()
+								+ " destinations=[" + destinations + "]");
+					}
+				}
 			}
 		}
 

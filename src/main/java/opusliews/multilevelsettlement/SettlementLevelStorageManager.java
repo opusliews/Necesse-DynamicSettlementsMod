@@ -1,12 +1,17 @@
 package opusliews.multilevelsettlement;
 
+import necesse.engine.registries.LevelJobRegistry;
 import necesse.engine.util.LevelIdentifier;
 import necesse.level.maps.Level;
 import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import necesse.level.maps.levelData.settlementData.SettlementInventory;
+import necesse.level.maps.levelData.jobs.HasStorageLevelJob;
+import necesse.level.maps.levelData.jobs.TileLevelJob;
 import necesse.level.maps.levelData.settlementData.SettlementWorkstation;
+import necesse.level.maps.levelData.settlementData.storage.SettlementStorageRecords;
 import opusliews.logging.Logging;
 
+import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -40,7 +45,10 @@ public final class SettlementLevelStorageManager {
 		}
 		created.updateAdjacentSolidState();
 		state.storage.put(key, created);
-		if (persist) persistEntry(settlement, SettlementLevelManagerLevelData.EntryType.STORAGE, key, true);
+		if (persist) {
+			persistEntry(settlement, SettlementLevelManagerLevelData.EntryType.STORAGE, key, true);
+			persistStorageConfig(settlement, created);
+		}
 		if (Logging.logEnabled) Logging.logMessage("[LevelManager] Registered level-aware storage settlement=" + settlement.uniqueID + " position=" + key);
 		return created;
 	}
@@ -130,6 +138,65 @@ public final class SettlementLevelStorageManager {
 		return result;
 	}
 
+	public static ArrayList<Point> getStoragePositions(ServerSettlementData settlement, LevelIdentifier levelIdentifier) {
+		ArrayList<Point> result = new ArrayList<>();
+		if (settlement == null || levelIdentifier == null) return result;
+		if (settlement.getLevel().getIdentifier().equals(levelIdentifier)) {
+			for (Object value : settlement.storageManager.getStorage()) {
+				if (value instanceof SettlementInventory) {
+					SettlementInventory inventory = (SettlementInventory)value;
+					result.add(new Point(inventory.tileX, inventory.tileY));
+				}
+			}
+			return result;
+		}
+		for (Map.Entry<SettlementLevelPosition, SettlementInventory> entry : getState(settlement).storage.entrySet()) {
+			if (levelIdentifier.equals(entry.getKey().levelIdentifier)) result.add(new Point(entry.getKey().tileX, entry.getKey().tileY));
+		}
+		return result;
+	}
+
+	public static SettlementStorageRecords getStorageRecords(ServerSettlementData settlement, LevelIdentifier levelIdentifier) {
+		if (settlement == null || levelIdentifier == null) return null;
+		if (settlement.getLevel().getIdentifier().equals(levelIdentifier)) return settlement.storageRecords;
+		State state = getState(settlement);
+		SettlementStorageRecords records = state.recordsByLevel.get(levelIdentifier);
+		if (records != null) return records;
+		if (settlement.getServer() == null) return null;
+		Level level = settlement.getServer().world.levelManager.getLevel(levelIdentifier);
+		if (level == null) return null;
+		records = new SettlementStorageRecords(level);
+		state.recordsByLevel.put(levelIdentifier, records);
+		return records;
+	}
+
+	/** Keeps non-canonical storage simulations, indexes and HasStorage jobs in sync. */
+	public static void tickLevelStorage(ServerSettlementData settlement) {
+		if (settlement == null || settlement.getLevel() == null || !settlement.getLevel().isServer()) return;
+		restorePersisted(settlement);
+		clearInvalids(settlement);
+		State state = getState(settlement);
+		LinkedHashMap<LevelIdentifier, SettlementStorageRecords> nextRecords = new LinkedHashMap<>();
+
+		for (Map.Entry<SettlementLevelPosition, SettlementInventory> entry : state.storage.entrySet()) {
+			SettlementInventory inventory = entry.getValue();
+			if (!(inventory instanceof SettlementLevelInventory) || inventory.level == null || !inventory.isStorageValid()) continue;
+			SettlementStorageRecords records = nextRecords.computeIfAbsent(inventory.level.getIdentifier(), ignored -> new SettlementStorageRecords(inventory.level));
+			((SettlementLevelInventory)inventory).tickLevelStorage(records);
+
+			inventory.level.jobsLayer.streamJobsInTile(inventory.tileX, inventory.tileY)
+					.filter(job -> job.getID() == LevelJobRegistry.hasStorageID)
+					.forEach(TileLevelJob::remove);
+			if (!inventory.isAllAdjacentSolid()) {
+				SettlementInventory captured = inventory;
+				inventory.level.jobsLayer.addJob(new HasStorageLevelJob(inventory, () -> hasInventory(settlement, captured)), true);
+			}
+		}
+
+		state.recordsByLevel.clear();
+		state.recordsByLevel.putAll(nextRecords);
+	}
+
 	public static SettlementLevelPosition getPosition(SettlementInventory inventory) {
 		return inventory == null ? null : new SettlementLevelPosition(inventory.level.getIdentifier(), inventory.tileX, inventory.tileY);
 	}
@@ -152,6 +219,13 @@ public final class SettlementLevelStorageManager {
 		if (settlement == null || workstation == null) return false;
 		if (!(workstation instanceof SettlementLevelWorkstation)) return settlement.storageManager.hasWorkstation(workstation);
 		return getState(settlement).workstations.get(getPosition(workstation)) == workstation;
+	}
+
+	public static void persistStorageConfig(ServerSettlementData settlement, SettlementInventory inventory) {
+		if (settlement == null || inventory == null || inventory.level == null) return;
+		if (inventory.level.getIdentifier().equals(settlement.getLevel().getIdentifier())) return;
+		SettlementLevelManagerLevelData data = SettlementLevelManagerLevelData.get(settlement.getLevel(), true);
+		if (data != null) data.setStorageConfig(settlement.uniqueID, inventory.level.getIdentifier(), inventory.tileX, inventory.tileY, inventory.priority, inventory.filter);
 	}
 
 	public static void restorePersisted(ServerSettlementData settlement) {
@@ -177,7 +251,16 @@ public final class SettlementLevelStorageManager {
 				continue;
 			}
 			if (entry.type == SettlementLevelManagerLevelData.EntryType.STORAGE) {
-				if (assignStorage(settlement, level, entry.tileX, entry.tileY, false) != null) restoredStorage++;
+				SettlementInventory restored = assignStorage(settlement, level, entry.tileX, entry.tileY, false);
+				if (restored != null) {
+					restored.priority = entry.priority;
+					if (entry.filter != null) {
+						necesse.engine.network.Packet packet = new necesse.engine.network.Packet();
+						entry.filter.writePacket(new necesse.engine.network.PacketWriter(packet));
+						restored.filter.readPacket(new necesse.engine.network.PacketReader(packet));
+					}
+					restoredStorage++;
+				}
 			} else if (entry.type == SettlementLevelManagerLevelData.EntryType.WORKSTATION) {
 				if (assignWorkstation(settlement, level, entry.tileX, entry.tileY, false) != null) restoredWorkstations++;
 			}
@@ -235,6 +318,7 @@ public final class SettlementLevelStorageManager {
 	private static final class State {
 		final LinkedHashMap<SettlementLevelPosition, SettlementInventory> storage = new LinkedHashMap<>();
 		final LinkedHashMap<SettlementLevelPosition, SettlementWorkstation> workstations = new LinkedHashMap<>();
+		final LinkedHashMap<LevelIdentifier, SettlementStorageRecords> recordsByLevel = new LinkedHashMap<>();
 		boolean restored;
 	}
 }

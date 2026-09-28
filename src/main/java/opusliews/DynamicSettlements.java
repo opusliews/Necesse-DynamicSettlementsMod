@@ -397,6 +397,11 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketToggleSettlementLadder.class);
 		PacketRegistry.registerPacket(PacketSettlementLadderRequest.class);
 		PacketRegistry.registerPacket(PacketSettlementLadderSync.class);
+		PacketRegistry.registerPacket(PacketSettlementStorageRequest.class);
+		PacketRegistry.registerPacket(PacketSettlementStorageSync.class);
+		PacketRegistry.registerPacket(PacketToggleSettlementStorage.class);
+		PacketRegistry.registerPacket(PacketOpenSettlementStorage.class);
+		PacketRegistry.registerPacket(PacketOpenMultiLevelSettlement.class);
 		PacketRegistry.registerPacket(PacketSettlerLevelPreference.class);
 
 		CraftingStationFeature.register();

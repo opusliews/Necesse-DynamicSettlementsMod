@@ -7,6 +7,7 @@ import necesse.engine.util.LevelIdentifier;
 import necesse.engine.world.worldData.SettlementsWorldData;
 import necesse.entity.mobs.Mob;
 import necesse.entity.mobs.PlayerMob;
+import necesse.entity.mobs.ai.path.TilePathfinding;
 import necesse.entity.objectEntity.ObjectEntity;
 import necesse.entity.objectEntity.PortalObjectEntity;
 import necesse.level.gameObject.GameObject;
@@ -72,6 +73,20 @@ public final class SettlementLadderSystem {
 		return valid;
 	}
 
+	public static boolean isMobAtOrAdjacentLadder(Mob mob, SettlementLadderLink link, SettlementLevelType levelType) {
+		if (mob == null || link == null || levelType == null || mob.getLevel() == null) return false;
+
+		int ladderTileX = link.getTileX(levelType);
+		int ladderTileY = link.getTileY(levelType);
+		return TilePathfinding.isAtOrAdjacentObject(
+				mob.getLevel(),
+				ladderTileX,
+				ladderTileY,
+				mob.getTileX(),
+				mob.getTileY()
+		);
+	}
+
 	public static boolean transitionMob(Mob mob, SettlementLadderLink link, SettlementLevelType destinationType) {
 		if (mob == null || link == null || destinationType == null) {
 			if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] NPC transition rejected due to null argument mob=" + mob + " link=" + link + " destinationType=" + destinationType);
@@ -104,8 +119,8 @@ public final class SettlementLadderSystem {
 			if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] NPC transition rejected invalid source/destination mob=" + mob.getUniqueID() + " currentType=" + currentType + " destinationType=" + destinationType);
 			return false;
 		}
-		if (!link.matches(currentType, mob.getTileX(), mob.getTileY())) {
-			if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] NPC transition rejected because mob is not on designated ladder mob=" + mob.getUniqueID() + " mobTile=" + mob.getTileX() + "," + mob.getTileY() + " link=" + link);
+		if (!isMobAtOrAdjacentLadder(mob, link, currentType)) {
+			if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] NPC transition rejected because mob is not at or adjacent to designated ladder mob=" + mob.getUniqueID() + " mobTile=" + mob.getTileX() + "," + mob.getTileY() + " ladderTile=" + link.getTileX(currentType) + "," + link.getTileY(currentType) + " link=" + link);
 			return false;
 		}
 
