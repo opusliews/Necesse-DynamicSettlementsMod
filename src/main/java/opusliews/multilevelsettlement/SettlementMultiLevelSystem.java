@@ -125,6 +125,7 @@ public final class SettlementMultiLevelSystem {
 		caveMissingLogged.remove(settlement);
 		caveLoadedLogged.remove(settlement);
 		SettlementLevelStorageManager.remove(settlement);
+		SettlementLevelZoneSystem.removeSettlement(settlement);
 		if (removed != null && Logging.logEnabled) Logging.logMessage("[MultiLevelSettlement] Removed domain settlement=" + settlement.uniqueID);
 	}
 

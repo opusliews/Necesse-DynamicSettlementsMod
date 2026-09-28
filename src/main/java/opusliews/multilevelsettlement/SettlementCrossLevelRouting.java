@@ -75,15 +75,6 @@ public final class SettlementCrossLevelRouting {
 			int targetLadderX = link.getTileX(targetType);
 			int targetLadderY = link.getTileY(targetType);
 
-			if (!effectiveRestriction.isTileAllowed(currentLevel.getIdentifier(), sourceLadderX, sourceLadderY)) {
-				if (Logging.logEnabled) Logging.logMessage("[SettlementRouting] Ladder candidate rejected by source restriction mob=" + mob.getUniqueID() + " link=" + link + " sourceType=" + sourceType);
-				continue;
-			}
-			if (!effectiveRestriction.isTileAllowed(target.levelIdentifier, targetLadderX, targetLadderY)) {
-				if (Logging.logEnabled) Logging.logMessage("[SettlementRouting] Ladder candidate rejected by destination restriction mob=" + mob.getUniqueID() + " link=" + link + " targetType=" + targetType);
-				continue;
-			}
-
 			if (!canMoveOnLevel(mob, currentLevel, source.tileX, source.tileY, sourceLadderX, sourceLadderY, false)) {
 				if (Logging.logEnabled) Logging.logMessage("[SettlementRouting] Ladder candidate unreachable on source level mob=" + mob.getUniqueID() + " link=" + link + " source=" + source + " ladder=" + sourceLadderX + "," + sourceLadderY);
 				continue;

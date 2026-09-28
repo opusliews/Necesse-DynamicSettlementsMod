@@ -52,6 +52,7 @@ import opusliews.mobs.BuilderHumanMob;
 import opusliews.multilevelsettlement.SettlementLadderLevelData;
 import opusliews.multilevelsettlement.SettlementCaveBedLevelData;
 import opusliews.multilevelsettlement.SettlementLevelManagerLevelData;
+import opusliews.multilevelsettlement.SettlementLevelZoneLevelData;
 import opusliews.multilevelsettlement.SettlementCaveBedSystem;
 import opusliews.multilevelsettlement.SettlementLevelPreferenceSystem;
 import opusliews.network.*;
@@ -279,6 +280,7 @@ public class DynamicSettlements {
 		LevelDataRegistry.registerLevelData(SettlementLadderLevelData.managerKey, SettlementLadderLevelData.class);
 		LevelDataRegistry.registerLevelData(SettlementCaveBedLevelData.managerKey, SettlementCaveBedLevelData.class);
 		LevelDataRegistry.registerLevelData(SettlementLevelManagerLevelData.managerKey, SettlementLevelManagerLevelData.class);
+		LevelDataRegistry.registerLevelData(SettlementLevelZoneLevelData.managerKey, SettlementLevelZoneLevelData.class);
 
 		JobTypeRegistry.registerType(
 				"construction",

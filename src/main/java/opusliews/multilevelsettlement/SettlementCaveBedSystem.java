@@ -251,9 +251,17 @@ public final class SettlementCaveBedSystem {
 
 		SettlementLevelDomain domain = SettlementMultiLevelSystem.get(levelSettler.data);
 		boolean stranded = true;
-		if (domain != null) {
-			SettlementLevelPosition target = new SettlementLevelPosition(bedLevel, bed.tileX, bed.tileY);
-			stranded = SettlementCrossLevelRouting.findBestRoute(human, domain, target, true) == null;
+		if (domain == null) {
+			if (Logging.logEnabled) Logging.logMessage("[CaveBeds] Stranded check failed because settlement domain is unavailable settler=" + human.getUniqueID() + " currentLevel=" + human.getLevel().getIdentifier() + " bedLevel=" + bedLevel);
+		}
+		else {
+			SettlementLevelType bedType = domain.getLevelType(bedLevel);
+			if (bedType == null) {
+				if (Logging.logEnabled) Logging.logMessage("[CaveBeds] Stranded check failed because bed level is outside settlement domain settler=" + human.getUniqueID() + " bedLevel=" + bedLevel + " domain=" + domain);
+			}
+			else {
+				stranded = SettlementCrossLevelRouting.findBestTransitionRoute(human, domain, bedType) == null;
+			}
 		}
 		strandedCache.put(human, new StrandedCache(now + strandedCacheDuration, human.getLevel().getIdentifier(), bedLevel, bed.tileX, bed.tileY, stranded));
 		if (cache == null || cache.stranded != stranded) {
