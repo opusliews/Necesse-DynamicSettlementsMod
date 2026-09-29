@@ -10,6 +10,7 @@ import necesse.inventory.container.settlement.SettlementDependantContainer;
 import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import necesse.level.maps.levelData.settlementData.SettlementInventory;
 import opusliews.stock.SettlementStockSystem;
+import opusliews.multilevelsettlement.SettlementLevelStorageManager;
 
 public class PacketSettlementStockRequest extends Packet {
 	private final int tileX;
@@ -36,7 +37,7 @@ public class PacketSettlementStockRequest extends Packet {
 		SettlementDependantContainer container = (SettlementDependantContainer)client.getContainer();
 		ServerSettlementData settlement = container.getServerData();
 		if (settlement == null || !settlement.networkData.doesClientHaveAccess(client)) return;
-		SettlementInventory storage = settlement.storageManager.getStorage(tileX, tileY);
+		SettlementInventory storage = client.getLevel() == null ? null : SettlementLevelStorageManager.getStorage(settlement, client.getLevel().getIdentifier(), tileX, tileY);
 		if (storage == null) return;
 		client.sendPacket(new PacketSettlementStockSync(tileX, tileY, SettlementStockSystem.getTargets(storage)));
 	}

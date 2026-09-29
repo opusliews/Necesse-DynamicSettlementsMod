@@ -87,12 +87,12 @@ public class SettlementLevelZoneLevelData extends LevelData {
 		super.applyLoadData(save);
 		entries.clear();
 		for (LoadData entrySave : save.getLoadDataByName("ZONE")) {
-			int settlementUniqueID = entrySave.getInt("settlementUniqueID", -1, false);
+			int settlementUniqueID = entrySave.getInt("settlementUniqueID", 0, false);
 			String kindName = entrySave.getSafeString("kind", null, false);
 			String levelName = entrySave.getSafeString("level", null, false);
 			int uniqueID = entrySave.getInt("uniqueID", 0, false);
 			int zoneID = entrySave.getInt("zoneID", -1, false);
-			if (settlementUniqueID < 0 || kindName == null || levelName == null || uniqueID == 0) continue;
+			if (settlementUniqueID == 0 || kindName == null || levelName == null || uniqueID == 0) continue;
 			try {
 				ZoneKind kind = ZoneKind.valueOf(kindName);
 				ArrayList<Rectangle> rectangles = new ArrayList<>();

@@ -13,6 +13,7 @@ import necesse.inventory.item.Item;
 import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import necesse.level.maps.levelData.settlementData.SettlementInventory;
 import opusliews.stock.SettlementStockSystem;
+import opusliews.multilevelsettlement.SettlementLevelStorageManager;
 
 public class PacketSettlementStockUpdate extends Packet {
 	private final int tileX;
@@ -47,7 +48,7 @@ public class PacketSettlementStockUpdate extends Packet {
 		SettlementDependantContainer container = (SettlementDependantContainer)client.getContainer();
 		ServerSettlementData settlement = container.getServerData();
 		if (settlement == null || !settlement.networkData.doesClientHaveAccess(client)) return;
-		SettlementInventory storage = settlement.storageManager.getStorage(tileX, tileY);
+		SettlementInventory storage = client.getLevel() == null ? null : SettlementLevelStorageManager.getStorage(settlement, client.getLevel().getIdentifier(), tileX, tileY);
 		Item item = ItemRegistry.getItem(itemID);
 		if (storage == null || item == null) return;
 
@@ -60,12 +61,13 @@ public class PacketSettlementStockUpdate extends Packet {
 					tileY,
 					new Item[]{item},
 					true
-			).applyAndSendToClientsAt(settlement.getLevel());
+			).applyAndSendToClientsAt(storage.level);
 		}
 		SettlementStockSystem.enforceConfiguredMax(settlement, storage, true);
+		SettlementLevelStorageManager.persistStorageConfig(settlement, storage);
 		server.network.sendToClientsAtEntireLevel(
 				new PacketSettlementStockSync(tileX, tileY, SettlementStockSystem.getTargets(storage)),
-				settlement.getLevel()
+				storage.level
 		);
 	}
 }

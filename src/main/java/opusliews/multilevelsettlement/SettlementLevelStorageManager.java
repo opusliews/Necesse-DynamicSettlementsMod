@@ -10,7 +10,11 @@ import necesse.level.maps.levelData.jobs.UseWorkstationLevelJob;
 import necesse.level.maps.levelData.jobs.TileLevelJob;
 import necesse.level.maps.levelData.settlementData.SettlementWorkstation;
 import necesse.level.maps.levelData.settlementData.storage.SettlementStorageRecords;
+import necesse.level.maps.levelData.settlementData.storage.SettlementStorageFoodQualityIndex;
+import necesse.level.maps.levelData.settlementData.storage.SettlementStorageItemIDIndex;
+import necesse.inventory.item.Item;
 import opusliews.logging.Logging;
+import opusliews.stock.SettlementStockSystem;
 
 import java.awt.Point;
 import java.util.ArrayList;
@@ -189,6 +193,58 @@ public final class SettlementLevelStorageManager {
 		return records;
 	}
 
+	public static Collection<SettlementStorageRecords> getAllStorageRecords(ServerSettlementData settlement) {
+		if (settlement == null) return Collections.emptyList();
+		ArrayList<SettlementStorageRecords> result = new ArrayList<>();
+		if (settlement.storageRecords != null) result.add(settlement.storageRecords);
+		SettlementLevelDomain domain = SettlementMultiLevelSystem.get(settlement);
+		if (domain == null) return result;
+		LevelIdentifier caveIdentifier = domain.getLevelIdentifier(SettlementLevelType.CAVE);
+		if (caveIdentifier == null) return result;
+		SettlementStorageRecords caveRecords = getStorageRecords(settlement, caveIdentifier);
+		if (caveRecords != null && caveRecords != settlement.storageRecords) result.add(caveRecords);
+		return result;
+	}
+
+	public static int getTotalStoredItems(ServerSettlementData settlement, Item item) {
+		if (settlement == null || item == null) return 0;
+		int total = 0;
+		for (SettlementStorageRecords records : getAllStorageRecords(settlement)) total += getStoredItemCount(records, item);
+		return total;
+	}
+
+	public static int getTotalFoodNutrition(ServerSettlementData settlement) {
+		if (settlement == null) return 0;
+		int total = 0;
+		for (SettlementStorageRecords records : getAllStorageRecords(settlement)) total += getFoodNutrition(records);
+		return total;
+	}
+
+	public static int getTotalFoodItems(ServerSettlementData settlement) {
+		if (settlement == null) return 0;
+		int total = 0;
+		for (SettlementStorageRecords records : getAllStorageRecords(settlement)) total += getFoodItems(records);
+		return total;
+	}
+
+	private static int getStoredItemCount(SettlementStorageRecords records, Item item) {
+		if (records == null) return 0;
+		SettlementStorageItemIDIndex index = (SettlementStorageItemIDIndex)records.getIndex(SettlementStorageItemIDIndex.class);
+		return index == null ? 0 : index.getTotalItems(item);
+	}
+
+	private static int getFoodNutrition(SettlementStorageRecords records) {
+		if (records == null) return 0;
+		SettlementStorageFoodQualityIndex index = (SettlementStorageFoodQualityIndex)records.getIndex(SettlementStorageFoodQualityIndex.class);
+		return index == null ? 0 : index.getTotalNutrition();
+	}
+
+	private static int getFoodItems(SettlementStorageRecords records) {
+		if (records == null) return 0;
+		SettlementStorageFoodQualityIndex index = (SettlementStorageFoodQualityIndex)records.getIndex(SettlementStorageFoodQualityIndex.class);
+		return index == null ? 0 : index.getTotalItems();
+	}
+
 	/** Keeps non-canonical storage simulations, indexes and HasStorage jobs in sync. */
 	public static void tickLevelStorage(ServerSettlementData settlement) {
 		if (settlement == null || settlement.getLevel() == null || !settlement.getLevel().isServer()) return;
@@ -254,7 +310,7 @@ public final class SettlementLevelStorageManager {
 		if (settlement == null || inventory == null || inventory.level == null) return;
 		if (inventory.level.getIdentifier().equals(settlement.getLevel().getIdentifier())) return;
 		SettlementLevelManagerLevelData data = SettlementLevelManagerLevelData.get(settlement.getLevel(), true);
-		if (data != null) data.setStorageConfig(settlement.uniqueID, inventory.level.getIdentifier(), inventory.tileX, inventory.tileY, inventory.priority, inventory.filter);
+		if (data != null) data.setStorageConfig(settlement.uniqueID, inventory.level.getIdentifier(), inventory.tileX, inventory.tileY, inventory.priority, inventory.filter, SettlementStockSystem.getTargets(inventory));
 	}
 
 	public static void persistWorkstationRecipes(ServerSettlementData settlement, SettlementWorkstation workstation) {
@@ -294,6 +350,9 @@ public final class SettlementLevelStorageManager {
 						necesse.engine.network.Packet packet = new necesse.engine.network.Packet();
 						entry.filter.writePacket(new necesse.engine.network.PacketWriter(packet));
 						restored.filter.readPacket(new necesse.engine.network.PacketReader(packet));
+					}
+					for (Map.Entry<Integer, Integer> stockEntry : entry.stockTargets.entrySet()) {
+						SettlementStockSystem.setStockTarget(restored, stockEntry.getKey(), stockEntry.getValue());
 					}
 					restoredStorage++;
 				}

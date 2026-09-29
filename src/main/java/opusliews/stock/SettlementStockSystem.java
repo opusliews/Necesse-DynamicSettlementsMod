@@ -18,10 +18,12 @@ import necesse.level.maps.levelData.settlementData.SettlementStockInventoryAcces
 import necesse.level.maps.levelData.settlementData.SettlementStoragePickupFuture;
 import necesse.level.maps.levelData.settlementData.storage.SettlementStorageItemIDIndex;
 import necesse.level.maps.levelData.settlementData.storage.SettlementStorageRecord;
+import necesse.level.maps.levelData.settlementData.storage.SettlementStorageRecords;
 import necesse.level.maps.levelData.settlementData.storage.SettlementStorageRecordsRegionData;
 import necesse.inventory.container.settlement.events.SettlementStorageChangeAllowedEvent;
 import necesse.inventory.container.settlement.events.SettlementStoragePriorityLimitEvent;
 import opusliews.logging.Logging;
+import opusliews.multilevelsettlement.SettlementLevelStorageManager;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -200,7 +202,7 @@ public final class SettlementStockSystem {
 					storage.tileY,
 					storage.filter.limitMode,
 					required
-			).applyAndSendToClientsAt(settlement.getLevel());
+			).applyAndSendToClientsAt(storage.level);
 		}
 		return true;
 	}
@@ -280,10 +282,11 @@ public final class SettlementStockSystem {
 	public static void tickStockJobs(ServerSettlementData settlement) {
 		if (settlement == null || settlement.storageRecords == null) return;
 		ArrayList<SettlementInventory> storages = new ArrayList<>();
-		for (Object value : settlement.storageManager.getStorage()) {
-			if (value instanceof SettlementInventory) storages.add((SettlementInventory)value);
+		for (SettlementInventory storage : SettlementLevelStorageManager.getStorage(settlement)) {
+			if (storage != null && storage.level != null && storage.isStorageValid()) storages.add(storage);
 		}
-		storages.sort(Comparator.comparingInt((SettlementInventory storage) -> storage.tileY)
+		storages.sort(Comparator.comparing((SettlementInventory storage) -> storage.level.getIdentifier().toString())
+				.thenComparingInt(storage -> storage.tileY)
 				.thenComparingInt(storage -> storage.tileX));
 
 		for (SettlementInventory storage : storages) {
@@ -410,7 +413,7 @@ public final class SettlementStockSystem {
 					}
 
 					if (created) {
-						HaulFromLevelJob added = (HaulFromLevelJob)settlement.getLevel().jobsLayer.addJob(job, true);
+						HaulFromLevelJob added = (HaulFromLevelJob)source.level.jobsLayer.addJob(job, true);
 						if (added == null) {
 							plannedByJob.remove(job);
 							if (Logging.logEnabled) Logging.logMessage("[Stock] Failed to add haul job item=" + item.getStringID()
@@ -433,34 +436,36 @@ public final class SettlementStockSystem {
 
 	private static StockSourcePool buildSourcePool(ServerSettlementData settlement, int itemID) {
 		StockSourcePool pool = new StockSourcePool();
-		SettlementStorageItemIDIndex itemIndex = settlement.storageRecords.getIndex(SettlementStorageItemIDIndex.class);
-		SettlementStorageRecordsRegionData recordsData = itemIndex.getItem(itemID);
-		if (recordsData == null) return pool;
+		for (SettlementStorageRecords records : SettlementLevelStorageManager.getAllStorageRecords(settlement)) {
+			SettlementStorageItemIDIndex itemIndex = records.getIndex(SettlementStorageItemIDIndex.class);
+			SettlementStorageRecordsRegionData recordsData = itemIndex.getItem(itemID);
+			if (recordsData == null) continue;
 
-		recordsData.streamAllRecords()
-				.flatMap(region -> region.values().stream())
-				.flatMap(GameLinkedList::stream)
-				.forEach(recordValue -> {
-					SettlementStorageRecord record = (SettlementStorageRecord)recordValue;
-					if (!(record.storage instanceof SettlementInventory) || record.itemAmount <= 0) return;
-					SettlementInventory source = (SettlementInventory)record.storage;
-					InventoryItem recordItem = record.getItem();
-					if (recordItem == null || recordItem.item.getID() != itemID) return;
+			recordsData.streamAllRecords()
+					.flatMap(region -> region.values().stream())
+					.flatMap(GameLinkedList::stream)
+					.forEach(recordValue -> {
+						SettlementStorageRecord record = (SettlementStorageRecord)recordValue;
+						if (!(record.storage instanceof SettlementInventory) || record.itemAmount <= 0) return;
+						SettlementInventory source = (SettlementInventory)record.storage;
+						InventoryItem recordItem = record.getItem();
+						if (source.level == null || recordItem == null || recordItem.item.getID() != itemID) return;
 
-					SourceItemGroup group = null;
-					for (SourceItemGroup candidate : pool.groups) {
-						if (candidate.source != source) continue;
-						if (!candidate.item.equals(settlement.getLevel(), recordItem, true, false, "stocking")) continue;
-						group = candidate;
-						break;
-					}
-					if (group == null) {
-						group = new SourceItemGroup(source, recordItem.copy(1));
-						pool.groups.add(group);
-					}
-					group.remainingAmount += record.itemAmount;
-					pool.remainingBySource.merge(source, record.itemAmount, Integer::sum);
-				});
+						SourceItemGroup group = null;
+						for (SourceItemGroup candidate : pool.groups) {
+							if (candidate.source != source) continue;
+							if (!candidate.item.equals(source.level, recordItem, true, false, "stocking")) continue;
+							group = candidate;
+							break;
+						}
+						if (group == null) {
+							group = new SourceItemGroup(source, recordItem.copy(1));
+							pool.groups.add(group);
+						}
+						group.remainingAmount += record.itemAmount;
+						pool.remainingBySource.merge(source, record.itemAmount, Integer::sum);
+					});
+		}
 
 		for (Map.Entry<SettlementInventory, Integer> entry : pool.remainingBySource.entrySet()) {
 			int protectedAmount = getStockTarget(entry.getKey(), itemID);
@@ -475,11 +480,12 @@ public final class SettlementStockSystem {
 			SettlementInventory source,
 			InventoryItem sourceItem
 	) {
-		return (HaulFromLevelJob)settlement.getLevel().jobsLayer
+		if (source == null || source.level == null) return null;
+		return (HaulFromLevelJob)source.level.jobsLayer
 				.streamJobsInTile(source.tileX, source.tileY)
 				.filter(job -> job instanceof HaulFromLevelJob)
 				.map(job -> (HaulFromLevelJob)job)
-				.filter(job -> job.item != null && job.item.equals(settlement.getLevel(), sourceItem, true, false, "stocking"))
+				.filter(job -> job.item != null && job.item.equals(source.level, sourceItem, true, false, "stocking"))
 				.findFirst()
 				.orElse(null);
 	}
@@ -488,8 +494,10 @@ public final class SettlementStockSystem {
 		for (Object positionValue : job.dropOffPositions) {
 			HaulFromLevelJob.HaulPosition position = (HaulFromLevelJob.HaulPosition)positionValue;
 			if (!isStockDestination(position)) continue;
-			if (position.storage == destination
-					|| (position.storage.tileX == destination.tileX && position.storage.tileY == destination.tileY)) {
+			if (position.storage == destination) return true;
+			if (position.storage.level != null && destination.level != null
+					&& position.storage.level.getIdentifier().equals(destination.level.getIdentifier())
+					&& position.storage.tileX == destination.tileX && position.storage.tileY == destination.tileY) {
 				return true;
 			}
 		}
@@ -509,7 +517,7 @@ public final class SettlementStockSystem {
 					storage.tileY,
 					new Item[]{item},
 					true
-			).applyAndSendToClientsAt(settlement.getLevel());
+			).applyAndSendToClientsAt(storage.level);
 		}
 	}
 

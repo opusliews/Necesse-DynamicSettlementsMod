@@ -15,6 +15,8 @@ import opusliews.logging.Logging;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class SettlementLevelManagerLevelData extends LevelData {
 	public static final String managerKey = "opusmultilevelsettlementmanager";
@@ -37,15 +39,15 @@ public class SettlementLevelManagerLevelData extends LevelData {
 
 	public synchronized void setEntry(int settlementUniqueID, EntryType type, LevelIdentifier levelIdentifier, int tileX, int tileY, boolean present) {
 		entries.removeIf(entry -> entry.settlementUniqueID == settlementUniqueID && entry.type == type && entry.levelIdentifier.equals(levelIdentifier) && entry.tileX == tileX && entry.tileY == tileY);
-		if (present) entries.add(new Entry(settlementUniqueID, type, levelIdentifier, tileX, tileY, 0, null, null));
+		if (present) entries.add(new Entry(settlementUniqueID, type, levelIdentifier, tileX, tileY, 0, null, null, null));
 	}
 
-	public synchronized void setStorageConfig(int settlementUniqueID, LevelIdentifier levelIdentifier, int tileX, int tileY, int priority, ItemCategoriesFilter filter) {
+	public synchronized void setStorageConfig(int settlementUniqueID, LevelIdentifier levelIdentifier, int tileX, int tileY, int priority, ItemCategoriesFilter filter, Map<Integer, Integer> stockTargets) {
 		for (int i = 0; i < entries.size(); i++) {
 			Entry entry = entries.get(i);
 			if (entry.settlementUniqueID == settlementUniqueID && entry.type == EntryType.STORAGE
 					&& entry.levelIdentifier.equals(levelIdentifier) && entry.tileX == tileX && entry.tileY == tileY) {
-				entries.set(i, new Entry(settlementUniqueID, EntryType.STORAGE, levelIdentifier, tileX, tileY, priority, copyFilter(filter), entry.workstationRecipes));
+				entries.set(i, new Entry(settlementUniqueID, EntryType.STORAGE, levelIdentifier, tileX, tileY, priority, copyFilter(filter), entry.workstationRecipes, stockTargets));
 				return;
 			}
 		}
@@ -56,7 +58,7 @@ public class SettlementLevelManagerLevelData extends LevelData {
 			Entry entry = entries.get(i);
 			if (entry.settlementUniqueID == settlementUniqueID && entry.type == EntryType.WORKSTATION
 					&& entry.levelIdentifier.equals(levelIdentifier) && entry.tileX == tileX && entry.tileY == tileY) {
-				entries.set(i, new Entry(settlementUniqueID, EntryType.WORKSTATION, levelIdentifier, tileX, tileY, 0, null, copyRecipes(recipes)));
+				entries.set(i, new Entry(settlementUniqueID, EntryType.WORKSTATION, levelIdentifier, tileX, tileY, 0, null, copyRecipes(recipes), null));
 				return;
 			}
 		}
@@ -91,6 +93,17 @@ public class SettlementLevelManagerLevelData extends LevelData {
 					entry.filter.addSaveData(filterSave);
 					if (!filterSave.isEmpty()) entrySave.addSaveData(filterSave);
 				}
+				if (entry.stockTargets != null && !entry.stockTargets.isEmpty()) {
+					SaveData stockSave = new SaveData("stockTargets");
+					for (Map.Entry<Integer, Integer> stockEntry : entry.stockTargets.entrySet()) {
+						if (stockEntry.getKey() == null || stockEntry.getValue() == null || stockEntry.getValue() <= 0) continue;
+						SaveData itemSave = new SaveData("item");
+						itemSave.addInt("itemID", stockEntry.getKey());
+						itemSave.addInt("stock", stockEntry.getValue());
+						stockSave.addSaveData(itemSave);
+					}
+					if (!stockSave.isEmpty()) entrySave.addSaveData(stockSave);
+				}
 			}
 			else if (entry.type == EntryType.WORKSTATION && entry.workstationRecipes != null) {
 				SaveData recipesSave = new SaveData("recipes");
@@ -110,12 +123,12 @@ public class SettlementLevelManagerLevelData extends LevelData {
 		super.applyLoadData(save);
 		entries.clear();
 		for (LoadData entrySave : save.getLoadDataByName("ENTRY")) {
-			int settlementUniqueID = entrySave.getInt("settlementUniqueID", -1, false);
+			int settlementUniqueID = entrySave.getInt("settlementUniqueID", 0, false);
 			String typeName = entrySave.getSafeString("type", null, false);
 			String levelName = entrySave.getSafeString("level", null, false);
 			int tileX = entrySave.getInt("tileX", 0, false);
 			int tileY = entrySave.getInt("tileY", 0, false);
-			if (settlementUniqueID < 0 || typeName == null || levelName == null) continue;
+			if (settlementUniqueID == 0 || typeName == null || levelName == null) continue;
 			try {
 				EntryType type = EntryType.valueOf(typeName);
 				int priority = entrySave.getInt("priority", 0, false);
@@ -124,6 +137,18 @@ public class SettlementLevelManagerLevelData extends LevelData {
 				if (type == EntryType.STORAGE && filterSave != null) {
 					filter = new ItemCategoriesFilter(true);
 					filter.applyLoadData(filterSave);
+				}
+				LinkedHashMap<Integer, Integer> stockTargets = null;
+				if (type == EntryType.STORAGE) {
+					stockTargets = new LinkedHashMap<>();
+					LoadData stockSave = entrySave.getFirstLoadDataByName("stockTargets");
+					if (stockSave != null) {
+						for (LoadData itemSave : stockSave.getLoadDataByName("item")) {
+							int itemID = itemSave.getInt("itemID", -1, false);
+							int stock = itemSave.getInt("stock", 0, false);
+							if (itemID >= 0 && stock > 0) stockTargets.put(itemID, stock);
+						}
+					}
 				}
 				ArrayList<SettlementWorkstationRecipe> workstationRecipes = null;
 				if (type == EntryType.WORKSTATION) {
@@ -140,7 +165,7 @@ public class SettlementLevelManagerLevelData extends LevelData {
 						}
 					}
 				}
-				entries.add(new Entry(settlementUniqueID, type, new LevelIdentifier(levelName), tileX, tileY, priority, filter, workstationRecipes));
+				entries.add(new Entry(settlementUniqueID, type, new LevelIdentifier(levelName), tileX, tileY, priority, filter, workstationRecipes, stockTargets));
 			} catch (IllegalArgumentException ignored) {
 				if (Logging.logEnabled) Logging.logMessage("[LevelManager] Ignored invalid persisted entry type=" + typeName + " level=" + levelName + " tile=" + tileX + "," + tileY);
 			}
@@ -162,8 +187,9 @@ public class SettlementLevelManagerLevelData extends LevelData {
 		public final int priority;
 		public final ItemCategoriesFilter filter;
 		public final ArrayList<SettlementWorkstationRecipe> workstationRecipes;
+		public final LinkedHashMap<Integer, Integer> stockTargets;
 
-		public Entry(int settlementUniqueID, EntryType type, LevelIdentifier levelIdentifier, int tileX, int tileY, int priority, ItemCategoriesFilter filter, List<SettlementWorkstationRecipe> workstationRecipes) {
+		public Entry(int settlementUniqueID, EntryType type, LevelIdentifier levelIdentifier, int tileX, int tileY, int priority, ItemCategoriesFilter filter, List<SettlementWorkstationRecipe> workstationRecipes, Map<Integer, Integer> stockTargets) {
 			this.settlementUniqueID = settlementUniqueID;
 			this.type = type;
 			this.levelIdentifier = levelIdentifier;
@@ -172,6 +198,7 @@ public class SettlementLevelManagerLevelData extends LevelData {
 			this.priority = priority;
 			this.filter = copyFilter(filter);
 			this.workstationRecipes = copyRecipes(workstationRecipes);
+			this.stockTargets = copyStockTargets(stockTargets);
 		}
 	}
 
@@ -187,6 +214,16 @@ public class SettlementLevelManagerLevelData extends LevelData {
 			}
 			catch (Exception ignored) {
 			}
+		}
+		return result;
+	}
+
+	private static LinkedHashMap<Integer, Integer> copyStockTargets(Map<Integer, Integer> stockTargets) {
+		LinkedHashMap<Integer, Integer> result = new LinkedHashMap<>();
+		if (stockTargets == null) return result;
+		for (Map.Entry<Integer, Integer> entry : stockTargets.entrySet()) {
+			if (entry.getKey() == null || entry.getValue() == null || entry.getValue() <= 0) continue;
+			result.put(entry.getKey(), entry.getValue());
 		}
 		return result;
 	}
