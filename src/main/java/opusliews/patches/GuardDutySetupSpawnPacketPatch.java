@@ -7,6 +7,7 @@ import necesse.entity.mobs.friendly.human.HumanMob;
 import net.bytebuddy.asm.Advice;
 import opusliews.guard.GuardDutySystem;
 import opusliews.guard.GuardFatigueSystem;
+import opusliews.guard.GuardLevelAssignmentSystem;
 import opusliews.multilevelsettlement.SettlementLevelPreferenceSystem;
 
 @ModMethodPatch(target = HumanMob.class, name = "setupSpawnPacket", arguments = {PacketWriter.class})
@@ -17,6 +18,7 @@ public class GuardDutySetupSpawnPacketPatch {
 			GuardHumanMob guard = (GuardHumanMob)mob;
 			writer.putNextBoolean(GuardDutySystem.isNightDuty(guard));
 			writer.putNextInt(GuardFatigueSystem.getFatigue(guard));
+			writer.putNextByteUnsigned(GuardLevelAssignmentSystem.getAssignment(guard).ordinal());
 		}
 		writer.putNextByteUnsigned(SettlementLevelPreferenceSystem.getPreference(mob).ordinal());
 	}

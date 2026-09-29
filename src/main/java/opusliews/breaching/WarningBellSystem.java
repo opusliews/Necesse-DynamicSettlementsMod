@@ -209,6 +209,47 @@ public final class WarningBellSystem {
 		}
 	}
 
+	public static CrossLevelAlert getCrossLevelAlert(Level level, int settlementUniqueID) {
+		if (level == null || !level.isServer() || settlementUniqueID == 0) return null;
+		LevelState state;
+		synchronized (states) {
+			state = states.get(level);
+		}
+		if (state == null) return null;
+
+		synchronized (state) {
+			long now = level.getTime();
+			if (pruneFinishedAlerts(level, state, now)) rebalanceGuards(level, state, now);
+
+			AlertState bestAlert = null;
+			Mob bestTarget = null;
+			for (AlertState alert : state.alerts.values()) {
+				if (alert.settlementUniqueID != settlementUniqueID) continue;
+				for (int attackerUniqueID : alert.attackers) {
+					Mob attacker = GameUtils.getLevelMob(attackerUniqueID, level);
+					if (attacker == null || attacker.removed() || attacker.getHealth() <= 0) continue;
+					if (bestAlert == null
+							|| alert.priority.value > bestAlert.priority.value
+							|| alert.priority.value == bestAlert.priority.value && attacker.getUniqueID() < bestTarget.getUniqueID()) {
+						bestAlert = alert;
+						bestTarget = attacker;
+					}
+				}
+			}
+			return bestTarget == null ? null : new CrossLevelAlert(bestTarget, bestAlert.emergency);
+		}
+	}
+
+	public static final class CrossLevelAlert {
+		public final Mob target;
+		public final boolean emergency;
+
+		private CrossLevelAlert(Mob target, boolean emergency) {
+			this.target = target;
+			this.emergency = emergency;
+		}
+	}
+
 	private static LevelState getState(Level level) {
 		synchronized (states) {
 			return states.computeIfAbsent(level, ignored -> new LevelState());

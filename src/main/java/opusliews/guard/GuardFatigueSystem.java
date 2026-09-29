@@ -7,6 +7,11 @@ import java.util.WeakHashMap;
 import necesse.entity.mobs.Mob;
 import necesse.entity.mobs.ai.behaviourTree.event.AIEvent;
 import necesse.entity.mobs.friendly.human.GuardHumanMob;
+import necesse.level.maps.Level;
+import necesse.level.maps.levelData.settlementData.ServerSettlementData;
+import opusliews.multilevelsettlement.SettlementLevelDomain;
+import opusliews.multilevelsettlement.SettlementLevelType;
+import opusliews.multilevelsettlement.SettlementMultiLevelSystem;
 import opusliews.logging.Logging;
 import opusliews.network.PacketGuardFatigueUpdate;
 
@@ -80,8 +85,8 @@ public final class GuardFatigueSystem {
 		}
 
 		if (rest && state.directRestAttackerUniqueID != null) {
-			Mob attacker = necesse.engine.util.GameUtils.getLevelMob(state.directRestAttackerUniqueID, guard.getLevel());
-			if (attacker == null || attacker.removed() || attacker.getHealth() <= 0 || !attacker.isSamePlace(guard)) {
+			Mob attacker = getDirectRestAttacker(guard);
+			if (attacker == null || attacker.removed() || attacker.getHealth() <= 0) {
 				Logging.logMessage("GuardFatigueDebug: guard " + guard.getUniqueID()
 						+ " direct rest attacker became invalid, clearing id=" + state.directRestAttackerUniqueID);
 				state.directRestAttackerUniqueID = null;
@@ -102,7 +107,7 @@ public final class GuardFatigueSystem {
 				Logging.logMessage("GuardFatigueDebug: awakened guard " + guard.getUniqueID()
 						+ " rest=" + rest
 						+ " inCombat=" + inCombat
-						+ " directAttacker=" + describeMob(state.directRestAttackerUniqueID == null ? null : necesse.engine.util.GameUtils.getLevelMob(state.directRestAttackerUniqueID, guard.getLevel()))
+						+ " directAttacker=" + describeMob(getDirectRestAttacker(guard))
 						+ " currentTarget=" + describeMob(currentTarget)
 						+ " chaserTarget=" + describeMob(chaserTarget));
 			}
@@ -215,6 +220,26 @@ public final class GuardFatigueSystem {
 				&& getState(guard).restAwakenedByCombat;
 	}
 
+	public static Mob getDirectRestAttacker(GuardHumanMob guard) {
+		if (guard == null || guard.getLevel() == null) return null;
+		State state = getState(guard);
+		if (state.directRestAttackerUniqueID == null) return null;
+
+		Mob attacker = necesse.engine.util.GameUtils.getLevelMob(state.directRestAttackerUniqueID, guard.getLevel());
+		if (attacker != null) return attacker;
+
+		ServerSettlementData settlement = guard.getSettlerSettlementServerData();
+		SettlementLevelDomain domain = SettlementMultiLevelSystem.get(settlement);
+		if (domain == null) return null;
+		for (SettlementLevelType type : SettlementLevelType.values()) {
+			Level level = domain.getLoadedLevel(type);
+			if (level == null || level == guard.getLevel()) continue;
+			attacker = necesse.engine.util.GameUtils.getLevelMob(state.directRestAttackerUniqueID, level);
+			if (attacker != null) return attacker;
+		}
+		return null;
+	}
+
 	public static boolean isDirectRestAttacker(GuardHumanMob guard, Mob target) {
 		if (guard == null || target == null || !isScheduledRestPeriod(guard)) {
 			return false;
@@ -224,7 +249,7 @@ public final class GuardFatigueSystem {
 		return state.directRestAttackerUniqueID != null && state.directRestAttackerUniqueID == target.getUniqueID()
 				&& !target.removed()
 				&& target.getHealth() > 0
-				&& target.isSamePlace(guard);
+				&& getDirectRestAttacker(guard) == target;
 	}
 
 	public static void applyLoadedState(

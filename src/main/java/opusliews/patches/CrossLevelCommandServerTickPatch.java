@@ -10,5 +10,6 @@ public class CrossLevelCommandServerTickPatch {
 	@Advice.OnMethodExit
 	public static void onExit(@Advice.This HumanMob human) {
 		SettlementCrossLevelCommandSystem.restoreFollowAfterServerTick(human);
+		SettlementCrossLevelCommandSystem.restoreAttackAfterServerTick(human);
 	}
 }

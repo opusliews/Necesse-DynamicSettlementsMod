@@ -16,11 +16,13 @@ import opusliews.breaching.WarningBellSystem;
 import opusliews.guard.GuardDutySystem;
 import opusliews.guard.GuardFatigueSystem;
 import opusliews.guard.GuardNeedsSystem;
+import opusliews.guard.GuardLevelAssignmentSystem;
 import opusliews.guard.NightGuardPatrolAINode;
 import opusliews.guard.NightGuardTargetFinderAI;
 import opusliews.guard.RestAwakenedGuardTargetFinderAI;
 import opusliews.sleep.GuardWakePlayerAINode;
 import opusliews.sleep.SleepWarningSystem;
+import opusliews.multilevelsettlement.SettlementCrossLevelGuardCombatSystem;
 
 @ModConstructorPatch(target = BehaviourTreeAI.class, arguments = {Mob.class, AINode.class, AIMover.class})
 public class WarningBellGuardAIPatch {
@@ -50,8 +52,33 @@ public class WarningBellGuardAIPatch {
 		restAwakenedCombat.addChild(new ItemAttackerChaserAINode());
 		root.addChildBefore(root.humanJobsFollowAINode, restAwakenedCombat);
 
+		SequenceAINode crossLevelCombat = new SequenceAINode();
+		crossLevelCombat.addChild(new CrossLevelGuardCombatAINode());
+		crossLevelCombat.addChild(new ItemAttackerChaserAINode());
+		root.addChildBefore(root.humanJobsFollowAINode, crossLevelCombat);
+
 		root.addChildBefore(root.humanJobsFollowAINode, new GuardWakePlayerAINode());
 		root.addChildBefore(root.humanJobsFollowAINode, new NightGuardPatrolAINode());
+	}
+
+	public static class CrossLevelGuardCombatAINode extends AINode {
+		@Override
+		protected void onRootSet(AINode root, Mob mob, Blackboard blackboard) {
+		}
+
+		@Override
+		public void init(Mob mob, Blackboard blackboard) {
+		}
+
+		@Override
+		public AINodeResult tick(Mob mob, Blackboard blackboard) {
+			return SettlementCrossLevelGuardCombatSystem.tick((GuardHumanMob)mob, blackboard, this);
+		}
+
+		@Override
+		public void onInterruptRunning(Mob mob, Blackboard blackboard) {
+			SettlementCrossLevelGuardCombatSystem.clear((GuardHumanMob)mob, blackboard, "AI branch interrupted");
+		}
 	}
 
 	public static class WarningBellTargetAINode extends AINode {
@@ -66,7 +93,7 @@ public class WarningBellGuardAIPatch {
 		@Override
 		public AINodeResult tick(Mob mob, Blackboard blackboard) {
 			GuardHumanMob guard = (GuardHumanMob)mob;
-			if (!guard.isSettlerOnCurrentLevel() || guard.hasCommandOrders()) {
+			if (!guard.isSettlerOnCurrentLevel() || guard.hasCommandOrders() || !GuardLevelAssignmentSystem.isOnAssignedLevel(guard)) {
 				return AINodeResult.FAILURE;
 			}
 

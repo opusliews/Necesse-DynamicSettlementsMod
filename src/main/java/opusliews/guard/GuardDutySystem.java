@@ -64,11 +64,15 @@ public final class GuardDutySystem {
 				&& !guard.adventureParty.isInAdventureParty();
 	}
 
-	public static boolean shouldPatrol(GuardHumanMob guard) {
+	public static boolean shouldBeOnGuardLevel(GuardHumanMob guard) {
 		return usesNightSchedule(guard)
 				&& guard.getWorldEntity().isNight()
 				&& !guard.isHiding
 				&& !guard.hasCommandOrders();
+	}
+
+	public static boolean shouldPatrol(GuardHumanMob guard) {
+		return shouldBeOnGuardLevel(guard) && GuardLevelAssignmentSystem.isOnAssignedLevel(guard);
 	}
 
 	public static void claimPatrolTarget(GuardHumanMob guard, Point target) {

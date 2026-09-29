@@ -8,6 +8,8 @@ import net.bytebuddy.asm.Advice;
 import opusliews.guard.GuardDuty;
 import opusliews.guard.GuardDutySystem;
 import opusliews.guard.GuardFatigueSystem;
+import opusliews.guard.GuardLevelAssignment;
+import opusliews.guard.GuardLevelAssignmentSystem;
 import opusliews.multilevelsettlement.SettlementLevelPreference;
 import opusliews.multilevelsettlement.SettlementLevelPreferenceSystem;
 
@@ -19,6 +21,7 @@ public class GuardDutyApplySpawnPacketPatch {
 			GuardHumanMob guard = (GuardHumanMob)mob;
 			GuardDutySystem.setDuty(guard, reader.getNextBoolean() ? GuardDuty.NIGHT : GuardDuty.DAY);
 			GuardFatigueSystem.applyClientFatigue(guard, reader.getNextInt());
+			GuardLevelAssignmentSystem.setAssignment(guard, GuardLevelAssignment.fromOrdinal(reader.getNextByteUnsigned()));
 		}
 		SettlementLevelPreferenceSystem.setPreference(mob, SettlementLevelPreference.fromOrdinal(reader.getNextByteUnsigned()));
 	}

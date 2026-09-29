@@ -7,6 +7,7 @@ import necesse.entity.mobs.friendly.human.HumanMob;
 import net.bytebuddy.asm.Advice;
 import opusliews.guard.GuardDutySystem;
 import opusliews.guard.GuardFatigueSystem;
+import opusliews.guard.GuardLevelAssignmentSystem;
 import opusliews.multilevelsettlement.SettlementLevelPreferenceSystem;
 
 @ModMethodPatch(target = HumanMob.class, name = "addSaveData", arguments = {SaveData.class})
@@ -17,6 +18,7 @@ public class GuardDutySavePatch {
 		if (mob instanceof GuardHumanMob) {
 			GuardHumanMob guard = (GuardHumanMob)mob;
 			save.addBoolean("dynamicSettlementsNightGuardDuty", GuardDutySystem.isNightDuty(guard));
+			save.addInt("dynamicSettlementsGuardLevel", GuardLevelAssignmentSystem.getAssignment(guard).ordinal());
 			save.addInt("dynamicSettlementsGuardFatigue", GuardFatigueSystem.getFatigue(guard));
 			save.addBoolean("dynamicSettlementsGuardRestActive", GuardFatigueSystem.isRestPeriodActive(guard));
 			save.addBoolean("dynamicSettlementsGuardRestInterrupted", GuardFatigueSystem.wasRestInterrupted(guard));

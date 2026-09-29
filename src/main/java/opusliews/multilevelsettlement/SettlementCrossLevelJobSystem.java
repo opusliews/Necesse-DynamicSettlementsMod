@@ -20,6 +20,7 @@ import necesse.engine.util.GameRandom;
 import necesse.engine.util.LevelIdentifier;
 import necesse.entity.mobs.Mob;
 import necesse.entity.mobs.MobWasHitEvent;
+import necesse.entity.mobs.friendly.human.GuardHumanMob;
 import necesse.entity.mobs.friendly.human.HumanMob;
 import necesse.entity.mobs.friendly.HusbandryMob;
 import necesse.entity.mobs.job.EntityJobWorker;
@@ -62,6 +63,7 @@ import necesse.level.maps.levelData.settlementData.storage.SettlementStorageReco
 import necesse.level.maps.levelData.settlementData.storage.SettlementStorageRecords;
 import necesse.level.maps.levelData.settlementData.storage.SettlementStorageRecordsRegionData;
 import necesse.level.maps.levelData.settlementData.LevelSettler;
+import opusliews.guard.GuardLevelAssignmentSystem;
 import opusliews.logging.Logging;
 
 public final class SettlementCrossLevelJobSystem {
@@ -70,6 +72,7 @@ public final class SettlementCrossLevelJobSystem {
 	private static final double PREFERENCE_WEIGHT_MIN = 1.40;
 	private static final double PREFERENCE_WEIGHT_MAX = 2.10;
 	private static final double CURRENT_LEVEL_WEIGHT = 1.15;
+	private static final double GUARD_ASSIGNED_LEVEL_WEIGHT = 4.0;
 	private static final double RECREATION_RANDOM_KIND_CHANCE = 0.20;
 	private static final long AGED_JOB_MS = 90_000L;
 	private static final long FORCE_OLD_JOB_MS = 180_000L;
@@ -736,16 +739,30 @@ public final class SettlementCrossLevelJobSystem {
 			return currentBest;
 		}
 
-		double preferenceWeight = preference == SettlementLevelPreference.AUTO
-				? 1.0
-				: PREFERENCE_WEIGHT_MIN + GameRandom.globalRandom.nextDouble() * (PREFERENCE_WEIGHT_MAX - PREFERENCE_WEIGHT_MIN);
-		double currentWeight = levelWeight(preference, currentType, currentType, preferenceWeight);
-		double otherWeight = levelWeight(preference, currentType, otherType, preferenceWeight);
+		double preferenceWeight;
+		double currentWeight;
+		double otherWeight;
+		String levelBias;
+		if (human instanceof GuardHumanMob) {
+			SettlementLevelType assignedType = GuardLevelAssignmentSystem.getAssignedLevelType((GuardHumanMob)human);
+			preferenceWeight = GUARD_ASSIGNED_LEVEL_WEIGHT;
+			currentWeight = currentType == assignedType ? GUARD_ASSIGNED_LEVEL_WEIGHT : 1.0;
+			otherWeight = otherType == assignedType ? GUARD_ASSIGNED_LEVEL_WEIGHT : 1.0;
+			levelBias = "guard=" + assignedType;
+		}
+		else {
+			preferenceWeight = preference == SettlementLevelPreference.AUTO
+					? 1.0
+					: PREFERENCE_WEIGHT_MIN + GameRandom.globalRandom.nextDouble() * (PREFERENCE_WEIGHT_MAX - PREFERENCE_WEIGHT_MIN);
+			currentWeight = levelWeight(preference, currentType, currentType, preferenceWeight);
+			otherWeight = levelWeight(preference, currentType, otherType, preferenceWeight);
+			levelBias = "preference=" + preference;
+		}
 		double roll = GameRandom.globalRandom.nextDouble() * (currentWeight + otherWeight);
 		Candidate selected = roll < currentWeight ? currentBest : otherBest;
 
 		if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Level choice settler=" + human.getUniqueID()
-				+ " preference=" + preference
+				+ " " + levelBias
 				+ " preferenceWeight=" + preferenceWeight
 				+ " currentLevel=" + currentType
 				+ " currentWeight=" + currentWeight

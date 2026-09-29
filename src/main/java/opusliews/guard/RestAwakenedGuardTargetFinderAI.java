@@ -16,6 +16,7 @@ import necesse.entity.mobs.ai.path.TilePathfinding;
 import necesse.entity.mobs.friendly.human.GuardHumanMob;
 import necesse.entity.mobs.friendly.human.HumanMob;
 import necesse.level.maps.levelData.settlementData.ZoneTester;
+import opusliews.multilevelsettlement.SettlementLevelZoneSystem;
 import opusliews.logging.Logging;
 
 public class RestAwakenedGuardTargetFinderAI extends HumanTargetFinderAI {
@@ -56,7 +57,8 @@ public class RestAwakenedGuardTargetFinderAI extends HumanTargetFinderAI {
 			return false;
 		}
 
-		ZoneTester zone = (ZoneTester)zoneTester.get();
+		ZoneTester zone = SettlementLevelZoneSystem.getCurrentLevelJobRestriction(mob);
+		if (zone == null) zone = (ZoneTester)zoneTester.get();
 		if (zone != null && !zone.containsTile(target.getTileX(), target.getTileY())) {
 			return false;
 		}

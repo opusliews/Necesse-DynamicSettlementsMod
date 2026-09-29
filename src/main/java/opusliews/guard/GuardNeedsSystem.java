@@ -25,6 +25,7 @@ import necesse.level.maps.levelData.jobs.ChatWithOtherLevelJob;
 import necesse.level.maps.levelData.jobs.ConsumeFoodLevelJob;
 import necesse.level.maps.levelData.settlementData.NetworkSettlementData;
 import necesse.level.maps.levelData.settlementData.ServerSettlementData;
+import opusliews.multilevelsettlement.SettlementCrossLevelGuardCombatSystem;
 import opusliews.logging.Logging;
 
 public final class GuardNeedsSystem {
@@ -274,7 +275,9 @@ public final class GuardNeedsSystem {
 	}
 
 	public static boolean isInCombat(GuardHumanMob guard) {
-		if (guard == null || guard.ai == null) {
+		if (guard == null) return false;
+		if (SettlementCrossLevelGuardCombatSystem.isResponding(guard)) return true;
+		if (guard.ai == null) {
 			return false;
 		}
 

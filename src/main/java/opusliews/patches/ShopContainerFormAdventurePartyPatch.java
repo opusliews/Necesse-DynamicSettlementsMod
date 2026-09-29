@@ -8,11 +8,14 @@ import necesse.inventory.container.mob.ShopContainer;
 import net.bytebuddy.asm.Advice;
 import opusliews.guard.GuardDutyDialogueRefresh;
 import opusliews.guard.GuardDutySystem;
+import opusliews.guard.GuardLevelAssignment;
+import opusliews.guard.GuardLevelAssignmentSystem;
 import opusliews.mobs.BuilderHumanMob;
 import opusliews.multilevelsettlement.SettlementLevelPreference;
 import opusliews.multilevelsettlement.SettlementLevelPreferenceSystem;
 import opusliews.network.PacketBuilderRoadRepairToggle;
 import opusliews.network.PacketGuardDutyToggle;
+import opusliews.network.PacketGuardLevelAssignment;
 import opusliews.network.PacketSettlerLevelPreference;
 
 @ModMethodPatch(
@@ -25,6 +28,7 @@ public class ShopContainerFormAdventurePartyPatch {
 	static boolean onEnter(@Advice.This ShopContainerForm form) {
 		addLevelPreferenceOption(form);
 		addGuardDutyOption(form);
+		addGuardLevelOption(form);
 		return handleBuilderAdventurePartyOptions(form);
 	}
 
@@ -32,6 +36,7 @@ public class ShopContainerFormAdventurePartyPatch {
 		ShopContainer container = (ShopContainer)form.getContainer();
 		if (!container.hasSettlerAccess || container.isInYourAdventureParty || container.isSettlerOutsideSettlement) return;
 		if (!(container.humanShop instanceof necesse.entity.mobs.friendly.human.HumanMob)) return;
+		if (container.humanShop instanceof GuardHumanMob) return;
 
 		necesse.entity.mobs.friendly.human.HumanMob human = container.humanShop;
 		SettlementLevelPreference preference = SettlementLevelPreferenceSystem.getPreference(human);
@@ -72,6 +77,24 @@ public class ShopContainerFormAdventurePartyPatch {
 					boolean nightDuty = !GuardDutySystem.isNightDuty(guard);
 					form.getClient().network.sendPacket(new PacketGuardDutyToggle(guard.getUniqueID(), nightDuty));
 				}
+		);
+	}
+
+	public static void addGuardLevelOption(ShopContainerForm form) {
+		ShopContainer container = (ShopContainer)form.getContainer();
+		if (!(container.humanShop instanceof GuardHumanMob)) return;
+
+		GuardHumanMob guard = (GuardHumanMob)container.humanShop;
+		if (!container.hasSettlerAccess
+				|| container.isInYourAdventureParty
+				|| container.isSettlerOutsideSettlement
+				|| !guard.isSettlerOnCurrentLevel()) return;
+
+		GuardDutyDialogueRefresh.track(guard, form);
+		GuardLevelAssignment assignment = GuardLevelAssignmentSystem.getAssignment(guard);
+		form.dialogueForm.addDialogueOption(
+				new LocalMessage("ui", assignment == GuardLevelAssignment.CAVE ? "guardlevelcave" : "guardlevelsurface"),
+				() -> form.getClient().network.sendPacket(new PacketGuardLevelAssignment(guard.getUniqueID(), assignment.next()))
 		);
 	}
 

@@ -364,6 +364,7 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketInspectionGlassData.class);
 		PacketRegistry.registerPacket(PacketWarningBellRing.class);
 		PacketRegistry.registerPacket(PacketGuardDutyToggle.class);
+		PacketRegistry.registerPacket(PacketGuardLevelAssignment.class);
 		PacketRegistry.registerPacket(PacketGuardFatigueUpdate.class);
 		PacketRegistry.registerPacket(PacketSettlementSleepSettingsRequest.class);
 		PacketRegistry.registerPacket(PacketSettlementSleepSettingsSync.class);

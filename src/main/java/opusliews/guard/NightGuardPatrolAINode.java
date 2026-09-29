@@ -109,7 +109,7 @@ public class NightGuardPatrolAINode extends MoveTaskAINode {
 		Point target = patrolTarget;
 		return moveToTileTask(target.x, target.y, null, pathObject -> {
 			MoveToTileAITask.AIPathResult path = (MoveToTileAITask.AIPathResult)pathObject;
-			if (!path.result.foundTarget || !isOutdoorPatrolPath(level, path.result.path)) {
+			if (!path.result.foundTarget || (!level.isCave && !isOutdoorPatrolPath(level, path.result.path))) {
 				clearTarget(guard);
 				nextTargetTime = level.getTime() + 500L;
 				return AINodeResult.SUCCESS;
@@ -156,7 +156,7 @@ public class NightGuardPatrolAINode extends MoveTaskAINode {
 
 			if (!bounds.contains(x, y)
 					|| !zoneTester.containsTile(x, y)
-					|| !level.isOutside(x, y)
+					|| (!level.isCave && !level.isOutside(x, y))
 					|| level.isSolidTile(x, y)
 					|| level.isLiquidTile(x, y)) {
 				continue;
@@ -193,7 +193,7 @@ public class NightGuardPatrolAINode extends MoveTaskAINode {
 		Level level = guard.getLevel();
 		ZoneTester zoneTester = guard.levelSettler.isTileInSettlementBoundsAndRestrictZoneTester();
 		return zoneTester.containsTile(target.x, target.y)
-				&& level.isOutside(target.x, target.y)
+				&& (level.isCave || level.isOutside(target.x, target.y))
 				&& !level.isSolidTile(target.x, target.y)
 				&& !level.isLiquidTile(target.x, target.y);
 	}

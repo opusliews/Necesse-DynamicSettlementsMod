@@ -10,6 +10,7 @@ import necesse.engine.network.server.ServerClient;
 import necesse.engine.util.GameUtils;
 import necesse.engine.world.worldData.SettlementsWorldData;
 import necesse.entity.mobs.Mob;
+import necesse.entity.mobs.friendly.human.GuardHumanMob;
 import necesse.entity.mobs.friendly.human.HumanMob;
 import necesse.level.maps.Level;
 import necesse.level.maps.levelData.settlementData.CachedSettlementData;
@@ -46,6 +47,10 @@ public class PacketSettlerLevelPreference extends Packet {
 			return;
 		}
 		HumanMob human = (HumanMob)mob;
+		if (human instanceof GuardHumanMob) {
+			if (Logging.logEnabled) Logging.logMessage("[LevelPreference] Rejected update because guards use Guard Level instead mob=" + mobUniqueID);
+			return;
+		}
 		if (!human.isSettlerOnCurrentLevel() || human.adventureParty.isInAdventureParty()) {
 			if (Logging.logEnabled) Logging.logMessage("[LevelPreference] Rejected update because settler is unavailable mob=" + mobUniqueID);
 			return;

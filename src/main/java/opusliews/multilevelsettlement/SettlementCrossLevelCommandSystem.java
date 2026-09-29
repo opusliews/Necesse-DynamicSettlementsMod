@@ -24,6 +24,7 @@ public final class SettlementCrossLevelCommandSystem {
 	private static final Field clientHasCommandOrdersField = getClientHasCommandOrdersField();
 	private static final Map<HumanMob, FollowState> followStates = Collections.synchronizedMap(new WeakHashMap<>());
 	private static final Map<HumanMob, GuardState> guardStates = Collections.synchronizedMap(new WeakHashMap<>());
+	private static final Map<HumanMob, AttackState> attackStates = Collections.synchronizedMap(new WeakHashMap<>());
 	private static final ThreadLocal<ServerClient> commandResolveClient = new ThreadLocal<>();
 
 	private SettlementCrossLevelCommandSystem() {
@@ -65,6 +66,7 @@ public final class SettlementCrossLevelCommandSystem {
 	public static void onFollowCommand(HumanMob human, Mob target) {
 		if (human == null) return;
 		guardStates.remove(human);
+		attackStates.remove(human);
 		if (!isSupportedCrossLevelTarget(human, target)) {
 			FollowState old = followStates.remove(human);
 			if (old != null) old.pathTask = null;
@@ -104,6 +106,7 @@ public final class SettlementCrossLevelCommandSystem {
 		human.resetCommandsBuffer = 600000;
 
 		followStates.remove(human);
+		attackStates.remove(human);
 		guardStates.put(human, new GuardState(commander.playerMob.getLevel().getIdentifier()));
 		if (Logging.logEnabled) Logging.logMessage("[CrossLevelCommands] Guard command will travel through settlement ladder settler=" + human.getUniqueID() + " from=" + sourceType + " to=" + targetType + " target=" + x + "," + y);
 		return true;
@@ -113,6 +116,7 @@ public final class SettlementCrossLevelCommandSystem {
 		if (human == null) return;
 		guardStates.remove(human);
 		followStates.remove(human);
+		attackStates.remove(human);
 	}
 
 	public static void clear(HumanMob human) {
@@ -120,7 +124,67 @@ public final class SettlementCrossLevelCommandSystem {
 		FollowState follow = followStates.remove(human);
 		if (follow != null) follow.pathTask = null;
 		guardStates.remove(human);
+		AttackState attack = attackStates.remove(human);
+		if (attack != null) attack.pathTask = null;
 		if (Logging.logEnabled) Logging.logMessage("[CrossLevelCommands] Cleared cross-level command state settler=" + human.getUniqueID());
+	}
+
+	public static boolean commandAttackCrossLevel(HumanMob human, ServerClient commander, Mob target) {
+		if (!isSupportedCrossLevelTarget(human, target)) return false;
+		if (!target.canBeTargeted(human, null)) return false;
+
+		human.commandMoveToGuardPoint = false;
+		human.commandMoveToFollowPoint = false;
+		human.stopMovingIn();
+		human.commandAttackMob = target;
+		human.ai.blackboard.submitEvent("resetTarget", new AIEvent());
+		human.ai.blackboard.submitEvent("newCommandSet", new AIEvent());
+		human.resetCommandsBuffer = 600000;
+
+		followStates.remove(human);
+		guardStates.remove(human);
+		AttackState state = new AttackState(target);
+		attackStates.put(human, state);
+		if (Logging.logEnabled) Logging.logMessage("[CrossLevelCommands] Attack command will travel through settlement ladder settler=" + human.getUniqueID() + " target=" + target.getStringID() + "#" + target.getUniqueID() + " targetLevel=" + target.getLevel().getIdentifier());
+		tickAttackTravel(human, state);
+		return true;
+	}
+
+	public static void onVanillaAttackCommand(HumanMob human) {
+		if (human == null) return;
+		attackStates.remove(human);
+	}
+
+	public static boolean shouldSuppressVanillaAttackTargeting(HumanMob human) {
+		return human != null && human.commandAttackMob != null && isSupportedCrossLevelTarget(human, human.commandAttackMob);
+	}
+
+	public static void restoreAttackAfterServerTick(HumanMob human) {
+		if (human == null || human.getLevel() == null || !human.getLevel().isServer()) return;
+		AttackState state = attackStates.get(human);
+		if (state == null) return;
+		if (state.target == null || state.target.removed() || state.target.getHealth() <= 0 || state.target.getLevel() == null) {
+			human.commandAttackMob = null;
+			attackStates.remove(human);
+			if (Logging.logEnabled) Logging.logMessage("[CrossLevelCommands] Attack target disappeared while travelling settler=" + human.getUniqueID());
+			return;
+		}
+		if (human.isSamePlace(state.target)) {
+			state.pathTask = null;
+			attackStates.remove(human);
+			human.ai.blackboard.submitEvent("resetPathTime", new AIEvent());
+			human.ai.blackboard.submitEvent("resetTarget", new AIEvent());
+			if (Logging.logEnabled) Logging.logMessage("[CrossLevelCommands] Attack target reached same level settler=" + human.getUniqueID() + " target=" + state.target.getStringID() + "#" + state.target.getUniqueID());
+			return;
+		}
+		if (!isSupportedCrossLevelTarget(human, state.target)) {
+			human.commandAttackMob = null;
+			attackStates.remove(human);
+			if (Logging.logEnabled) Logging.logMessage("[CrossLevelCommands] Attack target left settlement domain while travelling settler=" + human.getUniqueID() + " target=" + state.target.getStringID() + "#" + state.target.getUniqueID());
+			return;
+		}
+		if (human.commandAttackMob != state.target) human.commandAttackMob = state.target;
+		tickAttackTravel(human, state);
 	}
 
 	public static void restoreFollowAfterServerTick(HumanMob human) {
@@ -228,6 +292,80 @@ public final class SettlementCrossLevelCommandSystem {
 				state.route = null;
 				state.nextRouteSearchTime = human.getTime() + 3000L;
 				if (Logging.logEnabled) Logging.logMessage("[CrossLevelCommands] Follow ladder path exception settler=" + human.getUniqueID() + " error=" + e.getClass().getSimpleName() + ": " + e.getMessage());
+			}
+		}
+
+		if (blackboard.mover.isCurrentlyMovingFor(state.travelNode)) return;
+		if (blackboard.mover.isMoving()) blackboard.mover.stopMoving(human);
+		if (state.pathTask == null && state.route != null) {
+			int ladderX = state.route.ladder.getTileX(currentType);
+			int ladderY = state.route.ladder.getTileY(currentType);
+			state.pathTask = blackboard.mover.moveToTileTask(state.travelNode, ladderX, ladderY, null, path -> {
+				boolean moving = path.moveIfWithin(-1, 0, null);
+				return moving ? AINodeResult.RUNNING : AINodeResult.FAILURE;
+			});
+		}
+	}
+
+	private static void tickAttackTravel(HumanMob human, AttackState state) {
+		if (human == null || state == null || state.target == null || state.target.removed()) return;
+		if (human.getLevel() == null || state.target.getLevel() == null || state.target.isSamePlace(human)) return;
+
+		ServerSettlementData settlement = human.getSettlerSettlementServerData();
+		SettlementLevelDomain domain = SettlementMultiLevelSystem.get(settlement);
+		if (domain == null) return;
+		SettlementLevelType currentType = domain.getLevelType(human.getLevel().getIdentifier());
+		SettlementLevelType targetType = domain.getLevelType(state.target.getLevel().getIdentifier());
+		if (currentType == null || targetType == null || currentType == targetType) return;
+
+		Blackboard blackboard = human.ai.blackboard;
+		if (blackboard == null || blackboard.mover == null) return;
+		state.ensureTravelNode(human, blackboard);
+
+		if (state.route == null || state.targetType != targetType) {
+			if (human.getTime() < state.nextRouteSearchTime) return;
+			state.nextRouteSearchTime = human.getTime() + 3000L;
+			state.route = SettlementCrossLevelRouting.findBestTransitionRoute(human, domain, targetType);
+			state.targetType = targetType;
+			state.pathTask = null;
+			if (state.route == null || state.route.ladder == null) {
+				state.route = null;
+				if (Logging.logEnabled) Logging.logMessage("[CrossLevelCommands] Attack has no designated ladder route settler=" + human.getUniqueID() + " current=" + currentType + " targetLevel=" + targetType);
+				return;
+			}
+			if (Logging.logEnabled) Logging.logMessage("[CrossLevelCommands] Attack routing to ladder settler=" + human.getUniqueID() + " current=" + currentType + " targetLevel=" + targetType + " route=" + state.route);
+		}
+
+		if (SettlementLadderSystem.isMobAtOrAdjacentLadder(human, state.route.ladder, currentType)) {
+			if (blackboard.mover.isCurrentlyMovingFor(state.travelNode)) blackboard.mover.stopMoving(human);
+			boolean transitioned = SettlementLadderSystem.transitionMob(human, state.route.ladder, targetType);
+			state.pathTask = null;
+			state.route = null;
+			if (transitioned) {
+				human.commandAttackMob = state.target;
+				blackboard.submitEvent("resetPathTime", new AIEvent());
+				blackboard.submitEvent("resetTarget", new AIEvent());
+				if (Logging.logEnabled) Logging.logMessage("[CrossLevelCommands] Attack ladder transition completed settler=" + human.getUniqueID() + " targetLevel=" + targetType);
+			} else {
+				state.nextRouteSearchTime = human.getTime() + 3000L;
+				if (Logging.logEnabled) Logging.logMessage("[CrossLevelCommands] Attack ladder transition FAILED settler=" + human.getUniqueID() + " targetLevel=" + targetType + "; route will be re-evaluated");
+			}
+			return;
+		}
+
+		if (state.pathTask != null && state.pathTask.isComplete()) {
+			try {
+				AINodeResult result = state.pathTask.runComplete();
+				state.pathTask = null;
+				if (result == AINodeResult.FAILURE) {
+					state.route = null;
+					state.nextRouteSearchTime = human.getTime() + 3000L;
+				}
+			} catch (Exception e) {
+				state.pathTask = null;
+				state.route = null;
+				state.nextRouteSearchTime = human.getTime() + 3000L;
+				if (Logging.logEnabled) Logging.logMessage("[CrossLevelCommands] Attack ladder path exception settler=" + human.getUniqueID() + " error=" + e.getClass().getSimpleName() + ": " + e.getMessage());
 			}
 		}
 
@@ -374,6 +512,40 @@ public final class SettlementCrossLevelCommandSystem {
 
 		@Override
 		public AINodeResult tick(HumanMob mob, Blackboard<HumanMob> blackboard) {
+			return AINodeResult.RUNNING;
+		}
+	}
+
+	private static final class AttackState {
+		final Mob target;
+		SettlementLevelType targetType;
+		SettlementCrossLevelRoute route;
+		MoveToTileAITask pathTask;
+		AttackTravelNode travelNode;
+		long nextRouteSearchTime;
+
+		AttackState(Mob target) {
+			this.target = target;
+		}
+
+		void ensureTravelNode(HumanMob human, Blackboard blackboard) {
+			if (travelNode != null) return;
+			travelNode = new AttackTravelNode();
+			travelNode.makeRoot(human, blackboard);
+		}
+	}
+
+	private static final class AttackTravelNode extends AINode {
+		@Override
+		protected void onRootSet(AINode root, Mob mob, Blackboard blackboard) {
+		}
+
+		@Override
+		public void init(Mob mob, Blackboard blackboard) {
+		}
+
+		@Override
+		public AINodeResult tick(Mob mob, Blackboard blackboard) {
 			return AINodeResult.RUNNING;
 		}
 	}

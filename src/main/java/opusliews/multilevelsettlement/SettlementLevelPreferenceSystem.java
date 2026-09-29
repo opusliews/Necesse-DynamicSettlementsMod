@@ -2,6 +2,7 @@ package opusliews.multilevelsettlement;
 
 import necesse.engine.registries.SettlerThoughtRegistry;
 import necesse.engine.util.LevelIdentifier;
+import necesse.entity.mobs.friendly.human.GuardHumanMob;
 import necesse.entity.mobs.friendly.human.HumanMob;
 import necesse.level.maps.levelData.settlementData.LevelSettler;
 import necesse.level.maps.levelData.settlementData.ServerSettlementData;
@@ -23,6 +24,7 @@ public final class SettlementLevelPreferenceSystem {
 	public static final String caveResidenceThoughtStringID = "dscavelevelpreference";
 	public static final int caveResidenceHappinessModifier = 15;
 	private static final Map<HumanMob, SettlementLevelPreference> preferences = Collections.synchronizedMap(new WeakHashMap<>());
+	private static final Map<HumanMob, Boolean> initializedPreferences = Collections.synchronizedMap(new WeakHashMap<>());
 
 	private SettlementLevelPreferenceSystem() {
 	}
@@ -33,17 +35,43 @@ public final class SettlementLevelPreferenceSystem {
 	}
 
 	public static SettlementLevelPreference getPreference(HumanMob human) {
-		if (human == null) return SettlementLevelPreference.AUTO;
+		if (human == null || human instanceof GuardHumanMob) return SettlementLevelPreference.AUTO;
 		SettlementLevelPreference preference = preferences.get(human);
 		return preference == null ? SettlementLevelPreference.AUTO : preference;
 	}
 
 	public static void setPreference(HumanMob human, SettlementLevelPreference preference) {
 		if (human == null) return;
+		initializedPreferences.put(human, true);
+		if (human instanceof GuardHumanMob) {
+			preferences.remove(human);
+			return;
+		}
 		SettlementLevelPreference resolved = preference == null ? SettlementLevelPreference.AUTO : preference;
 		if (resolved == SettlementLevelPreference.AUTO) preferences.remove(human);
 		else preferences.put(human, resolved);
 		if (Logging.logEnabled) Logging.logMessage("[LevelPreference] Set settler=" + human.getUniqueID() + " preference=" + resolved);
+	}
+
+	public static void initializeGeneratedPreference(HumanMob human) {
+		if (human == null) return;
+		synchronized (initializedPreferences) {
+			if (initializedPreferences.containsKey(human)) return;
+			initializedPreferences.put(human, true);
+		}
+		if (human instanceof GuardHumanMob) {
+			preferences.remove(human);
+			return;
+		}
+		SettlementLevelPreference preference = getGeneratedPreference(human.settlerSeed);
+		if (preference == SettlementLevelPreference.AUTO) preferences.remove(human);
+		else preferences.put(human, preference);
+		if (Logging.logEnabled) Logging.logMessage("[LevelPreference] Generated settler=" + human.getUniqueID() + " seed=" + human.settlerSeed + " preference=" + preference);
+	}
+
+	public static SettlementLevelPreference getGeneratedPreference(int settlerSeed) {
+		int index = new necesse.engine.util.GameRandom((long)settlerSeed).nextInt(SettlementLevelPreference.values().length);
+		return SettlementLevelPreference.values()[index];
 	}
 
 	public static boolean isPreferredJobLevel(HumanMob human, LevelIdentifier targetLevel) {
@@ -64,7 +92,7 @@ public final class SettlementLevelPreferenceSystem {
 	}
 
 	public static String getHappinessThoughtStringID(HumanMob human) {
-		if (human == null || !human.isSettler() || getPreference(human) != SettlementLevelPreference.CAVE) return null;
+		if (human == null || human instanceof GuardHumanMob || !human.isSettler() || getPreference(human) != SettlementLevelPreference.CAVE) return null;
 		ServerSettlementData settlement = human.getSettlerSettlementServerData();
 		if (settlement == null) return null;
 		LevelSettler settler = settlement.getSettler(human.getUniqueID());
