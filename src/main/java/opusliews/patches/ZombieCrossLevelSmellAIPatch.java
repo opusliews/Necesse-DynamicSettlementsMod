@@ -1,0 +1,267 @@
+package opusliews.patches;
+
+import java.awt.Rectangle;
+import java.util.List;
+
+import necesse.engine.modLoader.annotations.ModConstructorPatch;
+import necesse.entity.mobs.Mob;
+import necesse.entity.mobs.ai.behaviourTree.AINode;
+import necesse.entity.mobs.ai.behaviourTree.AINodeResult;
+import necesse.entity.mobs.ai.behaviourTree.BehaviourTreeAI;
+import necesse.entity.mobs.ai.behaviourTree.Blackboard;
+import necesse.entity.mobs.ai.behaviourTree.decorators.MoveTaskAINode;
+import necesse.entity.mobs.ai.behaviourTree.event.AIEvent;
+import necesse.entity.mobs.ai.behaviourTree.trees.ConfusedCollisionPlayerChaserWandererAI;
+import necesse.entity.mobs.ai.behaviourTree.trees.ConfusedPlayerChaserWandererAI;
+import necesse.entity.mobs.ai.behaviourTree.util.AIMover;
+import necesse.entity.mobs.ai.behaviourTree.util.MoveToTileAITask;
+import necesse.entity.mobs.friendly.FriendlyMob;
+import necesse.level.maps.Level;
+import necesse.level.maps.levelData.settlementData.settler.SettlerMob;
+import net.bytebuddy.asm.Advice;
+import opusliews.breaching.ZombieBreaching;
+import opusliews.logging.Logging;
+import opusliews.multilevelsettlement.SettlementLadderLink;
+import opusliews.multilevelsettlement.SettlementLadderSystem;
+import opusliews.multilevelsettlement.SettlementLevelDomain;
+import opusliews.multilevelsettlement.SettlementLevelType;
+import opusliews.multilevelsettlement.SettlementMultiLevelSystem;
+
+@ModConstructorPatch(target = BehaviourTreeAI.class, arguments = {Mob.class, AINode.class, AIMover.class})
+public class ZombieCrossLevelSmellAIPatch {
+	@Advice.OnMethodExit
+	public static void onExit(@Advice.Argument(0) Mob mob, @Advice.Argument(1) AINode tree) {
+		if (!ZombieBreaching.isZombie(mob)) return;
+
+		if (tree instanceof ConfusedCollisionPlayerChaserWandererAI) {
+			ConfusedCollisionPlayerChaserWandererAI root = (ConfusedCollisionPlayerChaserWandererAI)tree;
+			root.addChildBefore(root.wandererAINode, new ZombieCrossLevelSmellAINode(root.collisionPlayerChaserAI.targetFinderAINode.distance.searchDistance));
+		}
+		else if (tree instanceof ConfusedPlayerChaserWandererAI) {
+			ConfusedPlayerChaserWandererAI root = (ConfusedPlayerChaserWandererAI)tree;
+			if (root.wandererAINode != null) root.addChildBefore(root.wandererAINode, new ZombieCrossLevelSmellAINode(root.playerChaserAI.targetFinderAINode.distance.searchDistance));
+		}
+	}
+
+	public static class ZombieCrossLevelSmellAINode extends MoveTaskAINode {
+		private static final long smellSearchCooldownMs = 1000L;
+		private static final long routeRetryCooldownMs = 1500L;
+
+		private final int normalSearchDistance;
+		private Mob smellTarget;
+		private SettlementLadderLink activeLink;
+		private long nextSmellSearchTime;
+		private long nextRouteSearchTime;
+
+		public ZombieCrossLevelSmellAINode(int normalSearchDistance) {
+			this.normalSearchDistance = normalSearchDistance;
+		}
+
+		@Override
+		protected void onRootSet(AINode root, Mob mob, Blackboard blackboard) {
+		}
+
+		@Override
+		public void init(Mob mob, Blackboard blackboard) {
+		}
+
+		@Override
+		protected void onInterruptRunning(Mob mob, Blackboard blackboard) {
+			super.onInterruptRunning(mob, blackboard);
+			stop(mob, blackboard, true);
+		}
+
+		@Override
+		public AINodeResult tick(Mob mob, Blackboard blackboard) {
+			if (!isIdleForSmell(mob, blackboard)) {
+				stop(mob, blackboard, true);
+				return AINodeResult.FAILURE;
+			}
+
+			Level level = mob.getLevel();
+			if (level == null || !level.isServer() || level.getServer() == null) {
+				stop(mob, blackboard, true);
+				return AINodeResult.FAILURE;
+			}
+
+			long now = mob.getTime();
+			if (smellTarget == null && now < nextSmellSearchTime) return AINodeResult.FAILURE;
+			if (smellTarget == null) nextSmellSearchTime = now + smellSearchCooldownMs;
+
+			SettlementLevelDomain domain = SettlementMultiLevelSystem.findDomainQuiet(level.getServer(), level.getIdentifier(), mob.getTileX(), mob.getTileY());
+			if (domain == null) {
+				stop(mob, blackboard, true);
+				return AINodeResult.FAILURE;
+			}
+
+			SettlementLevelType currentType = domain.getLevelType(level.getIdentifier());
+			if (currentType == null) {
+				stop(mob, blackboard, true);
+				return AINodeResult.FAILURE;
+			}
+			SettlementLevelType targetType = currentType == SettlementLevelType.SURFACE ? SettlementLevelType.CAVE : SettlementLevelType.SURFACE;
+
+			if (!isValidSmellTarget(mob, domain, targetType, smellTarget)) {
+				boolean hadTarget = smellTarget != null;
+				smellTarget = null;
+				activeLink = null;
+				clearTask();
+				if (hadTarget) nextSmellSearchTime = now + smellSearchCooldownMs;
+				if (now < nextSmellSearchTime && hadTarget) return AINodeResult.FAILURE;
+				smellTarget = findSmellTarget(mob, domain, targetType);
+				if (smellTarget == null) return AINodeResult.FAILURE;
+				if (Logging.logEnabled) Logging.logMessage("[ZombieSmell] Zombie acquired cross-level scent zombie=" + describeMob(mob)
+						+ " target=" + describeMob(smellTarget) + " radiusTiles=" + getSmellRadiusTiles(domain));
+			}
+
+			if (activeLink == null) {
+				if (now < nextRouteSearchTime) return AINodeResult.FAILURE;
+				nextRouteSearchTime = now + routeRetryCooldownMs;
+				activeLink = findBestPhysicalLink(mob, domain, currentType, smellTarget);
+				if (activeLink == null) return AINodeResult.FAILURE;
+				clearTask();
+				if (blackboard.mover.isMoving() && !blackboard.mover.isCurrentlyMovingFor(this)) blackboard.mover.stopMoving(mob);
+			}
+
+			if (SettlementLadderSystem.isMobAtOrAdjacentLadder(mob, activeLink, currentType)) {
+				if (blackboard.mover.isCurrentlyMovingFor(this)) blackboard.mover.stopMoving(mob);
+				Mob target = smellTarget;
+				SettlementLadderLink link = activeLink;
+				boolean transitioned = SettlementLadderSystem.transitionMob(mob, link, targetType);
+				stop(mob, blackboard, false);
+				if (transitioned) {
+					blackboard.submitEvent("resetPathTime", new AIEvent());
+					blackboard.submitEvent("resetTarget", new AIEvent());
+					if (Logging.logEnabled) Logging.logMessage("[ZombieSmell] Zombie followed scent through physical ladder zombie=" + describeMob(mob)
+							+ " target=" + describeMob(target) + " via=" + link);
+					return AINodeResult.RUNNING;
+				}
+				nextRouteSearchTime = now + routeRetryCooldownMs;
+				return AINodeResult.FAILURE;
+			}
+
+			return super.tick(mob, blackboard);
+		}
+
+		@Override
+		public AINodeResult tickNode(Mob mob, Blackboard blackboard) {
+			if (activeLink == null || mob.getLevel() == null) return AINodeResult.FAILURE;
+			SettlementLevelDomain domain = SettlementMultiLevelSystem.findDomainQuiet(mob.getLevel().getServer(), mob.getLevel().getIdentifier(), mob.getTileX(), mob.getTileY());
+			if (domain == null) return AINodeResult.FAILURE;
+			SettlementLevelType currentType = domain.getLevelType(mob.getLevel().getIdentifier());
+			if (currentType == null) return AINodeResult.FAILURE;
+
+			if (blackboard.mover.isCurrentlyMovingFor(this)) return AINodeResult.RUNNING;
+			int ladderX = activeLink.getTileX(currentType);
+			int ladderY = activeLink.getTileY(currentType);
+			return moveToTileTask(ladderX, ladderY, null, pathObject -> {
+				MoveToTileAITask.AIPathResult path = (MoveToTileAITask.AIPathResult)pathObject;
+				boolean moving = path.moveIfWithin(-1, 0, null);
+				return moving ? AINodeResult.RUNNING : AINodeResult.FAILURE;
+			});
+		}
+
+		@Override
+		public AINodeResult onTaskFailed(Mob mob, Blackboard blackboard) {
+			activeLink = null;
+			nextRouteSearchTime = mob.getTime() + routeRetryCooldownMs;
+			return AINodeResult.FAILURE;
+		}
+
+		private boolean isIdleForSmell(Mob mob, Blackboard blackboard) {
+			if (blackboard.getObject(Mob.class, "currentTarget") != null) return false;
+			if (blackboard.getObject(Mob.class, "chaserTarget") != null) return false;
+			if (blackboard.getObject(Mob.class, ZombieBreaching.passiveTargetKey) != null) return false;
+			if (hasNearbyPassiveTarget(mob)) return false;
+			ZombieBreaching.State breachState = ZombieBreaching.getState(mob);
+			return breachState.rememberedDoor == null && breachState.activeBreachTile == null && breachState.currentTarget == null;
+		}
+
+		private boolean hasNearbyPassiveTarget(Mob zombie) {
+			if (zombie.getLevel() == null || normalSearchDistance <= 0) return false;
+			int tileRange = normalSearchDistance / 32 + 1;
+			for (Mob candidate : zombie.getLevel().entityManager.mobs.getInRegionByTileRange(zombie.getTileX(), zombie.getTileY(), tileRange)) {
+				if (!(candidate instanceof FriendlyMob) || candidate.isHostile || candidate.isPlayer || candidate.isHuman || candidate.removed() || !candidate.isVisible()) continue;
+				if (zombie.getDistance(candidate) < normalSearchDistance) return true;
+			}
+			return false;
+		}
+
+		private Mob findSmellTarget(Mob zombie, SettlementLevelDomain domain, SettlementLevelType targetType) {
+			Level targetLevel = domain.getSettlement().getServer().world.levelManager.getLevel(domain.getLevelIdentifier(targetType));
+			if (targetLevel == null) return null;
+			int radiusTiles = getSmellRadiusTiles(domain);
+			int radiusSquared = radiusTiles * radiusTiles;
+			Mob best = null;
+			int bestDistanceSquared = Integer.MAX_VALUE;
+
+			for (Mob candidate : targetLevel.entityManager.mobs.getInRegionByTileRange(zombie.getTileX(), zombie.getTileY(), radiusTiles)) {
+				if (!(candidate instanceof SettlerMob) || !candidate.isHuman || candidate.removed() || candidate.getHealth() <= 0) continue;
+				SettlerMob settler = (SettlerMob)candidate;
+				if (!settler.isSettler() || settler.getSettlementUniqueID() != domain.getSettlementUniqueID()) continue;
+				if (!domain.isTileWithinBounds(targetLevel.getIdentifier(), candidate.getTileX(), candidate.getTileY())) continue;
+				int dx = candidate.getTileX() - zombie.getTileX();
+				int dy = candidate.getTileY() - zombie.getTileY();
+				int distanceSquared = dx * dx + dy * dy;
+				if (distanceSquared > radiusSquared || distanceSquared >= bestDistanceSquared) continue;
+				best = candidate;
+				bestDistanceSquared = distanceSquared;
+			}
+			return best;
+		}
+
+		private boolean isValidSmellTarget(Mob zombie, SettlementLevelDomain domain, SettlementLevelType targetType, Mob target) {
+			if (target == null || target.removed() || target.getHealth() <= 0 || !(target instanceof SettlerMob)) return false;
+			if (target.getLevel() == null || domain.getLevelType(target.getLevel().getIdentifier()) != targetType) return false;
+			SettlerMob settler = (SettlerMob)target;
+			if (!settler.isSettler() || settler.getSettlementUniqueID() != domain.getSettlementUniqueID()) return false;
+			int radiusTiles = getSmellRadiusTiles(domain);
+			int dx = target.getTileX() - zombie.getTileX();
+			int dy = target.getTileY() - zombie.getTileY();
+			return dx * dx + dy * dy <= radiusTiles * radiusTiles;
+		}
+
+		private SettlementLadderLink findBestPhysicalLink(Mob zombie, SettlementLevelDomain domain, SettlementLevelType currentType, Mob target) {
+			List<SettlementLadderLink> links = SettlementLadderSystem.getPhysicalLinks(domain);
+			SettlementLadderLink best = null;
+			double bestScore = Double.MAX_VALUE;
+			SettlementLevelType destinationType = currentType == SettlementLevelType.SURFACE ? SettlementLevelType.CAVE : SettlementLevelType.SURFACE;
+
+			for (SettlementLadderLink link : links) {
+				int sourceX = link.getTileX(currentType);
+				int sourceY = link.getTileY(currentType);
+				if (!zombie.estimateCanMoveTo(sourceX, sourceY, false)) continue;
+				int destinationX = link.getTileX(destinationType);
+				int destinationY = link.getTileY(destinationType);
+				double sourceDistance = Math.hypot(sourceX - zombie.getTileX(), sourceY - zombie.getTileY());
+				double targetDistance = Math.hypot(destinationX - target.getTileX(), destinationY - target.getTileY());
+				double score = sourceDistance + targetDistance;
+				if (score < bestScore) {
+					best = link;
+					bestScore = score;
+				}
+			}
+			return best;
+		}
+
+		private int getSmellRadiusTiles(SettlementLevelDomain domain) {
+			Rectangle bounds = domain.getTileBounds();
+			if (bounds == null) return 1;
+			int settlementRadius = Math.max(1, Math.min(bounds.width, bounds.height) / 2);
+			return Math.max(1, settlementRadius / 2);
+		}
+
+		private void stop(Mob mob, Blackboard blackboard, boolean clearTarget) {
+			clearTask();
+			if (blackboard.mover.isCurrentlyMovingFor(this)) blackboard.mover.stopMoving(mob);
+			activeLink = null;
+			if (clearTarget) smellTarget = null;
+		}
+
+		private String describeMob(Mob mob) {
+			if (mob == null) return "null";
+			return mob.getStringID() + "#" + mob.getUniqueID() + "@" + (mob.getLevel() == null ? "null" : mob.getLevel().getIdentifier())
+					+ ":" + mob.getTileX() + "," + mob.getTileY();
+		}
+	}
+}

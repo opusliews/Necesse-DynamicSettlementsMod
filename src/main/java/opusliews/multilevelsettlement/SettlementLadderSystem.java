@@ -19,11 +19,18 @@ import opusliews.network.PacketToggleSettlementLadder;
 import opusliews.network.PacketSettlementLadderSync;
 import necesse.inventory.container.settlement.SettlementDependantContainer;
 import java.awt.Point;
+import java.awt.Rectangle;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 public final class SettlementLadderSystem {
+	private static final long physicalLinkScanCooldownMs = 2000L;
+	private static final Map<ServerSettlementData, PhysicalLinkCache> physicalLinkCaches = Collections.synchronizedMap(new WeakHashMap<>());
+
 	private SettlementLadderSystem() {
 	}
 
@@ -58,6 +65,72 @@ public final class SettlementLadderSystem {
 		if (data == null) return result;
 		result.addAll(data.getLinks(domain.getSettlementUniqueID()));
 		return result;
+	}
+
+
+	public static List<SettlementLadderLink> getPhysicalLinks(SettlementLevelDomain domain) {
+		if (domain == null) return new ArrayList<>();
+		ServerSettlementData settlement = domain.getSettlement();
+		Level surface = getDomainLevel(domain, SettlementLevelType.SURFACE, false);
+		Level cave = getDomainLevel(domain, SettlementLevelType.CAVE, false);
+		if (surface == null || cave == null) return new ArrayList<>();
+
+		long now = surface.getTime();
+		PhysicalLinkCache cache = physicalLinkCaches.get(settlement);
+		if (cache != null && now < cache.nextScanTime) return new ArrayList<>(cache.links);
+
+		ArrayList<SettlementLadderLink> links = new ArrayList<>();
+		Rectangle bounds = domain.getTileBounds(SettlementLevelType.SURFACE);
+		if (bounds != null) {
+			for (int x = bounds.x; x < bounds.x + bounds.width; x++) {
+				for (int y = bounds.y; y < bounds.y + bounds.height; y++) {
+					if (!isSurfaceLadderObject(surface.getObject(x, y))) continue;
+					SettlementLadderLink link = buildPhysicalLink(domain, surface, cave, x, y);
+					if (link != null) links.add(link);
+				}
+			}
+		}
+
+		physicalLinkCaches.put(settlement, new PhysicalLinkCache(now + physicalLinkScanCooldownMs, links));
+		return new ArrayList<>(links);
+	}
+
+	public static boolean hasPhysicalDownwardLadder(SettlementLevelDomain domain) {
+		if (domain == null) return false;
+		Level surface = getDomainLevel(domain, SettlementLevelType.SURFACE, false);
+		Rectangle bounds = domain.getTileBounds(SettlementLevelType.SURFACE);
+		if (surface == null || bounds == null) return false;
+
+		for (int x = bounds.x; x < bounds.x + bounds.width; x++) {
+			for (int y = bounds.y; y < bounds.y + bounds.height; y++) {
+				GameObject object = surface.getObject(x, y);
+				if (!isSurfaceLadderObject(object)) continue;
+				if ("holecaveladder".equals(object.getStringID())) return true;
+				ObjectEntity entity = surface.entityManager.getObjectEntity(x, y);
+				if (entity instanceof PortalObjectEntity
+						&& domain.getLevelIdentifier(SettlementLevelType.CAVE).equals(((PortalObjectEntity)entity).getDestinationIdentifier())) return true;
+			}
+		}
+		return false;
+	}
+
+	private static SettlementLadderLink buildPhysicalLink(SettlementLevelDomain domain, Level surface, Level cave, int surfaceTileX, int surfaceTileY) {
+		if (domain == null || surface == null || cave == null) return null;
+		int caveTileX = surfaceTileX;
+		int caveTileY = surfaceTileY;
+
+		ObjectEntity sourceEntity = surface.entityManager.getObjectEntity(surfaceTileX, surfaceTileY);
+		if (sourceEntity instanceof PortalObjectEntity) {
+			PortalObjectEntity portal = (PortalObjectEntity)sourceEntity;
+			if (!domain.getLevelIdentifier(SettlementLevelType.CAVE).equals(portal.getDestinationIdentifier())) return null;
+			caveTileX = portal.destinationTileX;
+			caveTileY = portal.destinationTileY;
+		}
+
+		if (!domain.isTileWithinBounds(cave.getIdentifier(), caveTileX, caveTileY)) return null;
+		cave.regionManager.ensureTileIsLoaded(caveTileX, caveTileY);
+		if (!isCaveLadderObject(cave.getObject(caveTileX, caveTileY))) return null;
+		return new SettlementLadderLink(domain.getSettlementUniqueID(), surfaceTileX, surfaceTileY, caveTileX, caveTileY);
 	}
 
 	public static List<SettlementLadderLink> getValidLinks(SettlementLevelDomain domain) {
@@ -359,5 +432,15 @@ public final class SettlementLadderSystem {
 
 	private static void sendMessage(ServerClient client, String message) {
 		if (client != null) client.sendChatMessage(new StaticMessage(message));
+	}
+
+	private static final class PhysicalLinkCache {
+		private final long nextScanTime;
+		private final List<SettlementLadderLink> links;
+
+		private PhysicalLinkCache(long nextScanTime, List<SettlementLadderLink> links) {
+			this.nextScanTime = nextScanTime;
+			this.links = new ArrayList<>(links);
+		}
 	}
 }

@@ -18,6 +18,9 @@ public final class SettlementMultiLevelSystem {
 	private static final Map<ServerSettlementData, SettlementLevelDomain> domains = Collections.synchronizedMap(new WeakHashMap<>());
 	private static final Map<ServerSettlementData, Boolean> caveMissingLogged = Collections.synchronizedMap(new WeakHashMap<>());
 	private static final Map<ServerSettlementData, Boolean> caveLoadedLogged = Collections.synchronizedMap(new WeakHashMap<>());
+	private static final Map<ServerSettlementData, CaveAccessState> caveAccessStates = Collections.synchronizedMap(new WeakHashMap<>());
+	private static final long caveAccessRescanWithoutLadderMs = 1000L;
+	private static final long caveAccessRescanWithLadderMs = 5000L;
 
 	private SettlementMultiLevelSystem() {
 	}
@@ -46,6 +49,11 @@ public final class SettlementMultiLevelSystem {
 		if (settlement == null || settlement.getServer() == null) return;
 		SettlementLevelDomain domain = get(settlement);
 		if (domain == null) return;
+
+		if (!hasPhysicalCaveAccess(settlement, domain)) {
+			caveLoadedLogged.remove(settlement);
+			return;
+		}
 
 		LevelIdentifier caveIdentifier = domain.getLevelIdentifier(SettlementLevelType.CAVE);
 		if (caveIdentifier == null) {
@@ -105,8 +113,16 @@ public final class SettlementMultiLevelSystem {
 	}
 
 	public static SettlementLevelDomain findDomain(Server server, LevelIdentifier levelIdentifier, int tileX, int tileY) {
+		return findDomainInternal(server, levelIdentifier, tileX, tileY, true);
+	}
+
+	public static SettlementLevelDomain findDomainQuiet(Server server, LevelIdentifier levelIdentifier, int tileX, int tileY) {
+		return findDomainInternal(server, levelIdentifier, tileX, tileY, false);
+	}
+
+	private static SettlementLevelDomain findDomainInternal(Server server, LevelIdentifier levelIdentifier, int tileX, int tileY, boolean logDetails) {
 		if (server == null || levelIdentifier == null) {
-			if (Logging.logEnabled) Logging.logMessage("[MultiLevelSettlement] Cannot find domain with null server/level identifier level=" + levelIdentifier + " tile=" + tileX + "," + tileY);
+			if (logDetails && Logging.logEnabled) Logging.logMessage("[MultiLevelSettlement] Cannot find domain with null server/level identifier level=" + levelIdentifier + " tile=" + tileX + "," + tileY);
 			return null;
 		}
 
@@ -115,7 +131,7 @@ public final class SettlementMultiLevelSystem {
 		SettlementsWorldData settlements = SettlementsWorldData.getSettlementsData(server);
 		ServerSettlementData settlement = settlements.getOrLoadServerDataAtTile(surfaceIdentifier, tileX, tileY);
 		if (settlement == null) {
-			if (Logging.logEnabled) Logging.logMessage("[MultiLevelSettlement] No settlement found at projected surface tile level=" + levelIdentifier + " surface=" + surfaceIdentifier + " tile=" + tileX + "," + tileY);
+			if (logDetails && Logging.logEnabled) Logging.logMessage("[MultiLevelSettlement] No settlement found at projected surface tile level=" + levelIdentifier + " surface=" + surfaceIdentifier + " tile=" + tileX + "," + tileY);
 			return null;
 		}
 		SettlementLevelDomain domain = get(settlement);
@@ -128,6 +144,7 @@ public final class SettlementMultiLevelSystem {
 		SettlementLevelDomain removed = domains.remove(settlement);
 		caveMissingLogged.remove(settlement);
 		caveLoadedLogged.remove(settlement);
+		caveAccessStates.remove(settlement);
 		SettlementLevelStorageManager.remove(settlement);
 		SettlementLevelZoneSystem.removeSettlement(settlement);
 		if (removed != null && Logging.logEnabled) Logging.logMessage("[MultiLevelSettlement] Removed domain settlement=" + settlement.uniqueID);
@@ -203,5 +220,30 @@ public final class SettlementMultiLevelSystem {
 			return null;
 		}
 		return new SettlementLevelDomain(settlement, surfaceIdentifier, caveIdentifier);
+	}
+	private static boolean hasPhysicalCaveAccess(ServerSettlementData settlement, SettlementLevelDomain domain) {
+		Level surface = settlement.getLevel();
+		if (surface == null) return false;
+		long now = surface.getTime();
+		CaveAccessState state = caveAccessStates.get(settlement);
+		if (state != null && now < state.nextScanTime) return state.hasLadder;
+
+		boolean hasLadder = SettlementLadderSystem.hasPhysicalDownwardLadder(domain);
+		long cooldown = hasLadder ? caveAccessRescanWithLadderMs : caveAccessRescanWithoutLadderMs;
+		caveAccessStates.put(settlement, new CaveAccessState(hasLadder, now + cooldown));
+		if (Logging.logEnabled && (state == null || state.hasLadder != hasLadder)) {
+			Logging.logMessage("[MultiLevelSettlement] Physical cave access changed settlement=" + settlement.uniqueID + " hasDownwardLadder=" + hasLadder);
+		}
+		return hasLadder;
+	}
+
+	private static final class CaveAccessState {
+		private final boolean hasLadder;
+		private final long nextScanTime;
+
+		private CaveAccessState(boolean hasLadder, long nextScanTime) {
+			this.hasLadder = hasLadder;
+			this.nextScanTime = nextScanTime;
+		}
 	}
 }
