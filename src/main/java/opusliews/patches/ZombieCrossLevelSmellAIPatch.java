@@ -11,11 +11,12 @@ import necesse.entity.mobs.ai.behaviourTree.BehaviourTreeAI;
 import necesse.entity.mobs.ai.behaviourTree.Blackboard;
 import necesse.entity.mobs.ai.behaviourTree.decorators.MoveTaskAINode;
 import necesse.entity.mobs.ai.behaviourTree.event.AIEvent;
-import necesse.entity.mobs.ai.behaviourTree.trees.ConfusedCollisionPlayerChaserWandererAI;
-import necesse.entity.mobs.ai.behaviourTree.trees.ConfusedPlayerChaserWandererAI;
+import necesse.entity.mobs.ai.behaviourTree.trees.CollisionPlayerChaserWandererAI;
+import necesse.entity.mobs.ai.behaviourTree.trees.PlayerChaserWandererAI;
 import necesse.entity.mobs.ai.behaviourTree.util.AIMover;
 import necesse.entity.mobs.ai.behaviourTree.util.MoveToTileAITask;
 import necesse.entity.mobs.friendly.FriendlyMob;
+import necesse.entity.mobs.hostile.HostileMob;
 import necesse.level.maps.Level;
 import necesse.level.maps.levelData.settlementData.settler.SettlerMob;
 import net.bytebuddy.asm.Advice;
@@ -31,19 +32,28 @@ import opusliews.multilevelsettlement.SettlementMultiLevelSystem;
 public class ZombieCrossLevelSmellAIPatch {
 	@Advice.OnMethodExit
 	public static void onExit(@Advice.Argument(0) Mob mob, @Advice.Argument(1) AINode tree) {
-		if (!ZombieBreaching.isZombie(mob)) return;
+		if (!isEligibleHostile(mob)) return;
 
-		if (tree instanceof ConfusedCollisionPlayerChaserWandererAI) {
-			ConfusedCollisionPlayerChaserWandererAI root = (ConfusedCollisionPlayerChaserWandererAI)tree;
-			root.addChildBefore(root.wandererAINode, new ZombieCrossLevelSmellAINode(root.collisionPlayerChaserAI.targetFinderAINode.distance.searchDistance));
+		if (tree instanceof CollisionPlayerChaserWandererAI) {
+			CollisionPlayerChaserWandererAI root = (CollisionPlayerChaserWandererAI)tree;
+			if (root.wandererAINode != null) root.addChildBefore(root.wandererAINode, new HostileCrossLevelSmellAINode(root.collisionPlayerChaserAI.targetFinderAINode.distance.searchDistance));
 		}
-		else if (tree instanceof ConfusedPlayerChaserWandererAI) {
-			ConfusedPlayerChaserWandererAI root = (ConfusedPlayerChaserWandererAI)tree;
-			if (root.wandererAINode != null) root.addChildBefore(root.wandererAINode, new ZombieCrossLevelSmellAINode(root.playerChaserAI.targetFinderAINode.distance.searchDistance));
+		else if (tree instanceof PlayerChaserWandererAI) {
+			PlayerChaserWandererAI root = (PlayerChaserWandererAI)tree;
+			if (root.wandererAINode != null) root.addChildBefore(root.wandererAINode, new HostileCrossLevelSmellAINode(root.playerChaserAI.targetFinderAINode.distance.searchDistance));
 		}
 	}
 
-	public static class ZombieCrossLevelSmellAINode extends MoveTaskAINode {
+	public static boolean isEligibleHostile(Mob mob) {
+		if (!(mob instanceof HostileMob) || mob.isBoss()) return false;
+		if (mob.isSummoned || mob.isFlying()) return false;
+		if (mob.getLevelCollisionFilter() == null) return false;
+		Package mobPackage = mob.getClass().getPackage();
+		String packageName = mobPackage == null ? "" : mobPackage.getName();
+		return !packageName.contains(".summon.") && !packageName.contains(".hostile.bosses.");
+	}
+
+	public static class HostileCrossLevelSmellAINode extends MoveTaskAINode {
 		private static final long smellSearchCooldownMs = 1000L;
 		private static final long routeRetryCooldownMs = 1500L;
 
@@ -53,7 +63,7 @@ public class ZombieCrossLevelSmellAIPatch {
 		private long nextSmellSearchTime;
 		private long nextRouteSearchTime;
 
-		public ZombieCrossLevelSmellAINode(int normalSearchDistance) {
+		public HostileCrossLevelSmellAINode(int normalSearchDistance) {
 			this.normalSearchDistance = normalSearchDistance;
 		}
 
@@ -73,7 +83,7 @@ public class ZombieCrossLevelSmellAIPatch {
 
 		@Override
 		public AINodeResult tick(Mob mob, Blackboard blackboard) {
-			if (!isIdleForSmell(mob, blackboard)) {
+			if (!isEligibleHostile(mob) || !isIdleForSmell(mob, blackboard)) {
 				stop(mob, blackboard, true);
 				return AINodeResult.FAILURE;
 			}
@@ -110,7 +120,7 @@ public class ZombieCrossLevelSmellAIPatch {
 				if (now < nextSmellSearchTime && hadTarget) return AINodeResult.FAILURE;
 				smellTarget = findSmellTarget(mob, domain, targetType);
 				if (smellTarget == null) return AINodeResult.FAILURE;
-				if (Logging.logEnabled) Logging.logMessage("[ZombieSmell] Zombie acquired cross-level scent zombie=" + describeMob(mob)
+				if (Logging.logEnabled) Logging.logMessage("[HostileSmell] Hostile acquired cross-level scent mob=" + describeMob(mob)
 						+ " target=" + describeMob(smellTarget) + " radiusTiles=" + getSmellRadiusTiles(domain));
 			}
 
@@ -132,7 +142,7 @@ public class ZombieCrossLevelSmellAIPatch {
 				if (transitioned) {
 					blackboard.submitEvent("resetPathTime", new AIEvent());
 					blackboard.submitEvent("resetTarget", new AIEvent());
-					if (Logging.logEnabled) Logging.logMessage("[ZombieSmell] Zombie followed scent through physical ladder zombie=" + describeMob(mob)
+					if (Logging.logEnabled) Logging.logMessage("[HostileSmell] Hostile followed scent through physical ladder mob=" + describeMob(mob)
 							+ " target=" + describeMob(target) + " via=" + link);
 					return AINodeResult.RUNNING;
 				}
@@ -171,10 +181,15 @@ public class ZombieCrossLevelSmellAIPatch {
 		private boolean isIdleForSmell(Mob mob, Blackboard blackboard) {
 			if (blackboard.getObject(Mob.class, "currentTarget") != null) return false;
 			if (blackboard.getObject(Mob.class, "chaserTarget") != null) return false;
-			if (blackboard.getObject(Mob.class, ZombieBreaching.passiveTargetKey) != null) return false;
-			if (hasNearbyPassiveTarget(mob)) return false;
-			ZombieBreaching.State breachState = ZombieBreaching.getState(mob);
-			return breachState.rememberedDoor == null && breachState.activeBreachTile == null && breachState.currentTarget == null;
+
+			if (ZombieBreaching.isZombie(mob)) {
+				if (blackboard.getObject(Mob.class, ZombieBreaching.passiveTargetKey) != null) return false;
+				if (hasNearbyPassiveTarget(mob)) return false;
+				ZombieBreaching.State breachState = ZombieBreaching.getState(mob);
+				if (breachState.rememberedDoor != null || breachState.activeBreachTile != null || breachState.currentTarget != null) return false;
+			}
+
+			return true;
 		}
 
 		private boolean hasNearbyPassiveTarget(Mob zombie) {
