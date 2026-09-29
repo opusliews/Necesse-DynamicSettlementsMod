@@ -86,7 +86,7 @@ public class RestAwakenedGuardTargetFinderAI extends HumanTargetFinderAI {
 			return result.foundTarget;
 		}));
 
-		if (foundPath) {
+		if (foundPath && Logging.logEnabled) {
 			Logging.logMessage("GuardFatigueDebug: awakened combat finder guard=" + guard.getUniqueID()
 					+ " accepted target=" + target.getStringID() + "#" + target.getUniqueID());
 		}

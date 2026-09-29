@@ -37,7 +37,7 @@ public final class SettlementBedLevelIndicatorSystem {
 				bedLevels.put(settler.mobUniqueID, bed instanceof SettlementCaveBed);
 			}
 		}
-		return new PacketSettlementBedLevelSync(settlement == null ? -1 : settlement.uniqueID, bedLevels);
+		return new PacketSettlementBedLevelSync(settlement == null ? 0 : settlement.uniqueID, bedLevels);
 	}
 
 	public static synchronized void applySync(int settlementUniqueID, Map<Integer, Boolean> bedLevels) {

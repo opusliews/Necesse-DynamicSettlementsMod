@@ -13,7 +13,7 @@ public class SettlementSettlerBedFlagDrawContextPatch {
 		SettlementBedLevelIndicatorSystem.beginBedFlagDraw();
 	}
 
-	@Advice.OnMethodExit
+	@Advice.OnMethodExit(onThrowable = Throwable.class)
 	public static void onExit() {
 		SettlementBedLevelIndicatorSystem.endBedFlagDraw();
 	}

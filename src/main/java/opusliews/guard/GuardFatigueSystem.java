@@ -87,7 +87,7 @@ public final class GuardFatigueSystem {
 		if (rest && state.directRestAttackerUniqueID != null) {
 			Mob attacker = getDirectRestAttacker(guard);
 			if (attacker == null || attacker.removed() || attacker.getHealth() <= 0) {
-				Logging.logMessage("GuardFatigueDebug: guard " + guard.getUniqueID()
+				if (Logging.logEnabled) Logging.logMessage("GuardFatigueDebug: guard " + guard.getUniqueID()
 						+ " direct rest attacker became invalid, clearing id=" + state.directRestAttackerUniqueID);
 				state.directRestAttackerUniqueID = null;
 			}
@@ -100,7 +100,7 @@ public final class GuardFatigueSystem {
 				state.lastRestCombatTime = now;
 			}
 
-			if (now >= state.nextDebugLogTime) {
+			if (Logging.logEnabled && now >= state.nextDebugLogTime) {
 				state.nextDebugLogTime = now + 500L;
 				Mob currentTarget = guard.ai == null ? null : guard.ai.blackboard.getObject(Mob.class, "currentTarget");
 				Mob chaserTarget = guard.ai == null ? null : guard.ai.blackboard.getObject(Mob.class, "chaserTarget");
@@ -113,7 +113,7 @@ public final class GuardFatigueSystem {
 			}
 
 			if (!inCombat && now - state.lastRestCombatTime >= restCombatAwakeGraceMs) {
-				Logging.logMessage("GuardFatigueDebug: guard " + guard.getUniqueID()
+				if (Logging.logEnabled) Logging.logMessage("GuardFatigueDebug: guard " + guard.getUniqueID()
 						+ " combat-awake grace expired, returning to normal rest targeting");
 				state.restAwakenedByCombat = false;
 				state.directRestAttackerUniqueID = null;
@@ -191,7 +191,7 @@ public final class GuardFatigueSystem {
 		state.lastRestCombatTime = guard.getLevel().getTime();
 		state.nextDebugLogTime = 0L;
 
-		Logging.logMessage("GuardFatigueDebug: guard " + guard.getUniqueID()
+		if (Logging.logEnabled) Logging.logMessage("GuardFatigueDebug: guard " + guard.getUniqueID()
 				+ " directly attacked during rest by " + describeMob(attacker)
 				+ ", fatigue=" + getFatigue(guard)
 				+ ", setting combat-awake state");
@@ -200,11 +200,11 @@ public final class GuardFatigueSystem {
 			guard.ai.blackboard.put("currentTarget", attacker);
 			guard.ai.blackboard.put("chaserTarget", attacker);
 			guard.ai.blackboard.submitEvent("resetPathTime", new AIEvent());
-			Logging.logMessage("GuardFatigueDebug: guard " + guard.getUniqueID()
+			if (Logging.logEnabled) Logging.logMessage("GuardFatigueDebug: guard " + guard.getUniqueID()
 					+ " forced currentTarget/chaserTarget=" + describeMob(attacker));
 		}
 		else {
-			Logging.logMessage("GuardFatigueDebug: guard " + guard.getUniqueID()
+			if (Logging.logEnabled) Logging.logMessage("GuardFatigueDebug: guard " + guard.getUniqueID()
 					+ " has no AI while registering direct rest attacker");
 		}
 	}

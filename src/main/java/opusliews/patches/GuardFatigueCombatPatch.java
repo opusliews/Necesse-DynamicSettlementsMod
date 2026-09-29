@@ -23,7 +23,7 @@ public class GuardFatigueCombatPatch {
 		GuardHumanMob guard = (GuardHumanMob)mob;
 		Mob attackOwner = attacker.getAttackOwner();
 		if (attackOwner != null && attackOwner != mob) {
-			Logging.logMessage("GuardFatigueDebug: isServerHit guard=" + guard.getUniqueID()
+			if (Logging.logEnabled) Logging.logMessage("GuardFatigueDebug: isServerHit guard=" + guard.getUniqueID()
 					+ " attacker=" + attackOwner.getStringID() + "#" + attackOwner.getUniqueID()
 					+ " scheduledRest=" + GuardFatigueSystem.isScheduledRestPeriod(guard));
 			GuardFatigueSystem.registerDirectRestAttacker(guard, attackOwner);

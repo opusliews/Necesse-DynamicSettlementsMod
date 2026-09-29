@@ -453,9 +453,6 @@ public final class SleepWarningSystem {
 	}
 
 	private static GuardHumanMob getGuard(Level level, int uniqueID) {
-		if (uniqueID == -1) {
-			return null;
-		}
 		Mob mob = GameUtils.getLevelMob(uniqueID, level);
 		return mob instanceof GuardHumanMob ? (GuardHumanMob)mob : null;
 	}

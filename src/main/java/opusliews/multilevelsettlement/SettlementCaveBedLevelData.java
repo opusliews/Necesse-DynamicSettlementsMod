@@ -65,10 +65,13 @@ public class SettlementCaveBedLevelData extends LevelData {
 		super.applyLoadData(save);
 		assignedBeds.clear();
 		for (LoadData bedSave : save.getLoadDataByName("CAVE_BED")) {
-			int mobUniqueID = bedSave.getInt("mobUniqueID", -1, false);
+			if (!bedSave.hasLoadDataByName("mobUniqueID")) {
+				if (Logging.logEnabled) Logging.logMessage("[CaveBeds] Ignored persisted cave bed entry with missing mobUniqueID");
+				continue;
+			}
+			int mobUniqueID = bedSave.getInt("mobUniqueID", 0, false);
 			int tileX = bedSave.getInt("tileX", 0, false);
 			int tileY = bedSave.getInt("tileY", 0, false);
-			// Necesse mob unique IDs are signed ints; negative IDs are valid.
 			assignedBeds.put(mobUniqueID, new Point(tileX, tileY));
 		}
 		if (Logging.logEnabled && !assignedBeds.isEmpty()) Logging.logMessage("[CaveBeds] Loaded cave bed assignments count=" + assignedBeds.size() + " level=" + level.getIdentifier());
