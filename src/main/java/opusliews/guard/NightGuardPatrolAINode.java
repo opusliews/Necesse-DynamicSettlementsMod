@@ -2,6 +2,7 @@ package opusliews.guard;
 
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.util.Comparator;
 import necesse.engine.util.GameRandom;
 import necesse.engine.util.pathfinding.Pathfinding;
 import necesse.entity.mobs.Mob;
@@ -10,10 +11,13 @@ import necesse.entity.mobs.ai.behaviourTree.AINodeResult;
 import necesse.entity.mobs.ai.behaviourTree.Blackboard;
 import necesse.entity.mobs.ai.behaviourTree.decorators.MoveTaskAINode;
 import necesse.entity.mobs.ai.behaviourTree.util.MoveToTileAITask;
+import necesse.entity.mobs.ai.behaviourTree.util.TargetFinderDistance;
 import necesse.entity.mobs.friendly.human.GuardHumanMob;
 import necesse.level.maps.Level;
 import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import necesse.level.maps.levelData.settlementData.ZoneTester;
+import opusliews.logging.Logging;
+import opusliews.multilevelsettlement.SettlementLevelZoneSystem;
 
 public class NightGuardPatrolAINode extends MoveTaskAINode {
 	private static final int candidateAttempts = 60;
@@ -22,9 +26,12 @@ public class NightGuardPatrolAINode extends MoveTaskAINode {
 	private static final int targetReachedDistance = 2;
 	private static final int minPauseMs = 1200;
 	private static final int maxPauseMs = 3500;
+	private static final int combatSearchDistance = 640;
+	private static final long combatScanCooldownMs = 500L;
 
 	private Point patrolTarget;
 	private long nextTargetTime;
+	private long nextCombatScanTime;
 
 	@Override
 	protected void onRootSet(AINode root, Mob mob, Blackboard blackboard) {
@@ -71,12 +78,28 @@ public class NightGuardPatrolAINode extends MoveTaskAINode {
 			return AINodeResult.FAILURE;
 		}
 
+		Mob combatTarget = (Mob)blackboard.getObject(Mob.class, GuardCombatKeys.nightGuardTarget);
+		if (isUsableCombatTarget(guard, combatTarget)) {
+			yieldToCombat(guard, blackboard, combatTarget, "existing target");
+			return AINodeResult.SUCCESS;
+		}
+
+		long now = guard.getLevel().getTime();
+		if (now >= nextCombatScanTime) {
+			nextCombatScanTime = now + combatScanCooldownMs;
+			combatTarget = findNearbyCombatTarget(guard);
+			if (combatTarget != null) {
+				blackboard.put(GuardCombatKeys.nightGuardTarget, combatTarget);
+				yieldToCombat(guard, blackboard, combatTarget, "patrol scan");
+				return AINodeResult.SUCCESS;
+			}
+		}
+
 		if (guard.objectUser != null) {
 			guard.objectUser.stopUsing();
 		}
 
 		Level level = guard.getLevel();
-		long now = level.getTime();
 
 		if (patrolTarget != null && !isTargetStillValid(guard, patrolTarget)) {
 			clearTarget(guard);
@@ -223,6 +246,48 @@ public class NightGuardPatrolAINode extends MoveTaskAINode {
 		}
 
 		return reachedOutside;
+	}
+
+	private Mob findNearbyCombatTarget(GuardHumanMob guard) {
+		Point base = new Point(guard.getX(), guard.getY());
+		ZoneTester zone = SettlementLevelZoneSystem.getCurrentLevelJobRestriction(guard);
+		TargetFinderDistance distance = new TargetFinderDistance(combatSearchDistance);
+
+		return (Mob)distance.streamMobsAndPlayersInRange(base, guard)
+				.filter(targetObject -> {
+					Mob target = (Mob)targetObject;
+					if (!isUsableCombatTarget(guard, target)) return false;
+					if (zone != null && !zone.containsTile(target.getTileX(), target.getTileY())) return false;
+					return target.getDistance((float)base.x, (float)base.y) < (float)distance.getSearchDistance(guard, target);
+				})
+				.filter(targetObject -> {
+					Mob target = (Mob)targetObject;
+					return guard.estimateCanMoveTo(target.getTileX(), target.getTileY(), target.canBeTargetedFromAdjacentTiles());
+				})
+				.findBestDistance(0, Comparator.comparingDouble(targetObject -> {
+					Mob target = (Mob)targetObject;
+					return target.getDistance((float)base.x, (float)base.y);
+				}))
+				.orElse(null);
+	}
+
+	private boolean isUsableCombatTarget(GuardHumanMob guard, Mob target) {
+		return target != null
+				&& target != guard
+				&& !target.removed()
+				&& target.getHealth() > 0
+				&& target.isSamePlace(guard)
+				&& target.canTakeDamage()
+				&& target.canBeHit(guard)
+				&& target.canBeTargetedByHumans(guard);
+	}
+
+	private void yieldToCombat(GuardHumanMob guard, Blackboard blackboard, Mob target, String source) {
+		clearTarget(guard);
+		if (blackboard.mover.isCurrentlyMovingFor(this)) blackboard.mover.stopMoving(guard);
+		if (Logging.logEnabled) Logging.logMessage("NightGuard: guard " + guard.getUniqueID()
+				+ " yielding patrol to combat target=" + target.getStringID() + "#" + target.getUniqueID()
+				+ " source=" + source + " level=" + guard.getLevel().getIdentifier());
 	}
 
 	private void clearTarget(GuardHumanMob guard) {
