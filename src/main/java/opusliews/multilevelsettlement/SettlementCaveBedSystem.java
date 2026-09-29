@@ -14,6 +14,7 @@ import necesse.level.maps.levelData.settlementData.settler.SettlerMob;
 import opusliews.logging.Logging;
 
 import java.awt.Point;
+import java.util.ArrayList;
 import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.Map;
@@ -325,6 +326,42 @@ public final class SettlementCaveBedSystem {
 
 	static void endCaveRoomCalculation() {
 		roomContext.remove();
+	}
+
+
+	public static void onCaveRoomLevelChanged(Level level, int tileX, int tileY) {
+		if (level == null || !level.isServer() || !level.isLoadingComplete() || level.getServer() == null) return;
+		SettlementLevelDomain domain = SettlementMultiLevelSystem.findDomainQuiet(level.getServer(), level.getIdentifier(), tileX, tileY);
+		if (domain == null || domain.getLevelType(level.getIdentifier()) != SettlementLevelType.CAVE) return;
+		ServerSettlementData settlement = domain.getSettlement();
+		BedState state = states.get(settlement);
+		if (state == null || state.beds.isEmpty()) return;
+
+		state.rooms.clear();
+		ArrayList<Object> beds = new ArrayList<>(state.beds.values());
+		for (Object value : beds) {
+			if (!(value instanceof SettlementCaveBed)) continue;
+			SettlementCaveBed bed = (SettlementCaveBed)value;
+			SettlementCaveRoom room = (SettlementCaveRoom)state.rooms.get(bed.tileX, bed.tileY);
+			if (room == null) {
+				room = new SettlementCaveRoom(settlement, state.rooms, level, bed.tileX, bed.tileY);
+				bed.setCaveRoom(room);
+				room.getRoomSize();
+			}
+			else {
+				bed.setCaveRoom(room);
+			}
+		}
+
+		beds = new ArrayList<>(state.beds.values());
+		for (Object value : beds) {
+			if (!(value instanceof SettlementCaveBed)) continue;
+			SettlementCaveBed bed = (SettlementCaveBed)value;
+			SettlementCaveRoom room = (SettlementCaveRoom)state.rooms.get(bed.tileX, bed.tileY);
+			if (room != null) bed.setCaveRoom(room);
+			LevelSettler settler = bed.getSettler();
+			if (settler != null) settler.markRoomDirty();
+		}
 	}
 
 	public static void invalidateStrandedCache(ServerSettlementData settlement) {

@@ -15,7 +15,7 @@ import necesse.level.maps.levelData.settlementData.settler.thoughts.SettlerThoug
 
 public class SettlementCaveBed extends SettlementBed {
 	private final Level caveLevel;
-	private final SettlementCaveRoom caveRoom;
+	private SettlementCaveRoom caveRoom;
 
 	public SettlementCaveBed(ServerSettlementData data, Level caveLevel, SettlementCaveRoom caveRoom, int tileX, int tileY) {
 		super(data, tileX, tileY);
@@ -38,6 +38,10 @@ public class SettlementCaveBed extends SettlementBed {
 	@Override
 	public SettlementRoom getRoom() {
 		return caveRoom;
+	}
+
+	void setCaveRoom(SettlementCaveRoom caveRoom) {
+		this.caveRoom = caveRoom;
 	}
 
 	@Override
