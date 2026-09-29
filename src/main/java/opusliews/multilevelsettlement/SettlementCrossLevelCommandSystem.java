@@ -259,11 +259,22 @@ public final class SettlementCrossLevelCommandSystem {
 			if (currentType == targetType) guardStates.remove(human);
 			return null;
 		}
-		if (state.route == null || state.targetType != targetType) {
-			state.route = SettlementCrossLevelRouting.findBestTransitionRoute(human, domain, targetType);
+		if (state.targetType != targetType) {
+			state.route = null;
 			state.targetType = targetType;
+			state.nextRouteSearchTime = 0L;
 		}
-		if (state.route == null || state.route.ladder == null) return null;
+		if (state.route == null && human.getTime() >= state.nextRouteSearchTime) {
+			state.nextRouteSearchTime = human.getTime() + 3000L;
+			state.route = SettlementCrossLevelRouting.findBestTransitionRoute(human, domain, targetType);
+			if (state.route == null || state.route.ladder == null) {
+				state.route = null;
+				if (Logging.logEnabled) Logging.logMessage("[CrossLevelCommands] Guard has no designated ladder route settler=" + human.getUniqueID() + " current=" + currentType + " targetLevel=" + targetType);
+			}
+		}
+		if (state.route == null || state.route.ladder == null) {
+			return new Point(human.getX(), human.getY());
+		}
 		return new Point(state.route.ladder.getTileX(currentType) * 32 + 16, state.route.ladder.getTileY(currentType) * 32 + 16);
 	}
 
@@ -292,8 +303,10 @@ public final class SettlementCrossLevelCommandSystem {
 			human.ai.blackboard.submitEvent("resetPathTime", new AIEvent());
 			human.ai.blackboard.submitEvent("resetTarget", new AIEvent());
 			if (Logging.logEnabled) Logging.logMessage("[CrossLevelCommands] Guard ladder transition completed settler=" + human.getUniqueID() + " targetLevel=" + targetType + " finalTarget=" + human.commandGuardPoint);
-		} else if (Logging.logEnabled) {
-			Logging.logMessage("[CrossLevelCommands] Guard ladder transition FAILED settler=" + human.getUniqueID() + " targetLevel=" + targetType);
+		} else {
+			state.route = null;
+			state.nextRouteSearchTime = human.getTime() + 3000L;
+			if (Logging.logEnabled) Logging.logMessage("[CrossLevelCommands] Guard ladder transition FAILED settler=" + human.getUniqueID() + " targetLevel=" + targetType + "; route will be re-evaluated");
 		}
 		return true;
 	}
@@ -369,6 +382,7 @@ public final class SettlementCrossLevelCommandSystem {
 		final LevelIdentifier targetLevel;
 		SettlementLevelType targetType;
 		SettlementCrossLevelRoute route;
+		long nextRouteSearchTime;
 
 		GuardState(LevelIdentifier targetLevel) {
 			this.targetLevel = targetLevel;

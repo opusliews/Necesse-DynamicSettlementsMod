@@ -15,7 +15,7 @@ public class CrossLevelCommandResolveContextPatch {
 		}
 	}
 
-	@Advice.OnMethodExit
+	@Advice.OnMethodExit(onThrowable = Throwable.class)
 	public static void onExit() {
 		SettlementCrossLevelCommandSystem.endCommandResolution();
 	}
