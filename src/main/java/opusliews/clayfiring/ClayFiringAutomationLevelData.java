@@ -164,6 +164,7 @@ public class ClayFiringAutomationLevelData extends LevelData {
 			for (Integer uniqueID : entry.getValue().pickupUniqueIDs) {
 				SaveData pickup = new SaveData("PICKUP");
 				pickup.addInt("uniqueID", uniqueID);
+				pickup.addBoolean("hasUniqueID", true);
 				pending.addSaveData(pickup);
 			}
 			for (Map.Entry<String, Integer> expected : entry.getValue().expectedAmounts.entrySet()) {
@@ -196,7 +197,8 @@ public class ClayFiringAutomationLevelData extends LevelData {
 			LinkedHashMap<String, Integer> expectedAmounts = new LinkedHashMap<>();
 			for (LoadData pickup : pending.getLoadDataByName("PICKUP")) {
 				int uniqueID = pickup.getInt("uniqueID", 0, false);
-				if (uniqueID != 0) pickupUniqueIDs.add(uniqueID);
+				boolean hasUniqueID = pickup.getBoolean("hasUniqueID", uniqueID != 0, false);
+				if (hasUniqueID) pickupUniqueIDs.add(uniqueID);
 			}
 			for (LoadData item : pending.getLoadDataByName("EXPECTED_ITEM")) {
 				String itemStringID = item.getSafeString("itemStringID", "", false);

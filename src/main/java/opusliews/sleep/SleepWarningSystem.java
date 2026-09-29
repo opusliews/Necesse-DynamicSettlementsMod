@@ -159,7 +159,7 @@ public final class SleepWarningSystem {
 		WakeRequest completed = null;
 		synchronized (state) {
 			for (WakeRequest request : state.requests.values()) {
-				if (request.messengerGuardUniqueID == guard.getUniqueID()) {
+				if (request.messengerGuardUniqueID != null && request.messengerGuardUniqueID == guard.getUniqueID()) {
 					completed = request;
 					break;
 				}
@@ -258,12 +258,12 @@ public final class SleepWarningSystem {
 			}
 
 			request.targetPlayerUniqueID = targetClient.playerMob.getUniqueID();
-			GuardHumanMob messenger = getGuard(level, request.messengerGuardUniqueID);
+			GuardHumanMob messenger = request.messengerGuardUniqueID == null ? null : getGuard(level, request.messengerGuardUniqueID);
 			if (messenger != null && isValidMessenger(messenger, request.settlementUniqueID)) {
 				continue;
 			}
 
-			request.messengerGuardUniqueID = -1;
+			request.messengerGuardUniqueID = null;
 			if (now >= request.nextAssignmentTime) {
 				request.nextAssignmentTime = now + assignmentRetryMs;
 				tryAssignMessenger(level, state, request, targetClient.playerMob);
@@ -325,7 +325,7 @@ public final class SleepWarningSystem {
 	}
 
 	private static void tryAssignMessenger(Level level, LevelState state, WakeRequest request, PlayerMob targetPlayer) {
-		if (request.messengerGuardUniqueID != -1 || targetPlayer == null) {
+		if (request.messengerGuardUniqueID != null || targetPlayer == null) {
 			return;
 		}
 
@@ -407,7 +407,7 @@ public final class SleepWarningSystem {
 
 	private static boolean isGuardAssigned(LevelState state, int guardUniqueID) {
 		for (WakeRequest request : state.requests.values()) {
-			if (request.messengerGuardUniqueID == guardUniqueID) {
+			if (request.messengerGuardUniqueID != null && request.messengerGuardUniqueID == guardUniqueID) {
 				return true;
 			}
 		}
@@ -422,7 +422,7 @@ public final class SleepWarningSystem {
 		LevelState state = getState(guard.getLevel());
 		synchronized (state) {
 			for (WakeRequest request : state.requests.values()) {
-				if (request.messengerGuardUniqueID == guard.getUniqueID()) {
+				if (request.messengerGuardUniqueID != null && request.messengerGuardUniqueID == guard.getUniqueID()) {
 					return request;
 				}
 			}
@@ -531,7 +531,7 @@ public final class SleepWarningSystem {
 		private final int settlementUniqueID;
 		private WakeReason reason;
 		private int targetPlayerUniqueID;
-		private int messengerGuardUniqueID = -1;
+		private Integer messengerGuardUniqueID;
 		private final long createdAt;
 		private long nextAssignmentTime;
 		private boolean sawGuardCombat;

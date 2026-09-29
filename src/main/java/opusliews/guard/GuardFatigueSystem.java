@@ -79,12 +79,12 @@ public final class GuardFatigueSystem {
 			markRestCombat(guard, "combat");
 		}
 
-		if (rest && state.directRestAttackerUniqueID != -1) {
+		if (rest && state.directRestAttackerUniqueID != null) {
 			Mob attacker = necesse.engine.util.GameUtils.getLevelMob(state.directRestAttackerUniqueID, guard.getLevel());
 			if (attacker == null || attacker.removed() || attacker.getHealth() <= 0 || !attacker.isSamePlace(guard)) {
 				Logging.logMessage("GuardFatigueDebug: guard " + guard.getUniqueID()
 						+ " direct rest attacker became invalid, clearing id=" + state.directRestAttackerUniqueID);
-				state.directRestAttackerUniqueID = -1;
+				state.directRestAttackerUniqueID = null;
 			}
 		}
 
@@ -102,7 +102,7 @@ public final class GuardFatigueSystem {
 				Logging.logMessage("GuardFatigueDebug: awakened guard " + guard.getUniqueID()
 						+ " rest=" + rest
 						+ " inCombat=" + inCombat
-						+ " directAttacker=" + describeMob(necesse.engine.util.GameUtils.getLevelMob(state.directRestAttackerUniqueID, guard.getLevel()))
+						+ " directAttacker=" + describeMob(state.directRestAttackerUniqueID == null ? null : necesse.engine.util.GameUtils.getLevelMob(state.directRestAttackerUniqueID, guard.getLevel()))
 						+ " currentTarget=" + describeMob(currentTarget)
 						+ " chaserTarget=" + describeMob(chaserTarget));
 			}
@@ -111,7 +111,7 @@ public final class GuardFatigueSystem {
 				Logging.logMessage("GuardFatigueDebug: guard " + guard.getUniqueID()
 						+ " combat-awake grace expired, returning to normal rest targeting");
 				state.restAwakenedByCombat = false;
-				state.directRestAttackerUniqueID = -1;
+				state.directRestAttackerUniqueID = null;
 			}
 		}
 
@@ -122,13 +122,13 @@ public final class GuardFatigueSystem {
 		if (rest) {
 			state.restPeriodActive = true;
 			state.restInterrupted = false;
-			state.directRestAttackerUniqueID = -1;
+			state.directRestAttackerUniqueID = null;
 			state.restAwakenedByCombat = false;
 			state.lastRestCombatTime = 0L;
 		}
 		else {
 			state.restPeriodActive = false;
-			state.directRestAttackerUniqueID = -1;
+			state.directRestAttackerUniqueID = null;
 			state.restAwakenedByCombat = false;
 			state.lastRestCombatTime = 0L;
 			if (!state.restInterrupted && state.fatigue > 0) {
@@ -149,7 +149,7 @@ public final class GuardFatigueSystem {
 		state.initialized = true;
 		state.restPeriodActive = isScheduledRestPeriod(guard);
 		state.restInterrupted = false;
-		state.directRestAttackerUniqueID = -1;
+		state.directRestAttackerUniqueID = null;
 		state.restAwakenedByCombat = false;
 		state.lastRestCombatTime = 0L;
 	}
@@ -221,7 +221,7 @@ public final class GuardFatigueSystem {
 		}
 
 		State state = getState(guard);
-		return state.directRestAttackerUniqueID == target.getUniqueID()
+		return state.directRestAttackerUniqueID != null && state.directRestAttackerUniqueID == target.getUniqueID()
 				&& !target.removed()
 				&& target.getHealth() > 0
 				&& target.isSamePlace(guard);
@@ -243,7 +243,7 @@ public final class GuardFatigueSystem {
 		boolean currentRest = isScheduledRestPeriod(guard);
 		state.restPeriodActive = currentRest;
 		state.restInterrupted = currentRest && savedRestPeriodActive && savedRestInterrupted;
-		state.directRestAttackerUniqueID = -1;
+		state.directRestAttackerUniqueID = null;
 		state.restAwakenedByCombat = false;
 		state.lastRestCombatTime = 0L;
 	}
@@ -293,7 +293,7 @@ public final class GuardFatigueSystem {
 		private boolean initialized;
 		private boolean restPeriodActive;
 		private boolean restInterrupted;
-		private int directRestAttackerUniqueID = -1;
+		private Integer directRestAttackerUniqueID;
 		private boolean restAwakenedByCombat;
 		private long lastRestCombatTime;
 		private long nextDebugLogTime;

@@ -37,26 +37,31 @@ public class CharcoalCleanupLevelJob extends TileLevelJob {
 	private static final long holeFillTime = 2000L;
 	private ItemPickupEntity charcoalPickup;
 	private int charcoalPickupUniqueID;
+	private boolean hasCharcoalPickupUniqueID;
 
 	public CharcoalCleanupLevelJob(int tileX, int tileY, ItemPickupEntity charcoalPickup) {
 		this(tileX, tileY, charcoalPickup, charcoalPickup == null ? 0 : charcoalPickup.getUniqueID());
+		this.hasCharcoalPickupUniqueID = charcoalPickup != null;
 	}
 
 	public CharcoalCleanupLevelJob(int tileX, int tileY, ItemPickupEntity charcoalPickup, int charcoalPickupUniqueID) {
 		super(tileX, tileY);
 		this.charcoalPickup = charcoalPickup;
 		this.charcoalPickupUniqueID = charcoalPickupUniqueID;
+		this.hasCharcoalPickupUniqueID = true;
 	}
 
 	public CharcoalCleanupLevelJob(LoadData save) {
 		super(save);
 		this.charcoalPickupUniqueID = save.getInt("charcoalPickupUniqueID", 0, false);
+		this.hasCharcoalPickupUniqueID = save.getBoolean("hasCharcoalPickupUniqueID", charcoalPickupUniqueID != 0, false);
 	}
 
 	@Override
 	public void addSaveData(SaveData save) {
 		super.addSaveData(save);
 		save.addInt("charcoalPickupUniqueID", charcoalPickupUniqueID);
+		save.addBoolean("hasCharcoalPickupUniqueID", hasCharcoalPickupUniqueID);
 	}
 
 	@Override
@@ -282,7 +287,7 @@ public class CharcoalCleanupLevelJob extends TileLevelJob {
 		if (charcoalPickup != null && !charcoalPickup.removed()) {
 			return;
 		}
-		if (charcoalPickupUniqueID == 0 || getLevel() == null) {
+		if (!hasCharcoalPickupUniqueID || getLevel() == null) {
 			charcoalPickup = null;
 			return;
 		}

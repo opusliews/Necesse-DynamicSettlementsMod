@@ -75,7 +75,7 @@ public final class GuardNeedsSystem {
 		synchronized (state) {
 			cleanupState(guard.getLevel(), settlement.uniqueID, state);
 
-			if (state.holderUniqueID != -1) {
+			if (state.holderUniqueID != null) {
 				return state.holderUniqueID == guard.getUniqueID();
 			}
 
@@ -230,7 +230,7 @@ public final class GuardNeedsSystem {
 		SettlementBreakState state = getState(guard.getLevel(), settlement.uniqueID);
 		synchronized (state) {
 			cleanupState(guard.getLevel(), settlement.uniqueID, state);
-			return state.holderUniqueID == guard.getUniqueID() ? state.breakType : BreakType.NONE;
+			return state.holderUniqueID != null && state.holderUniqueID == guard.getUniqueID() ? state.breakType : BreakType.NONE;
 		}
 	}
 
@@ -257,7 +257,7 @@ public final class GuardNeedsSystem {
 
 		SettlementBreakState state = getState(guard.getLevel(), settlement.uniqueID);
 		synchronized (state) {
-			if (state.holderUniqueID != guard.getUniqueID()) {
+			if (state.holderUniqueID == null || state.holderUniqueID != guard.getUniqueID()) {
 				return;
 			}
 
@@ -295,7 +295,7 @@ public final class GuardNeedsSystem {
 
 		SettlementBreakState state = getState(guard.getLevel(), settlement.uniqueID);
 		synchronized (state) {
-			if (state.holderUniqueID == guard.getUniqueID()) {
+			if (state.holderUniqueID != null && state.holderUniqueID == guard.getUniqueID()) {
 				state.sequence = sequence;
 				state.reservedAt = guard.getLevel().getTime();
 				state.nextAttemptTimes.remove(guard.getUniqueID());
@@ -395,7 +395,7 @@ public final class GuardNeedsSystem {
 	}
 
 	private static void cleanupState(Level level, int settlementUniqueID, SettlementBreakState state) {
-		if (state.holderUniqueID == -1) {
+		if (state.holderUniqueID == null) {
 			return;
 		}
 
@@ -447,7 +447,7 @@ public final class GuardNeedsSystem {
 	}
 
 	private static void clearHolder(SettlementBreakState state) {
-		state.holderUniqueID = -1;
+		state.holderUniqueID = null;
 		state.breakType = BreakType.NONE;
 		state.sequence = null;
 		state.reservedAt = 0L;
@@ -455,7 +455,7 @@ public final class GuardNeedsSystem {
 	}
 
 	private static final class SettlementBreakState {
-		private int holderUniqueID = -1;
+		private Integer holderUniqueID;
 		private BreakType breakType = BreakType.NONE;
 		private JobSequence sequence;
 		private long reservedAt;

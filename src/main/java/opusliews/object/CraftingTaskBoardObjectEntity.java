@@ -35,7 +35,7 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 	private int taskRevision;
 
 	private transient CraftingStationLevelJob craftingJob;
-	private transient int assignedWorkerID = -1;
+	private transient Integer assignedWorkerID;
 	private transient int assignedDay = -1;
 	private transient int nextTaskIndex;
 	private transient long nextStatusRefreshTime;
@@ -182,7 +182,7 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 		}
 		assignedDay = day;
 
-		if (assignedWorkerID != -1) {
+		if (assignedWorkerID != null) {
 			Mob mob = (Mob)getLevel().entityManager.mobs.get(assignedWorkerID, false);
 			if (mob == null || mob.removed()) {
 				releaseWorker();
@@ -438,10 +438,10 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 	}
 
 	public boolean canBeClaimedBy(int uniqueID) {
-		if (assignedWorkerID != -1 && assignedWorkerID != uniqueID) {
+		if (assignedWorkerID != null && assignedWorkerID != uniqueID) {
 			return false;
 		}
-		return assignedWorkerID == uniqueID || !isWorkerAssignedElsewhere(uniqueID);
+		return assignedWorkerID != null && assignedWorkerID == uniqueID || !isWorkerAssignedElsewhere(uniqueID);
 	}
 
 	public boolean claimWorker(int uniqueID) {
@@ -451,7 +451,7 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 		if (!canBeClaimedBy(uniqueID)) {
 			return false;
 		}
-		if (assignedWorkerID == -1 || assignedWorkerID == uniqueID) {
+		if (assignedWorkerID == null || assignedWorkerID == uniqueID) {
 			assignedWorkerID = uniqueID;
 			assignedDay = getLevel().getWorldEntity().getDay();
 			return true;
@@ -460,15 +460,15 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 	}
 
 	public boolean isAssignedTo(int uniqueID) {
-		return assignedWorkerID == uniqueID;
+		return assignedWorkerID != null && assignedWorkerID == uniqueID;
 	}
 
 	public boolean isAssigned() {
-		return assignedWorkerID != -1;
+		return assignedWorkerID != null;
 	}
 
 	public void releaseWorker() {
-		assignedWorkerID = -1;
+		assignedWorkerID = null;
 		nextTaskIndex = 0;
 	}
 
@@ -629,7 +629,7 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 				break;
 			}
 		}
-		if (!anyActionable && assignedWorkerID != -1) {
+		if (!anyActionable && assignedWorkerID != null) {
 			releaseWorker();
 		}
 
