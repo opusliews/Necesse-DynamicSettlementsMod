@@ -37,6 +37,7 @@ public class GuardFatigueCombatPatch {
 					&& attackOwner.canBeHit(guard)
 					&& attackOwner.canBeTargetedByHumans(guard)
 					&& guard.ai != null) {
+				guard.ai.blackboard.put(GuardCombatKeys.nightGuardChaserTarget, null);
 				guard.ai.blackboard.put(GuardCombatKeys.nightGuardTarget, attackOwner);
 				guard.ai.blackboard.submitEvent("resetPathTime", new necesse.entity.mobs.ai.behaviourTree.event.AIEvent());
 				if (Logging.logEnabled) Logging.logMessage("NightGuard: guard " + guard.getUniqueID()

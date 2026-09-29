@@ -89,6 +89,7 @@ public class NightGuardPatrolAINode extends MoveTaskAINode {
 			nextCombatScanTime = now + combatScanCooldownMs;
 			combatTarget = findNearbyCombatTarget(guard);
 			if (combatTarget != null) {
+				blackboard.put(GuardCombatKeys.nightGuardChaserTarget, null);
 				blackboard.put(GuardCombatKeys.nightGuardTarget, combatTarget);
 				yieldToCombat(guard, blackboard, combatTarget, "patrol scan");
 				return AINodeResult.SUCCESS;

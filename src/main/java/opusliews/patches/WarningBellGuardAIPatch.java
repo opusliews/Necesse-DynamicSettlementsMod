@@ -7,28 +7,26 @@ import necesse.entity.mobs.ai.behaviourTree.AINodeResult;
 import necesse.entity.mobs.ai.behaviourTree.BehaviourTreeAI;
 import necesse.entity.mobs.ai.behaviourTree.Blackboard;
 import necesse.entity.mobs.ai.behaviourTree.composites.SequenceAINode;
-import necesse.entity.mobs.ai.behaviourTree.trees.HumanAI;
 import necesse.entity.mobs.ai.behaviourTree.leaves.ChaserAINode;
+import necesse.entity.mobs.ai.behaviourTree.trees.HumanAI;
 import necesse.entity.mobs.ai.behaviourTree.trees.ItemAttackerChaserAINode;
+import necesse.entity.mobs.ai.behaviourTree.util.AIMover;
+import necesse.entity.mobs.friendly.human.GuardHumanMob;
 import necesse.entity.mobs.itemAttacker.ItemAttackSlot;
 import necesse.entity.mobs.itemAttacker.ItemAttackerMob;
 import necesse.inventory.InventoryItem;
-import necesse.entity.mobs.ai.behaviourTree.util.AIMover;
-import necesse.entity.mobs.friendly.human.GuardHumanMob;
 import net.bytebuddy.asm.Advice;
 import opusliews.breaching.WarningBellSystem;
 import opusliews.guard.GuardCombatKeys;
 import opusliews.guard.GuardDutySystem;
 import opusliews.guard.GuardFatigueSystem;
-import opusliews.guard.GuardNeedsSystem;
 import opusliews.guard.GuardLevelAssignmentSystem;
+import opusliews.guard.GuardNeedsSystem;
 import opusliews.guard.NightGuardPatrolAINode;
-import opusliews.guard.NightGuardTargetFinderAI;
 import opusliews.guard.RestAwakenedGuardTargetFinderAI;
+import opusliews.multilevelsettlement.SettlementCrossLevelGuardCombatSystem;
 import opusliews.sleep.GuardWakePlayerAINode;
 import opusliews.sleep.SleepWarningSystem;
-import opusliews.multilevelsettlement.SettlementCrossLevelGuardCombatSystem;
-import opusliews.logging.Logging;
 
 @ModConstructorPatch(target = BehaviourTreeAI.class, arguments = {Mob.class, AINode.class, AIMover.class})
 public class WarningBellGuardAIPatch {
@@ -130,7 +128,6 @@ public class WarningBellGuardAIPatch {
 	}
 
 	public static class PatrolCombatConditionAINode extends AINode {
-		private long nextDebugLogTime;
 		@Override
 		protected void onRootSet(AINode root, Mob mob, Blackboard blackboard) {
 		}
@@ -149,20 +146,15 @@ public class WarningBellGuardAIPatch {
 			Mob currentTarget = (Mob)blackboard.getObject(Mob.class, GuardCombatKeys.nightGuardTarget);
 			if (currentTarget != null && (currentTarget.removed() || currentTarget.getHealth() <= 0 || !currentTarget.isSamePlace(guard))) {
 				blackboard.put(GuardCombatKeys.nightGuardTarget, null);
+				blackboard.put(GuardCombatKeys.nightGuardChaserTarget, null);
 				currentTarget = null;
 			}
 			if (result == AINodeResult.FAILURE) {
 				blackboard.put(GuardCombatKeys.nightGuardTarget, null);
+				blackboard.put(GuardCombatKeys.nightGuardChaserTarget, null);
 			}
 			else if (currentTarget == null) {
 				result = AINodeResult.FAILURE;
-			}
-			long now = guard.getTime();
-			if (Logging.logEnabled && currentTarget != null && now >= nextDebugLogTime) {
-				nextDebugLogTime = now + 500L;
-				Logging.logMessage("[GuardCombatDebug] Patrol condition guard=" + guard.getUniqueID()
-						+ " result=" + result + " shouldPatrol=" + shouldPatrol + " onBreak=" + onBreak
-						+ " wakeAssignment=" + wakeAssignment + " currentTarget=" + currentTarget.getStringID() + "#" + currentTarget.getUniqueID());
 			}
 			return result;
 		}
@@ -188,7 +180,6 @@ public class WarningBellGuardAIPatch {
 	}
 
 	public static class PatrolTargetActivityAINode extends AINode {
-		private long nextDebugLogTime;
 		@Override
 		protected void onRootSet(AINode root, Mob mob, Blackboard blackboard) {
 		}
@@ -199,16 +190,7 @@ public class WarningBellGuardAIPatch {
 
 		@Override
 		public AINodeResult tick(Mob mob, Blackboard blackboard) {
-			GuardHumanMob guard = (GuardHumanMob)mob;
-			Mob currentTarget = (Mob)blackboard.getObject(Mob.class, GuardCombatKeys.nightGuardTarget);
 			Mob target = (Mob)blackboard.getObject(Mob.class, GuardCombatKeys.nightGuardChaserTarget);
-			long now = guard.getTime();
-			if (Logging.logEnabled && currentTarget != null && now >= nextDebugLogTime) {
-				nextDebugLogTime = now + 500L;
-				Logging.logMessage("[GuardCombatDebug] Patrol sequence reached pre-chaser guard=" + guard.getUniqueID()
-						+ " currentTarget=" + currentTarget.getStringID() + "#" + currentTarget.getUniqueID()
-						+ " chaserTarget=" + (target == null ? "null" : target.getStringID() + "#" + target.getUniqueID()));
-			}
 			if (target != null) {
 				((GuardHumanMob)mob).setActivity(
 						"chaser",
