@@ -194,12 +194,17 @@ public final class SettlementCaveBedSystem {
 		BedState state = getState(settlement);
 		if (state.restoredAssignments) return;
 		SettlementCaveBedLevelData data = SettlementCaveBedLevelData.get(settlement.getLevel(), false);
-		state.restoredAssignments = true;
-		if (data == null) return;
+		if (data == null) {
+			state.restoredAssignments = true;
+			return;
+		}
+
+		boolean pendingSettlers = false;
 		for (Map.Entry<Integer, Point> entry : data.getAssignedBedsSnapshot().entrySet()) {
 			LevelSettler settler = settlement.getSettler(entry.getKey());
 			if (settler == null) {
-				if (Logging.logEnabled) Logging.logMessage("[CaveBeds] Saved cave bed assignment references missing settler mob=" + entry.getKey() + " bed=" + entry.getValue().x + "," + entry.getValue().y);
+				pendingSettlers = true;
+				if (Logging.logEnabled && !state.restorePendingLogged) Logging.logMessage("[CaveBeds] Deferring cave bed restore until settlers finish loading mob=" + entry.getKey() + " bed=" + entry.getValue().x + "," + entry.getValue().y);
 				continue;
 			}
 			SettlementCaveBed bed = getOrCreateCaveBed(settlement, entry.getValue().x, entry.getValue().y);
@@ -207,6 +212,15 @@ public final class SettlementCaveBedSystem {
 				if (Logging.logEnabled) Logging.logMessage("[CaveBeds] FAILED to restore cave bed assignment settler=" + entry.getKey() + " bed=" + entry.getValue().x + "," + entry.getValue().y);
 			}
 		}
+
+		if (pendingSettlers) {
+			state.restorePendingLogged = true;
+			return;
+		}
+
+		state.restoredAssignments = true;
+		state.restorePendingLogged = false;
+		if (Logging.logEnabled && !data.getAssignedBedsSnapshot().isEmpty()) Logging.logMessage("[CaveBeds] Restored persisted cave bed assignments settlement=" + settlement.uniqueID);
 	}
 
 	public static void validateAssignedCaveBed(LevelSettler settler) {
@@ -367,6 +381,7 @@ public final class SettlementCaveBedSystem {
 		final PointHashMap beds = new PointHashMap();
 		final PointHashMap rooms = new PointHashMap();
 		boolean restoredAssignments;
+		boolean restorePendingLogged;
 	}
 
 	private static final class RoomContext {

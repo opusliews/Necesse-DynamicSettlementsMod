@@ -47,7 +47,8 @@ public final class CharcoalPitSystem {
 		if (tileID == TileRegistry.getTileID(ShallowHoleTile.stringID)) {
 			if (hasHoleCaveLadder(level, tileX, tileY)) return false;
 			if (hasBlockingHoleObject(level, tileX, tileY)) return true;
-			allowedAction = isDirtPile(selected) || isLog(selected) || isFireableItem(selected);
+			allowedAction = isDirtPile(selected)
+					|| (FiringGroundSystem.isSurfaceProductionLevel(level) && (isLog(selected) || isFireableItem(selected)));
 		} else if (tileID == TileRegistry.getTileID(DeepHoleTile.stringID)) {
 			allowedAction = isDirtPile(selected);
 		} else if (getFiringPitCount(tileID) > 0) {
@@ -82,9 +83,9 @@ public final class CharcoalPitSystem {
 
 			if (isDirtPile(selected)) {
 				fillHoleWithDirt(level, player, selected, tileX, tileY);
-			} else if (isLog(selected)) {
+			} else if (FiringGroundSystem.isSurfaceProductionLevel(level) && isLog(selected)) {
 				fillHoleWithLogs(level, player, selected, tileX, tileY);
-			} else if (isFireableItem(selected)) {
+			} else if (FiringGroundSystem.isSurfaceProductionLevel(level) && isFireableItem(selected)) {
 				addFireableItem(level, player, selected, tileX, tileY);
 			}
 			return;
@@ -103,6 +104,8 @@ public final class CharcoalPitSystem {
 		if (firingItemCount > 0) {
 			if (isShovel(selected) && isShovelInRange(level, player, selected, tileX, tileY)) {
 				extractFiringPit(level, tileX, tileY);
+			} else if (!FiringGroundSystem.isSurfaceProductionLevel(level)) {
+				return;
 			} else if (isFireableItem(selected) && firingItemCount < FiringPitTile.maxItems
 					&& CharcoalPitLevelData.get(level, true).getLogs(tileX, tileY).isEmpty()) {
 				addFireableItem(level, player, selected, tileX, tileY);
@@ -118,6 +121,8 @@ public final class CharcoalPitSystem {
 		if (tileID == TileRegistry.getTileID(FiringPitLogTile.stringID)) {
 			if (isShovel(selected) && isShovelInRange(level, player, selected, tileX, tileY)) {
 				extractFiringPit(level, tileX, tileY);
+			} else if (!FiringGroundSystem.isSurfaceProductionLevel(level)) {
+				return;
 			} else if ((isIgnitionTorch(level, selected) && isTorchInRange(level, player, selected, tileX, tileY))
 					|| (isFirestarter(selected) && isWithinRange(player, tileX, tileY))) {
 				igniteFiringPit(level, tileX, tileY);
@@ -129,7 +134,7 @@ public final class CharcoalPitSystem {
 		if (tileID == TileRegistry.getTileID(CharcoalPitTile.stringID)) {
 			if (isShovel(selected) && isShovelInRange(level, player, selected, tileX, tileY)) {
 				extractPit(level, tileX, tileY, false);
-			} else if (isDirtPile(selected)) {
+			} else if (FiringGroundSystem.isSurfaceProductionLevel(level) && isDirtPile(selected)) {
 				coverPit(level, selected, tileX, tileY);
 			}
 			return;
@@ -138,6 +143,8 @@ public final class CharcoalPitSystem {
 		if (tileID == TileRegistry.getTileID(CoveredCharcoalPitTile.stringID)) {
 			if (isShovel(selected) && isShovelInRange(level, player, selected, tileX, tileY)) {
 				extractPit(level, tileX, tileY, true);
+			} else if (!FiringGroundSystem.isSurfaceProductionLevel(level)) {
+				return;
 			} else if ((isIgnitionTorch(level, selected) && isTorchInRange(level, player, selected, tileX, tileY))
 					|| (isFirestarter(selected) && isWithinRange(player, tileX, tileY))) {
 				ignitePit(level, tileX, tileY);

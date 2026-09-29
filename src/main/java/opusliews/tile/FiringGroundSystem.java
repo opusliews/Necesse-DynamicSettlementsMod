@@ -7,8 +7,12 @@ public final class FiringGroundSystem {
 	private FiringGroundSystem() {
 	}
 
+	public static boolean isSurfaceProductionLevel(Level level) {
+		return level != null && level.getIdentifier().isSurface();
+	}
+
 	public static boolean isSupportedGround(Level level, int tileX, int tileY) {
-		if (level == null || !level.isTileWithinBounds(tileX, tileY)) return false;
+		if (!isSurfaceProductionLevel(level) || !level.isTileWithinBounds(tileX, tileY)) return false;
 
 		String tileStringID = level.getTile(tileX, tileY).getStringID();
 		switch (tileStringID) {

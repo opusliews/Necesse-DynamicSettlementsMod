@@ -940,13 +940,13 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 	}
 
 	public static JobTypeHandler.SubHandler handler(EntityJobWorker worker, JobTypeHandler handler) {
-		if (!(worker instanceof HumanMob)) {
+		if (!(worker.getMobWorker() instanceof HumanMob)) {
 			return null;
 		}
 
-		HumanMob human = (HumanMob)worker;
+		HumanMob human = (HumanMob)worker.getMobWorker();
 		return handler
-				.setJobHandler(CharcoalProductionLevelJob.class, foundJob -> getJobSequence(human, foundJob))
+				.setJobHandler(CharcoalProductionLevelJob.class, foundJob -> getJobSequence(foundJob.worker, foundJob))
 				.setPredicate(
 						() -> !human.isOnStrike()
 								&& !human.hasCompletedMission()

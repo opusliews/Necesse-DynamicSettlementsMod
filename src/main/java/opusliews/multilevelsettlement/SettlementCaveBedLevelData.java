@@ -68,10 +68,7 @@ public class SettlementCaveBedLevelData extends LevelData {
 			int mobUniqueID = bedSave.getInt("mobUniqueID", -1, false);
 			int tileX = bedSave.getInt("tileX", 0, false);
 			int tileY = bedSave.getInt("tileY", 0, false);
-			if (mobUniqueID < 0) {
-				if (Logging.logEnabled) Logging.logMessage("[CaveBeds] Ignored saved cave bed with invalid mob ID tile=" + tileX + "," + tileY);
-				continue;
-			}
+			// Necesse mob unique IDs are signed ints; negative IDs are valid.
 			assignedBeds.put(mobUniqueID, new Point(tileX, tileY));
 		}
 		if (Logging.logEnabled && !assignedBeds.isEmpty()) Logging.logMessage("[CaveBeds] Loaded cave bed assignments count=" + assignedBeds.size() + " level=" + level.getIdentifier());

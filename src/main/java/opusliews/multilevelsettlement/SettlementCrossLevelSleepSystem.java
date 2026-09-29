@@ -72,7 +72,13 @@ public final class SettlementCrossLevelSleepSystem {
 			boolean transitioned = SettlementLadderSystem.transitionMob(human, state.route.ladder, bedType);
 			if (Logging.logEnabled) Logging.logMessage("[CrossLevelSleep] Bed-level transition " + (transitioned ? "completed" : "failed") + " settler=" + human.getUniqueID() + " bedLevel=" + bedType);
 			clearState(node, human, blackboard, state, transitioned ? "transition-complete" : "transition-failed");
-			if (transitioned) target.levelSettler.updateHome();
+			if (transitioned) {
+				target.levelSettler.updateHome();
+				// Vanilla HumanSleepAINode normally waits 5-10 seconds before retrying its bed path.
+				// After a cross-level transition that delay lets unrelated AI take over and wander first.
+				node.ticks = 0;
+				if (Logging.logEnabled) Logging.logMessage("[CrossLevelSleep] Armed immediate vanilla bed path after transition settler=" + human.getUniqueID() + " bed=" + target.bed.tileX + "," + target.bed.tileY);
+			}
 			return transitioned ? AINodeResult.RUNNING : AINodeResult.FAILURE;
 		}
 

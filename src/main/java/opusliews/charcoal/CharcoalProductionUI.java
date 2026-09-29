@@ -42,6 +42,7 @@ public final class CharcoalProductionUI {
 	}
 
 	public static void addAssignButton(SettlementAssignWorkForm form, FormFlow flow, FormContentBox content) {
+		if (form.client.getLevel() == null || !form.client.getLevel().getIdentifier().isSurface()) return;
 		int y = flow.next(40);
 		int buttonWidth = content.getWidth() - 32 - 32 - 36;
 		FormLocalTextButton assignButton = content.addComponent(new FormLocalTextButton(

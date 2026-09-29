@@ -573,9 +573,9 @@ public class ClayFiringProductionLevelJob extends TileLevelJob {
 	}
 
 	public static JobTypeHandler.SubHandler handler(EntityJobWorker worker, JobTypeHandler handler) {
-		if (!(worker instanceof HumanMob)) return null;
-		HumanMob human = (HumanMob)worker;
-		return handler.setJobHandler(ClayFiringProductionLevelJob.class, foundJob -> getJobSequence(human, foundJob))
+		if (!(worker.getMobWorker() instanceof HumanMob)) return null;
+		HumanMob human = (HumanMob)worker.getMobWorker();
+		return handler.setJobHandler(ClayFiringProductionLevelJob.class, foundJob -> getJobSequence(foundJob.worker, foundJob))
 				.setPredicate(() -> !human.isOnStrike() && !human.hasCompletedMission()
 						&& (!human.isSettler() || human.isSettlerWithinSettlement()));
 	}

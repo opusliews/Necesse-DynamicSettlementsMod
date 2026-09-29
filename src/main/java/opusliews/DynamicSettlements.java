@@ -17,6 +17,7 @@ import necesse.gfx.forms.components.localComponents.FormLocalTextButton;
 import necesse.gfx.forms.presets.ContinueForm;
 import necesse.gfx.forms.presets.ModsForm;
 import necesse.gfx.gameFont.FontOptions;
+import necesse.gfx.gameTexture.GameTexture;
 import necesse.inventory.item.Item;
 import necesse.inventory.item.matItem.MatItem;
 import necesse.inventory.item.toolItem.ToolType;
@@ -78,6 +79,7 @@ public class DynamicSettlements {
 	public static GameSound clayDigSound;
 	public static GameSound clayDigFastSound;
 	public static GameSound rockSlideSound;
+	public static GameTexture outlinedArrowTexture;
 
 	public void preInit() {
 		boolean settlementBuildersLoaded = ModLoader.getEnabledMods().stream()
@@ -407,6 +409,8 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketOpenSettlementWorkstation.class);
 		PacketRegistry.registerPacket(PacketOpenMultiLevelSettlement.class);
 		PacketRegistry.registerPacket(PacketSettlerLevelPreference.class);
+		PacketRegistry.registerPacket(PacketSettlementBedLevelRequest.class);
+		PacketRegistry.registerPacket(PacketSettlementBedLevelSync.class);
 
 		CraftingStationFeature.register();
 		CraftingTasksFeature.register();
@@ -422,6 +426,8 @@ public class DynamicSettlements {
 		GuideStoryObjectiveRegistry.applyOrdering();
 		DSRecipeRegistry.registerRecipes();
 		loadSounds();
+
+		outlinedArrowTexture = GameTexture.fromFile("ui/outlinedarrow");
 	}
 
 	public static void loadSounds() {
