@@ -16,6 +16,7 @@ import necesse.entity.mobs.ai.behaviourTree.trees.PlayerChaserWandererAI;
 import necesse.entity.mobs.ai.behaviourTree.util.AIMover;
 import necesse.entity.mobs.ai.behaviourTree.util.MoveToTileAITask;
 import necesse.entity.mobs.friendly.FriendlyMob;
+import necesse.entity.mobs.hostile.FlyingHostileMob;
 import necesse.entity.mobs.hostile.HostileMob;
 import necesse.level.maps.Level;
 import necesse.level.maps.levelData.settlementData.settler.SettlerMob;
@@ -32,7 +33,7 @@ import opusliews.multilevelsettlement.SettlementMultiLevelSystem;
 public class ZombieCrossLevelSmellAIPatch {
 	@Advice.OnMethodExit
 	public static void onExit(@Advice.Argument(0) Mob mob, @Advice.Argument(1) AINode tree) {
-		if (!isEligibleHostile(mob)) return;
+		if (!isConstructorEligibleHostile(mob)) return;
 
 		if (tree instanceof CollisionPlayerChaserWandererAI) {
 			CollisionPlayerChaserWandererAI root = (CollisionPlayerChaserWandererAI)tree;
@@ -44,13 +45,17 @@ public class ZombieCrossLevelSmellAIPatch {
 		}
 	}
 
-	public static boolean isEligibleHostile(Mob mob) {
-		if (!(mob instanceof HostileMob) || mob.isBoss()) return false;
-		if (mob.isSummoned || mob.isFlying()) return false;
-		if (mob.getLevelCollisionFilter() == null) return false;
+	public static boolean isConstructorEligibleHostile(Mob mob) {
+		if (!(mob instanceof HostileMob) || mob instanceof FlyingHostileMob) return false;
 		Package mobPackage = mob.getClass().getPackage();
 		String packageName = mobPackage == null ? "" : mobPackage.getName();
 		return !packageName.contains(".summon.") && !packageName.contains(".hostile.bosses.");
+	}
+
+	public static boolean isEligibleHostile(Mob mob) {
+		if (!isConstructorEligibleHostile(mob)) return false;
+		if (mob.isBoss() || mob.isSummoned || mob.isFlying()) return false;
+		return mob.getLevelCollisionFilter() != null;
 	}
 
 	public static class HostileCrossLevelSmellAINode extends MoveTaskAINode {

@@ -60,8 +60,7 @@ public class ShopContainerFormAdventurePartyPatch {
 		GuardHumanMob guard = (GuardHumanMob)container.humanShop;
 		if (!container.hasSettlerAccess
 				|| container.isInYourAdventureParty
-				|| container.isSettlerOutsideSettlement
-				|| !guard.isSettlerOnCurrentLevel()) {
+				|| container.isSettlerOutsideSettlement) {
 			return;
 		}
 
@@ -87,8 +86,7 @@ public class ShopContainerFormAdventurePartyPatch {
 		GuardHumanMob guard = (GuardHumanMob)container.humanShop;
 		if (!container.hasSettlerAccess
 				|| container.isInYourAdventureParty
-				|| container.isSettlerOutsideSettlement
-				|| !guard.isSettlerOnCurrentLevel()) return;
+				|| container.isSettlerOutsideSettlement) return;
 
 		GuardDutyDialogueRefresh.track(guard, form);
 		GuardLevelAssignment assignment = GuardLevelAssignmentSystem.getAssignment(guard);
