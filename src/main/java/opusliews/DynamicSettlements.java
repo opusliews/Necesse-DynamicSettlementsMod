@@ -181,6 +181,7 @@ public class DynamicSettlements {
 		BuffRegistry.registerBuff(MalignanceGogglesItem.buffStringID, new MalignanceGogglesBuff());
 		BuffRegistry.registerBuff(TrapdoorHiddenBuff.stringID, new TrapdoorHiddenBuff());
 		BuffRegistry.registerBuff(DeepHoleHiddenBuff.stringID, new DeepHoleHiddenBuff());
+		BuffRegistry.registerBuff(RaidPreparingHiddenBuff.stringID, new RaidPreparingHiddenBuff());
 		BuffRegistry.registerBuff(DeepHoleDiggingBuff.stringID, new DeepHoleDiggingBuff());
 		BuffRegistry.registerBuff(DeepHoleCaveFallBuff.stringID, new DeepHoleCaveFallBuff());
 		BuffRegistry.registerBuff(DeepHoleLadderDescentBuff.stringID, new DeepHoleLadderDescentBuff());

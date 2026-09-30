@@ -14,7 +14,9 @@ import necesse.engine.sound.SoundManager;
 import necesse.engine.util.GameMath;
 import necesse.engine.util.LevelIdentifier;
 import necesse.engine.util.TeleportResult;
+import necesse.entity.mobs.Mob;
 import necesse.entity.mobs.PlayerMob;
+import necesse.entity.mobs.hostile.ItemAttackerRaiderMob;
 import necesse.entity.objectEntity.LadderDownObjectEntity;
 import necesse.entity.objectEntity.PortalObjectEntity;
 import necesse.entity.mobs.buffs.ActiveBuff;
@@ -35,6 +37,7 @@ import opusliews.network.PacketHoleCaveLadderInteract;
 import opusliews.object.DeepHoleCeilingLightObject;
 import opusliews.object.HoleCaveLadderObject;
 import opusliews.object.HoleCaveLadderUpObject;
+import opusliews.raids.MultiLevelRaidSystem;
 import opusliews.tile.DeepHoleTile;
 import opusliews.tile.ShallowHoleTile;
 import opusliews.tile.ShallowHoleSystem;
@@ -128,6 +131,7 @@ public final class DeepHoleSystem {
 
 	public static boolean fillDeepHole(Level surfaceLevel, int tileX, int tileY) {
 		if (surfaceLevel == null || !surfaceLevel.isServer()) return false;
+		if (MultiLevelRaidSystem.isProtectedBreach(surfaceLevel, tileX, tileY)) return false;
 		if (surfaceLevel.getTileID(tileX, tileY) != TileRegistry.getTileID(DeepHoleTile.stringID)) return false;
 		if (isShaftTransitionAt(surfaceLevel, tileX, tileY)) return false;
 
@@ -588,10 +592,18 @@ public final class DeepHoleSystem {
 			return;
 		}
 
+		boolean playerPlacedLadder = sourceLevel.objectLayer.isPlayerPlaced(0, tileX, tileY);
+
 		client.changeLevelCheck(destinationIdentifier, (destinationLevel) -> {
 			destinationLevel.regionManager.ensureTilesAreLoaded(tileX, tileY, tileX, tileY);
 			int existingObjectID = destinationLevel.getObjectID(tileX, tileY);
-			if (existingObjectID != ladderUpID && existingObjectID != vanillaLadderUpID) {
+			boolean firstDescent = existingObjectID != ladderUpID && existingObjectID != vanillaLadderUpID;
+			if (Logging.logEnabled) {
+				Logging.logMessage("[DeepHole] Safe ladder descent clear check level=" + sourceLevel.getIdentifier()
+						+ " ladder=" + tileX + "," + tileY + " playerPlaced=" + playerPlacedLadder
+						+ " firstDescent=" + firstDescent + " destinationObjectID=" + existingObjectID);
+			}
+			if (firstDescent) {
 				GameMessage error = destinationLevel.preventsLadderPlacement(tileX, tileY);
 				if (error != null) {
 					client.sendChatMessage(error);
@@ -626,16 +638,9 @@ public final class DeepHoleSystem {
 			player.buffManager.removeBuff(DeepHoleLadderDescentBuff.stringID, true);
 			client.newStats.ladders_used.increment(1);
 
-			LadderDownObjectEntity portal = new LadderDownObjectEntity(
-					"deepholetemporary",
-					sourceLevel,
-					tileX,
-					tileY,
-					destinationIdentifier,
-					ObjectRegistry.getObjectID(HoleCaveLadderObject.stringID),
-					ladderUpID
-			);
-			portal.runClearMobs(destinationLevel, tileX, tileY);
+			if (playerPlacedLadder && firstDescent) {
+				runInitialPlayerLadderClearMobs(destinationLevel, tileX, tileY);
+			}
 			return new TeleportResult(true, destination);
 		}, true);
 	}
@@ -688,18 +693,46 @@ public final class DeepHoleSystem {
 			caveFallBuff.getGndData().setLong(caveFallStartKey, 0L);
 			player.buffManager.addBuff(caveFallBuff, true);
 
-			PortalObjectEntity portal = new PortalObjectEntity(
-					sourceLevel,
-					"deepholetemporary",
-					tileX,
-					tileY,
-					destinationIdentifier,
-					tileX,
-					tileY
-			);
-			portal.runClearMobs(destinationLevel, tileX, tileY);
 			return new TeleportResult(true, destination);
 		}, true);
+	}
+
+	private static void runInitialPlayerLadderClearMobs(Level level, int tileX, int tileY) {
+		final int clearHostileMobsRadius = 160;
+		final int clearLevelGeneratedHostileMobsRadius = 480;
+		int tileRadius = Math.max(clearHostileMobsRadius, clearLevelGeneratedHostileMobsRadius) / 32 + 1;
+		int removed = 0;
+		int skippedRaiders = 0;
+		level.regionManager.ensureTilesAreLoaded(tileX - tileRadius, tileY - tileRadius, tileX + tileRadius, tileY + tileRadius);
+
+		for (Mob mob : level.entityManager.mobs.getInRegionByTileRange(tileX, tileY, tileRadius)) {
+			if (mob instanceof ItemAttackerRaiderMob) {
+				skippedRaiders++;
+				continue;
+			}
+			if (mob.isBoss() || !mob.isHostile) continue;
+
+			float distance = mob.getDistance((float)(tileX * 32 + 16), (float)(tileY * 32 + 16));
+			if (!(distance < (float)clearHostileMobsRadius)
+					&& (mob.canDespawn || !(distance < (float)clearLevelGeneratedHostileMobsRadius))) {
+				continue;
+			}
+
+			if (!mob.estimateCanMoveTo(tileX, tileY, true)) continue;
+
+			if (Logging.logEnabled) {
+				Logging.logMessage("[DeepHole] First player-ladder descent clearing hostile "
+						+ mob.getStringID() + "#" + mob.getUniqueID() + " level=" + level.getIdentifier()
+						+ " tile=" + mob.getTileX() + "," + mob.getTileY() + " ladder=" + tileX + "," + tileY);
+			}
+			mob.remove();
+			removed++;
+		}
+
+		if (Logging.logEnabled) {
+			Logging.logMessage("[DeepHole] First player-ladder hostile clear complete level=" + level.getIdentifier()
+					+ " ladder=" + tileX + "," + tileY + " removed=" + removed + " skippedRaiders=" + skippedRaiders);
+		}
 	}
 
 	private static void tickCaveFall(PlayerMob player) {

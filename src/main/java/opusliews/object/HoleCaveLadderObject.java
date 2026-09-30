@@ -22,6 +22,7 @@ import necesse.level.gameObject.GameObject;
 import necesse.level.maps.Level;
 import necesse.level.maps.light.GameLight;
 import opusliews.deephole.DeepHoleSystem;
+import opusliews.raids.MultiLevelRaidSystem;
 import opusliews.tile.DeepHoleTile;
 import opusliews.tile.ShallowHoleTile;
 
@@ -83,12 +84,14 @@ public class HoleCaveLadderObject extends GameObject {
 
 	@Override
 	public boolean onDamaged(Level level, int layerID, int x, int y, int damage, Attacker attacker, ServerClient client, boolean showEffect, int mouseX, int mouseY) {
+		if (MultiLevelRaidSystem.isProtectedBreach(level, x, y)) return false;
 		if (DeepHoleSystem.isShaftTransitionAt(level, x, y)) return false;
 		return super.onDamaged(level, layerID, x, y, damage, attacker, client, showEffect, mouseX, mouseY);
 	}
 
 	@Override
 	public void doExplosionDamage(Level level, int layerID, int tileX, int tileY, int damage, float toolTier, Attacker attacker, ServerClient client) {
+		if (MultiLevelRaidSystem.isProtectedBreach(level, tileX, tileY)) return;
 		if (DeepHoleSystem.isShaftTransitionAt(level, tileX, tileY)) return;
 		super.doExplosionDamage(level, layerID, tileX, tileY, damage, toolTier, attacker, client);
 	}
