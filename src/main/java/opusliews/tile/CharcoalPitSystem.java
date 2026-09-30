@@ -95,7 +95,7 @@ public final class CharcoalPitSystem {
 			if (isDirtPile(selected) && !DeepHoleSystem.isShaftTransitionAt(level, tileX, tileY)) {
 				boolean returnedLadder = DeepHoleSystem.fillDeepHole(level, tileX, tileY);
 				if (returnedLadder) dropItem(level, tileX, tileY, new InventoryItem(HoleCaveLadderObject.stringID, 1));
-				if (level.getTileID(tileX, tileY) != TileRegistry.getTileID(DeepHoleTile.stringID)) selected.setAmount(selected.getAmount() - 1);
+				if (level.getTileID(tileX, tileY) != TileRegistry.getTileID(DeepHoleTile.stringID)) consumeSelectedItem(player, selected);
 			}
 			return;
 		}
@@ -135,7 +135,7 @@ public final class CharcoalPitSystem {
 			if (isShovel(selected) && isShovelInRange(level, player, selected, tileX, tileY)) {
 				extractPit(level, tileX, tileY, false);
 			} else if (FiringGroundSystem.isSurfaceProductionLevel(level) && isDirtPile(selected)) {
-				coverPit(level, selected, tileX, tileY);
+				coverPit(level, player, selected, tileX, tileY);
 			}
 			return;
 		}
@@ -266,7 +266,7 @@ public final class CharcoalPitSystem {
 
 
 	private static void fillHoleWithDirt(Level level, PlayerMob player, InventoryItem selected, int tileX, int tileY) {
-		selected.setAmount(selected.getAmount() - 1);
+		consumeSelectedItem(player, selected);
 		setTile(level, tileX, tileY, ShallowHoleSystem.getFillTileID(level, tileX, tileY));
 		CharcoalPitLevelData data = CharcoalPitLevelData.get(level, false);
 		if (data != null) {
@@ -290,14 +290,27 @@ public final class CharcoalPitSystem {
 		setTile(level, tileX, tileY, TileRegistry.getTileID(CharcoalPitTile.stringID));
 	}
 
-	private static void coverPit(Level level, InventoryItem selected, int tileX, int tileY) {
+	private static void coverPit(Level level, PlayerMob player, InventoryItem selected, int tileX, int tileY) {
 		CharcoalPitLevelData data = CharcoalPitLevelData.get(level, false);
 		if (data == null || data.getLogs(tileX, tileY).isEmpty()) {
 			return;
 		}
 
-		selected.setAmount(selected.getAmount() - 1);
+		consumeSelectedItem(player, selected);
 		setTile(level, tileX, tileY, TileRegistry.getTileID(CoveredCharcoalPitTile.stringID));
+	}
+
+	private static void consumeSelectedItem(PlayerMob player, InventoryItem selected) {
+		if (player == null || selected == null || selected.getAmount() <= 0) return;
+
+		PlayerInventorySlot selectedSlot = player.getSelectedItemSlot();
+		selected.setAmount(selected.getAmount() - 1);
+		if (selected.getAmount() <= 0) selectedSlot.setItem(player.getInv(), null);
+		else selectedSlot.markDirty(player.getInv());
+
+		if (player.isServerClient()) {
+			player.getServerClient().sendPacket(new PacketPlayerInventorySlot(player.getServerClient(), selectedSlot));
+		}
 	}
 
 	private static void extractPit(Level level, int tileX, int tileY, boolean returnDirt) {
