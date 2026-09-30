@@ -33,7 +33,7 @@ public class HoleCaveLadderObject extends GameObject {
 
 	public HoleCaveLadderObject() {
 		super();
-		this.toolType = ToolType.AXE;
+		this.toolType = ToolType.ALL;
 		this.toolTier = 0.0F;
 		this.objectHealth = 40;
 		this.drawDamage = true;

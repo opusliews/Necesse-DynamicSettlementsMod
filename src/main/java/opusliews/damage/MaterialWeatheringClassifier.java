@@ -15,6 +15,23 @@ public final class MaterialWeatheringClassifier {
 			"oak", "spruce", "pine", "willow", "palm", "maple", "birch", "dryad", "bamboo", "deadwood"
 	);
 
+	private static final Set<String> selfRecoveringTileIDs = setOf(
+			"grasstile",
+			"icetile",
+			"mudtile",
+			"plainsgrasstile",
+			"puddlecobble",
+			"rocktile",
+			"sandtile",
+			"sandstonetile",
+			"slimerocktile",
+			"snowtile",
+			"snowrocktile",
+			"spidernesttile",
+			"swampgrasstile",
+			"swamprocktile"
+	);
+
 	private static final Map<String, WeatheringMaterialTier> furnitureCategoryTiers = new HashMap<>();
 	private static final Map<String, WeatheringMaterialTier> materialPrefixTiers = new HashMap<>();
 	private static final Map<String, WeatheringMaterialTier> wallPrefixTiers = new HashMap<>();
@@ -183,7 +200,7 @@ public final class MaterialWeatheringClassifier {
 	}
 
 	public static WeatheringMaterialTier getObjectTier(GameObject object) {
-		if (object == null || object.getID() == 0 || object.objectHealth <= 0) {
+		if (object == null || object.getID() == 0 || object.objectHealth <= 0 || object.isTree) {
 			return null;
 		}
 
@@ -239,11 +256,17 @@ public final class MaterialWeatheringClassifier {
 	}
 
 	public static WeatheringMaterialTier getTileTier(GameTile tile) {
-		if (tile == null || tile.getID() == 0 || tile.tileHealth <= 0) {
+		if (tile == null || tile.getID() == 0 || tile.tileHealth <= 0 || isSelfRecoveringTile(tile)) {
 			return null;
 		}
 
 		return tileTiers.get(tile.getStringID());
+	}
+
+	public static boolean isSelfRecoveringTile(GameTile tile) {
+		if (tile == null || tile.getID() == 0) return false;
+		String tileID = tile.getStringID();
+		return selfRecoveringTileIDs.contains(tileID) || tileID.contains("gravel");
 	}
 
 	public static boolean isWeatherableFence(GameObject object) {

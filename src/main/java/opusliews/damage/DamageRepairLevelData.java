@@ -7,6 +7,7 @@ import necesse.entity.AbstractDamageResult;
 import necesse.entity.DamagedObjectEntity;
 import necesse.entity.manager.RegionLoadedListenerEntityComponent;
 import necesse.level.gameObject.GameObject;
+import necesse.level.gameTile.GameTile;
 import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
 import necesse.level.maps.levelData.LevelData;
@@ -63,7 +64,15 @@ public class DamageRepairLevelData extends LevelData implements RegionLoadedList
 			return;
 		}
 
-		if (objectLayerID < 0 && !level.tileLayer.isPlayerPlaced(damagedEntity.tileX, damagedEntity.tileY)) {
+		if (objectLayerID < 0) {
+			GameTile tile = level.getTile(damagedEntity.tileX, damagedEntity.tileY);
+			if (!level.tileLayer.isPlayerPlaced(damagedEntity.tileX, damagedEntity.tileY)
+					|| MaterialWeatheringClassifier.isSelfRecoveringTile(tile)) {
+				return;
+			}
+		}
+
+		if (objectLayerID >= 0 && isTreeObject(level, objectLayerID, damagedEntity.tileX, damagedEntity.tileY)) {
 			return;
 		}
 
@@ -141,18 +150,20 @@ public class DamageRepairLevelData extends LevelData implements RegionLoadedList
 		boolean hasPersistentDamage = false;
 
 		if (damagedEntity.tileDamage > 0
-				&& level.tileLayer.isPlayerPlaced(damagedEntity.tileX, damagedEntity.tileY)) {
+				&& level.tileLayer.isPlayerPlaced(damagedEntity.tileX, damagedEntity.tileY)
+				&& !MaterialWeatheringClassifier.isSelfRecoveringTile(level.getTile(damagedEntity.tileX, damagedEntity.tileY))) {
 			pendingRepairs.add(GameMath.getUniqueLongKey(damagedEntity.tileX, damagedEntity.tileY));
 			hasPersistentDamage = true;
 		}
 
 		if (damagedEntity.hasAnyObjectDamage()) {
-			hasPersistentDamage = true;
 			for (int layerID = 0; layerID < damagedEntity.objectDamage.length; layerID++) {
-				if (damagedEntity.objectDamage[layerID] <= 0) {
+				if (damagedEntity.objectDamage[layerID] <= 0
+						|| isTreeObject(level, layerID, damagedEntity.tileX, damagedEntity.tileY)) {
 					continue;
 				}
 
+				hasPersistentDamage = true;
 				Point masterTile = getObjectMasterTile(level, layerID, damagedEntity.tileX, damagedEntity.tileY);
 				pendingRepairs.add(GameMath.getUniqueLongKey(masterTile.x, masterTile.y));
 			}
@@ -163,15 +174,29 @@ public class DamageRepairLevelData extends LevelData implements RegionLoadedList
 
 	public static boolean hasRepairableDamage(Level level, int tileX, int tileY) {
 		DamagedObjectEntity damagedEntity = level.entityManager.getDamagedObjectEntity(tileX, tileY);
-		return damagedEntity != null && !damagedEntity.removed() && !damagedEntity.shouldRemove();
+		if (damagedEntity == null || damagedEntity.removed() || damagedEntity.shouldRemove()) return false;
+
+		if (damagedEntity.tileDamage > 0
+				&& level.tileLayer.isPlayerPlaced(tileX, tileY)
+				&& !MaterialWeatheringClassifier.isSelfRecoveringTile(level.getTile(tileX, tileY))) return true;
+
+		for (int layerID = 0; layerID < damagedEntity.objectDamage.length; layerID++) {
+			if (damagedEntity.objectDamage[layerID] > 0 && !isTreeObject(level, layerID, tileX, tileY)) return true;
+		}
+
+		return false;
 	}
 
 	public static boolean isRepairReady(Level level, int tileX, int tileY) {
 		DamagedObjectEntity damagedEntity = level.entityManager.getDamagedObjectEntity(tileX, tileY);
-		return damagedEntity != null
-				&& !damagedEntity.removed()
-				&& !damagedEntity.shouldRemove()
+		return hasRepairableDamage(level, tileX, tileY)
 				&& damagedEntity.getTimeSinceLastDamage() >= repairDebounceTime;
+	}
+
+	public static boolean isTreeObject(Level level, int objectLayerID, int tileX, int tileY) {
+		if (level == null || objectLayerID < 0 || objectLayerID >= necesse.engine.registries.ObjectLayerRegistry.getTotalLayers()) return false;
+		GameObject object = level.getObject(objectLayerID, tileX, tileY);
+		return object != null && object.getID() != 0 && object.isTree;
 	}
 
 	public static Point getObjectMasterTile(Level level, int objectLayerID, int tileX, int tileY) {
