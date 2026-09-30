@@ -254,7 +254,7 @@ crudeworkbench=Crude Workbench
 crudetorch=Crude Torch
 crudewalltorch=Crude Torch
 blueprintworkstation=Blueprint Workstation
-builderjobrequestbulletin=Builder Job Request Bulletin
+jobrequestbulletin=Job Request Bulletin
 warningbell=Warning Bell
 trapdoor=Trapdoor
 closedtrapdoor=Trapdoor
@@ -397,6 +397,9 @@ craftingmissingingredients=Missing ingredients
 craftingmissingingredientslist=Missing ingredients: <ingredients>
 craftingrecipeunavailable=Recipe is not available at the linked crafting station
 donebutton=Done
+builderjobsavailable=Builder jobs available
+carpenterjobsavailable=Carpenter jobs available
+
 [itemtooltip]
 blueprintemptytip=Click [input=mouse2] to create a new blueprint
 blueprintnonemptytip=Click [input=mouse1] to place this blueprint in the world\nClick [input=mouse2] to empty this blueprint (can't be restored)\nUse Pageup and Pagedown rotate the blueprint prior to placement\nBlueprint will not be consumed

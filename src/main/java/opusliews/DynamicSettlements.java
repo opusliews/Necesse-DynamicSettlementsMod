@@ -33,6 +33,7 @@ import opusliews.container.BlueprintWorkstationContainer;
 import opusliews.container.CrudeWorkbenchContainer;
 import opusliews.crafting.CraftingStationFeature;
 import opusliews.crafting.CraftingTasksFeature;
+import opusliews.crafting.JobRequestBulletinFeature;
 import opusliews.damage.DamageRepairLevelData;
 import opusliews.damage.WeatheringLevelData;
 import opusliews.durability.ItemDurabilityRegistry;
@@ -59,7 +60,7 @@ import opusliews.multilevelsettlement.SettlementCaveBedSystem;
 import opusliews.multilevelsettlement.SettlementLevelPreferenceSystem;
 import opusliews.network.*;
 import opusliews.object.*;
-import opusliews.settler.BuilderRequestLevelData;
+import opusliews.settler.JobRequestLevelData;
 import opusliews.settler.BuilderSettler;
 import opusliews.settler.CarpenterSettler;
 import opusliews.sleep.SettlementSleepSettingsLevelData;
@@ -222,8 +223,8 @@ public class DynamicSettlements {
 		ObjectRegistry.registerObject("blueprintworkstation",
 				new BlueprintWorkstationObject(), 100.0F, true);
 		ObjectRegistry.registerObject(
-				BuilderJobRequestBulletinObject.stringID,
-				new BuilderJobRequestBulletinObject(), 25.0F, true);
+				JobRequestBulletinObject.stringID,
+				new JobRequestBulletinObject(), 25.0F, true);
 		ObjectRegistry.registerObject(
 				WarningBellObject.stringID,
 				new WarningBellObject(), 60.0F, true);
@@ -243,6 +244,9 @@ public class DynamicSettlements {
 		GameObject clayRock = ObjectRegistry.getObject("clayrock");
 		clayRock.toolType = ToolType.SHOVEL;
 		clayRock.toolTier = 0.0F;
+
+
+		JobRequestBulletinFeature.register();
 
 		crudeWorkbenchContainerID = ContainerRegistry.registerSettlementDependantLOContainer(
 				(client, uniqueSeed, settlement, levelObject, content) -> new CrudeWorkbenchContainerForm(
@@ -277,7 +281,7 @@ public class DynamicSettlements {
 		LevelDataRegistry.registerLevelData(BlueprintAreaLevelData.managerKey, BlueprintAreaLevelData.class);
 		LevelDataRegistry.registerLevelData(DamageRepairLevelData.managerKey, DamageRepairLevelData.class);
 		LevelDataRegistry.registerLevelData(WeatheringLevelData.managerKey, WeatheringLevelData.class);
-		LevelDataRegistry.registerLevelData(BuilderRequestLevelData.managerKey, BuilderRequestLevelData.class);
+		LevelDataRegistry.registerLevelData(JobRequestLevelData.managerKey, JobRequestLevelData.class);
 		LevelDataRegistry.registerLevelData(SettlementSleepSettingsLevelData.managerKey, SettlementSleepSettingsLevelData.class);
 		LevelDataRegistry.registerLevelData(CharcoalPitLevelData.managerKey, CharcoalPitLevelData.class);
 		LevelDataRegistry.registerLevelData(ClayFiringSettingsLevelData.managerKey, ClayFiringSettingsLevelData.class);

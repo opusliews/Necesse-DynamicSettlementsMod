@@ -93,7 +93,7 @@ public class DSRecipeRegistry {
 		register("projecteraser", 1, RecipeTechRegistry.WORKSTATION, ingredient("quillandparchment", 1), ingredient("ironbar", 1));
 		register("inspectionglass", 1, RecipeTechRegistry.WORKSTATION, ingredient("glass", 2), ingredient("ironbar", 1));
 		register("malignancegoggles", 1, RecipeTechRegistry.DEMONIC_WORKSTATION, ingredient("inspectionglass", 2), ingredient("demonicbar", 1));
-		register(BuilderJobRequestBulletinObject.stringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("stackofpaper", 1), ingredient("quillandparchment", 1));
+		register(JobRequestBulletinObject.stringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("stackofpaper", 1), ingredient("quillandparchment", 1));
 		register(WarningBellObject.stringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("goldbar", 3), ingredient("ironbar", 1));
 
 		register(CrudeTorchObject.stringID, 4, RecipeTechRegistry.NONE,

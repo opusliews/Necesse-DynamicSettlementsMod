@@ -5,7 +5,7 @@ import necesse.level.maps.Level;
 import net.bytebuddy.asm.Advice;
 import opusliews.damage.DamageRepairLevelData;
 import opusliews.damage.WeatheringLevelData;
-import opusliews.settler.BuilderRequestLevelData;
+import opusliews.settler.JobRequestLevelData;
 import opusliews.tile.CharcoalPitLevelData;
 import opusliews.worldgengating.WorldgenGatingLevelData;
 
@@ -19,7 +19,7 @@ public class LevelLoadingCompletePatch {
 			return;
 		}
 
-		BuilderRequestLevelData.get(level, true);
+		JobRequestLevelData.get(level, true);
 		CharcoalPitLevelData.get(level, true);
 
 		DamageRepairLevelData.get(level, true);
