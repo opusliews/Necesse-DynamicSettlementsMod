@@ -50,6 +50,7 @@ import opusliews.jobs.ClayFiringCleanupLevelJob;
 import opusliews.jobs.ConstructionLevelJob;
 import opusliews.jobs.RepairLevelJob;
 import opusliews.mobs.BuilderHumanMob;
+import opusliews.mobs.CarpenterHumanMob;
 import opusliews.multilevelsettlement.SettlementLadderLevelData;
 import opusliews.multilevelsettlement.SettlementCaveBedLevelData;
 import opusliews.multilevelsettlement.SettlementLevelManagerLevelData;
@@ -60,6 +61,7 @@ import opusliews.network.*;
 import opusliews.object.*;
 import opusliews.settler.BuilderRequestLevelData;
 import opusliews.settler.BuilderSettler;
+import opusliews.settler.CarpenterSettler;
 import opusliews.sleep.SettlementSleepSettingsLevelData;
 import opusliews.story.GuideStoryObjectiveRegistry;
 import opusliews.tile.*;
@@ -186,10 +188,13 @@ public class DynamicSettlements {
 		BuffRegistry.registerBuff(DeepHoleCaveFallBuff.stringID, new DeepHoleCaveFallBuff());
 		BuffRegistry.registerBuff(DeepHoleLadderDescentBuff.stringID, new DeepHoleLadderDescentBuff());
 		SettlerRegistry.registerSettler("builder", new BuilderSettler());
+		SettlerRegistry.registerSettler("carpenter", new CarpenterSettler());
 		SettlementCaveBedSystem.registerThought();
 		SettlementLevelPreferenceSystem.registerThought();
 		MobRegistry.registerMob("builderhuman",
 				BuilderHumanMob.class, true);
+		MobRegistry.registerMob("carpenterhuman",
+				CarpenterHumanMob.class, true);
 
 		CrudeWorkbenchFeature.register();
 		CrudeAnvilFeature.register();

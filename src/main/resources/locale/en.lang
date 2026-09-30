@@ -1,6 +1,8 @@
 [mob]
 builderhuman=Builder
 builderhumanname=Builder
+carpenterhuman=Carpenter
+carpenterhumanname=Carpenter
 
 [jobs]
 constructionname=Construction
@@ -37,9 +39,15 @@ buildertalk4=Someone has to keep these walls standing
 buildertalk5=Building is easy. Building well takes skill.
 buildertalk6=This settlement could use a few improvements
 buildertalk7=Strong walls make for peaceful nights
+carpentertalk1=Good timber and sharp tools solve many problems
+carpentertalk2=Show me a carpentry bench and I will get to work
+carpentertalk3=Measure twice, cut once
+carpentertalk4=A proper workshop keeps a settlement running
+carpentertalk5=Planks, beams and benches are my specialty
 
 [settlement]
-buildertip=Use a Job Request Bulletin to hire a builder
+buildertip=test string
+carpentertip=Carpenters can handle crafting tasks at the carpentry bench
 strandedfromsurface=I cannot reach my bed on the surface
 strandedfromcave=I cannot reach my bed underground
 cavelevelpreference=I enjoy living underground
@@ -48,6 +56,9 @@ cavelevelpreference=I enjoy living underground
 builderhat=Builder Hat
 buildershirt=Builder Shirt
 builderboots=Builder Boots
+safetyglasses=Safety Glasses
+carpentershirt=Carpenter Shirt
+carpenterboots=Carpenter Boots
 blueprintItem=Blueprint
 projecteraser=Project Eraser
 inspectionglass=Inspection Glass

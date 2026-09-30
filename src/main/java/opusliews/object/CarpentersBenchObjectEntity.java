@@ -1,6 +1,8 @@
 package opusliews.object;
 
+import necesse.entity.mobs.friendly.human.HumanMob;
 import necesse.level.maps.Level;
+import opusliews.mobs.CarpenterHumanMob;
 
 public class CarpentersBenchObjectEntity extends DynamicCraftingStationObjectEntity {
 	public static final String TYPE = "dynamiccarpentersbench";
@@ -12,5 +14,15 @@ public class CarpentersBenchObjectEntity extends DynamicCraftingStationObjectEnt
 	@Override
 	public String getTaskBoardTextureKey() {
 		return "carpenter";
+	}
+
+	@Override
+	public boolean supportsSettlerCraftingTasks() {
+		return true;
+	}
+
+	@Override
+	public boolean canSettlerPerformCrafting(HumanMob worker) {
+		return worker instanceof CarpenterHumanMob;
 	}
 }
