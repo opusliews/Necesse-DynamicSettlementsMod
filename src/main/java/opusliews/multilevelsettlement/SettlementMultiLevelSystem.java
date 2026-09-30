@@ -5,6 +5,7 @@ import necesse.engine.util.LevelIdentifier;
 import necesse.engine.world.worldData.SettlementsWorldData;
 import necesse.level.maps.Level;
 import necesse.level.maps.regionSystem.Region;
+import necesse.level.maps.regionSystem.RegionManager;
 import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import opusliews.logging.Logging;
 
@@ -83,10 +84,10 @@ public final class SettlementMultiLevelSystem {
 			return;
 		}
 
-		int startRegionX = cave.regionManager.getRegionXByTileLimited(bounds.x);
-		int startRegionY = cave.regionManager.getRegionYByTileLimited(bounds.y);
-		int endRegionX = cave.regionManager.getRegionXByTileLimited(bounds.x + bounds.width - 1);
-		int endRegionY = cave.regionManager.getRegionYByTileLimited(bounds.y + bounds.height - 1);
+		int startRegionX = cave.regionManager.getRegionXByTileLimited(bounds.x) - 1;
+		int startRegionY = cave.regionManager.getRegionYByTileLimited(bounds.y) - 1;
+		int endRegionX = cave.regionManager.getRegionXByTileLimited(bounds.x + bounds.width - 1) + 1;
+		int endRegionY = cave.regionManager.getRegionYByTileLimited(bounds.y + bounds.height - 1) + 1;
 		int keptRegions = 0;
 		for (int regionX = startRegionX; regionX <= endRegionX; regionX++) {
 			for (int regionY = startRegionY; regionY <= endRegionY; regionY++) {
@@ -101,14 +102,23 @@ public final class SettlementMultiLevelSystem {
 			}
 		}
 
+		int spawnPadding = RegionManager.REGION_SIZE;
+		Rectangle activeBounds = new Rectangle(
+				bounds.x - spawnPadding,
+				bounds.y - spawnPadding,
+				bounds.width + spawnPadding * 2,
+				bounds.height + spawnPadding * 2
+		);
+
 		SettlementCaveBedSystem.restoreAssignments(settlement);
 		SettlementLevelStorageManager.restorePersisted(settlement);
 		SettlementLevelStorageManager.clearInvalids(settlement);
+		CaveSettlementMobSpawnSystem.serverTick(settlement, domain, cave, activeBounds);
 
 		if (Logging.logEnabled && !Boolean.TRUE.equals(caveLoadedLogged.get(settlement))) {
 			SettlementCaveBedSystem.logCaveBedScan(settlement);
 			caveLoadedLogged.put(settlement, true);
-			Logging.logMessage("[MultiLevelSettlement] Cave settlement domain is now kept loaded settlement=" + settlement.uniqueID + " cave=" + caveIdentifier + " regions=" + keptRegions + " bounds=" + bounds);
+			Logging.logMessage("[MultiLevelSettlement] Cave settlement domain is now kept loaded settlement=" + settlement.uniqueID + " cave=" + caveIdentifier + " regions=" + keptRegions + " settlementBounds=" + bounds + " activeBounds=" + activeBounds);
 		}
 	}
 
@@ -147,6 +157,7 @@ public final class SettlementMultiLevelSystem {
 		caveAccessStates.remove(settlement);
 		SettlementLevelStorageManager.remove(settlement);
 		SettlementLevelZoneSystem.removeSettlement(settlement);
+		CaveSettlementMobSpawnSystem.remove(settlement);
 		if (removed != null && Logging.logEnabled) Logging.logMessage("[MultiLevelSettlement] Removed domain settlement=" + settlement.uniqueID);
 	}
 

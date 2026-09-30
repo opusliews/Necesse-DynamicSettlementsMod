@@ -10,6 +10,7 @@ import necesse.entity.mobs.ai.behaviourTree.AINodeResult;
 import necesse.entity.mobs.ai.behaviourTree.BehaviourTreeAI;
 import necesse.entity.mobs.ai.behaviourTree.Blackboard;
 import necesse.entity.mobs.ai.behaviourTree.decorators.MoveTaskAINode;
+import necesse.entity.mobs.ai.behaviourTree.leaves.TargetFinderAINode;
 import necesse.entity.mobs.ai.behaviourTree.event.AIEvent;
 import necesse.entity.mobs.ai.behaviourTree.trees.CollisionPlayerChaserWandererAI;
 import necesse.entity.mobs.ai.behaviourTree.trees.PlayerChaserWandererAI;
@@ -37,11 +38,11 @@ public class ZombieCrossLevelSmellAIPatch {
 
 		if (tree instanceof CollisionPlayerChaserWandererAI) {
 			CollisionPlayerChaserWandererAI root = (CollisionPlayerChaserWandererAI)tree;
-			if (root.wandererAINode != null) root.addChildBefore(root.wandererAINode, new HostileCrossLevelSmellAINode(root.collisionPlayerChaserAI.targetFinderAINode.distance.searchDistance));
+			if (root.wandererAINode != null) root.addChildBefore(root.wandererAINode, new HostileCrossLevelSmellAINode(root.collisionPlayerChaserAI.targetFinderAINode));
 		}
 		else if (tree instanceof PlayerChaserWandererAI) {
 			PlayerChaserWandererAI root = (PlayerChaserWandererAI)tree;
-			if (root.wandererAINode != null) root.addChildBefore(root.wandererAINode, new HostileCrossLevelSmellAINode(root.playerChaserAI.targetFinderAINode.distance.searchDistance));
+			if (root.wandererAINode != null) root.addChildBefore(root.wandererAINode, new HostileCrossLevelSmellAINode(root.playerChaserAI.targetFinderAINode));
 		}
 	}
 
@@ -62,14 +63,16 @@ public class ZombieCrossLevelSmellAIPatch {
 		private static final long smellSearchCooldownMs = 1000L;
 		private static final long routeRetryCooldownMs = 1500L;
 
+		private final TargetFinderAINode primaryTargetFinder;
 		private final int normalSearchDistance;
 		private Mob smellTarget;
 		private SettlementLadderLink activeLink;
 		private long nextSmellSearchTime;
 		private long nextRouteSearchTime;
 
-		public HostileCrossLevelSmellAINode(int normalSearchDistance) {
-			this.normalSearchDistance = normalSearchDistance;
+		public HostileCrossLevelSmellAINode(TargetFinderAINode primaryTargetFinder) {
+			this.primaryTargetFinder = primaryTargetFinder;
+			this.normalSearchDistance = primaryTargetFinder.distance.searchDistance;
 		}
 
 		@Override
@@ -88,13 +91,19 @@ public class ZombieCrossLevelSmellAIPatch {
 
 		@Override
 		public AINodeResult tick(Mob mob, Blackboard blackboard) {
-			if (!isEligibleHostile(mob) || !isIdleForSmell(mob, blackboard)) {
+			if (!isEligibleHostile(mob)) {
 				stop(mob, blackboard, true);
 				return AINodeResult.FAILURE;
 			}
 
 			Level level = mob.getLevel();
 			if (level == null || !level.isServer() || level.getServer() == null) {
+				stop(mob, blackboard, true);
+				return AINodeResult.FAILURE;
+			}
+
+			boolean followingSmell = isFollowingSmell(blackboard);
+			if (!isIdleForSmell(mob, blackboard)) {
 				stop(mob, blackboard, true);
 				return AINodeResult.FAILURE;
 			}
@@ -184,7 +193,12 @@ public class ZombieCrossLevelSmellAIPatch {
 		}
 
 		private boolean isIdleForSmell(Mob mob, Blackboard blackboard) {
-			if (blackboard.getObject(Mob.class, "currentTarget") != null) return false;
+			if (blackboard.getLastHits().iterator().hasNext()) return false;
+
+			if (blackboard.getObject(Mob.class, primaryTargetFinder.currentTargetKey) == null) {
+				primaryTargetFinder.tickTargetFinder(mob, blackboard);
+			}
+			if (blackboard.getObject(Mob.class, primaryTargetFinder.currentTargetKey) != null) return false;
 			if (blackboard.getObject(Mob.class, "chaserTarget") != null) return false;
 
 			if (ZombieBreaching.isZombie(mob)) {
@@ -195,6 +209,10 @@ public class ZombieCrossLevelSmellAIPatch {
 			}
 
 			return true;
+		}
+
+		private boolean isFollowingSmell(Blackboard blackboard) {
+			return smellTarget != null || activeLink != null || blackboard.mover.isCurrentlyMovingFor(this);
 		}
 
 		private boolean hasNearbyPassiveTarget(Mob zombie) {
