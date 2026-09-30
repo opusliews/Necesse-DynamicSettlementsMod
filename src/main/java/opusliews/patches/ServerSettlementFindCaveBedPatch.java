@@ -11,16 +11,20 @@ import opusliews.multilevelsettlement.SettlementCaveBedSystem;
 import opusliews.multilevelsettlement.SettlementLevelDomain;
 import opusliews.multilevelsettlement.SettlementLevelType;
 import opusliews.multilevelsettlement.SettlementMultiLevelSystem;
+import opusliews.multilevelsettlement.SettlerBedReservationSystem;
 
 @ModMethodPatch(target = ServerSettlementData.class, name = "findBedForSettler", arguments = {LevelSettler.class})
 public class ServerSettlementFindCaveBedPatch {
 	@Advice.OnMethodExit
 	public static void onExit(@Advice.Argument(0) LevelSettler settler, @Advice.Return(readOnly = false) SettlementBed result) {
 		SettlerMob mob = settler == null ? null : settler.getMob();
-		if (mob == null || mob.getMob().getLevel() == null) return;
-		SettlementLevelDomain domain = SettlementMultiLevelSystem.get(settler.data);
-		if (domain == null || domain.getLevelType(mob.getMob().getLevel().getIdentifier()) != SettlementLevelType.CAVE) return;
-		SettlementCaveBed caveBed = SettlementCaveBedSystem.findBestCaveBedForSettler(settler);
-		if (caveBed != null) result = caveBed;
+		if (mob != null && mob.getMob().getLevel() != null) {
+			SettlementLevelDomain domain = SettlementMultiLevelSystem.get(settler.data);
+			if (domain != null && domain.getLevelType(mob.getMob().getLevel().getIdentifier()) == SettlementLevelType.CAVE) {
+				SettlementCaveBed caveBed = SettlementCaveBedSystem.findBestCaveBedForSettler(settler);
+				if (caveBed != null) result = caveBed;
+			}
+		}
+		result = SettlerBedReservationSystem.adjustSelectedBed(settler, result);
 	}
 }

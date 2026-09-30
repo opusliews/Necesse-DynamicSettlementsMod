@@ -10,6 +10,7 @@ import opusliews.multilevelsettlement.SettlementCrossLevelCommandSystem;
 public class CrossLevelCommandRemoteSettlerLookupPatch {
 	@Advice.OnMethodExit
 	public static void onExit(@Advice.Argument(0) int uniqueID, @Advice.Return(readOnly = false) HumanMob result) {
-		if (result == null) result = SettlementCrossLevelCommandSystem.resolveCommandSettler(uniqueID);
+		HumanMob loadedSettler = SettlementCrossLevelCommandSystem.resolveCommandSettler(uniqueID);
+		if (loadedSettler != null) result = loadedSettler;
 	}
 }

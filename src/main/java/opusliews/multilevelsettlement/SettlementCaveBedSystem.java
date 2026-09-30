@@ -105,7 +105,8 @@ public final class SettlementCaveBedSystem {
 		for (int x = bounds.x; x < bounds.x + bounds.width; x++) {
 			for (int y = bounds.y; y < bounds.y + bounds.height; y++) {
 				SettlementCaveBed bed = getOrCreateCaveBed(settler.data, x, y);
-				if (bed == null || bed.getSettler() != null || bed.isLocked || !settler.settler.isValidBed(bed)) continue;
+				if (bed == null || bed.getSettler() != null || bed.isLocked || !settler.settler.isValidBed(bed)
+						|| SettlerBedReservationSystem.isReservedForOther(settler, bed)) continue;
 				int score = bed.getHappinessScore();
 				if (best == null || score > bestScore) {
 					best = bed;

@@ -15,5 +15,6 @@ public class SettlerMultiLevelWithinLoadedRegionsPatch {
 			@Advice.Return(readOnly = false) boolean result
 	) {
 		if (!result && SettlementResidentSystem.isSettlerInLoadedSettlementDomain(settler, settlement)) result = true;
+		if (!result && SettlementResidentSystem.isDownedHumanInLoadedSettlementDomain(settler, settlement)) result = true;
 	}
 }

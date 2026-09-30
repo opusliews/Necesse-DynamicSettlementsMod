@@ -2,6 +2,7 @@ package opusliews.multilevelsettlement;
 
 import necesse.engine.util.LevelIdentifier;
 import necesse.entity.mobs.Mob;
+import necesse.entity.mobs.friendly.human.HumanMob;
 import necesse.level.maps.Level;
 import necesse.level.maps.levelData.settlementData.LevelSettler;
 import necesse.level.maps.levelData.settlementData.NetworkSettlementData;
@@ -54,6 +55,26 @@ public final class SettlementResidentSystem {
 		Level level = mob.getLevel();
 		int regionX = level.regionManager.getRegionXByTileLimited(mob.getTileX());
 		int regionY = level.regionManager.getRegionYByTileLimited(mob.getTileY());
+		Region region = level.regionManager.getRegion(regionX, regionY, false);
+		return region != null;
+	}
+
+
+	public static boolean isDownedHumanInLoadedSettlementDomain(SettlerMob settler, NetworkSettlementData settlementNetworkData) {
+		if (settler == null || settlementNetworkData == null) return false;
+		Mob mob = settler.getMob();
+		if (!(mob instanceof HumanMob)) return false;
+		HumanMob human = (HumanMob)mob;
+		if (!human.isDowned() || human.getLevel() == null || !human.getLevel().isServer()) return false;
+
+		ServerSettlementData settlement = settlementNetworkData.getServerData();
+		if (settlement == null || settlement.uniqueID != settlementNetworkData.uniqueID) return false;
+		SettlementLevelDomain domain = SettlementMultiLevelSystem.get(settlement);
+		if (!isMobInsideDomain(human, domain)) return false;
+
+		Level level = human.getLevel();
+		int regionX = level.regionManager.getRegionXByTileLimited(human.getTileX());
+		int regionY = level.regionManager.getRegionYByTileLimited(human.getTileY());
 		Region region = level.regionManager.getRegion(regionX, regionY, false);
 		return region != null;
 	}
