@@ -4,9 +4,11 @@ import java.util.LinkedList;
 
 import necesse.engine.modLoader.annotations.ModMethodPatch;
 import necesse.entity.levelEvent.settlementRaidEvent.SettlementRaidLevelEvent;
+import necesse.entity.mobs.RaiderMobPhase;
 import necesse.entity.mobs.hostile.ItemAttackerRaiderMob;
 import net.bytebuddy.asm.Advice;
 import opusliews.raids.MultiLevelRaidSystem;
+import opusliews.raids.RaidPreparingProtectionSystem;
 import opusliews.sleep.SleepWarningSystem;
 
 @ModMethodPatch(target = SettlementRaidLevelEvent.class, name = "startRaid", arguments = {boolean.class})
@@ -25,6 +27,13 @@ public class SettlementRaidStartPatch {
 			@Advice.FieldValue("raiders") LinkedList<ItemAttackerRaiderMob> raiders
 	) {
 		if (!wasStarted && started) {
+			for (ItemAttackerRaiderMob raider : raiders) {
+				if (raider != null) {
+					if (raider.phase == RaiderMobPhase.PREPARING) raider.phase = RaiderMobPhase.RAIDING;
+					RaidPreparingProtectionSystem.clearProtection(raider);
+				}
+			}
+
 			MultiLevelRaidSystem.onRaidStarted(event, raiders);
 			SleepWarningSystem.onRaidStarted(event.getLevel(), settlementUniqueID);
 		}

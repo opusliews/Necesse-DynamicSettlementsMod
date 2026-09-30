@@ -1,8 +1,6 @@
 package opusliews.raids;
 
 import java.awt.Point;
-import java.util.Iterator;
-
 import necesse.entity.levelEvent.settlementRaidEvent.SettlementRaidLevelEvent;
 import necesse.entity.mobs.Mob;
 import necesse.entity.mobs.RaiderMobPhase;
@@ -11,8 +9,6 @@ import necesse.entity.mobs.ai.behaviourTree.AINodeResult;
 import necesse.entity.mobs.ai.behaviourTree.Blackboard;
 import necesse.entity.mobs.ai.behaviourTree.CompositeAINode;
 import necesse.entity.mobs.ai.behaviourTree.BehaviourTreeAI;
-import necesse.entity.mobs.ai.behaviourTree.event.AIEvent;
-import necesse.entity.mobs.ai.behaviourTree.event.AIWasHitEvent;
 import necesse.entity.mobs.ai.behaviourTree.leaves.ChaserAINode;
 import necesse.entity.mobs.ai.behaviourTree.leaves.EscapeAINode;
 import necesse.entity.mobs.ai.behaviourTree.leaves.MoveToAINode;
@@ -145,16 +141,6 @@ public class DynamicRaiderAI extends CompositeAINode {
 		if (mob.raidingStartTimer > 0) mob.raidingStartTimer -= 50;
 		if (mob.raidingStartTimer <= 0) startRaid(mob);
 
-		Iterator<AIWasHitEvent> hits = blackboard.getLastHits().iterator();
-		while (hits.hasNext()) {
-			hits.next();
-			mob.getLevel().entityManager.mobs.getInRegionByTileRange(mob.getTileX(), mob.getTileY(), 25).stream()
-					.filter(m -> m instanceof ItemAttackerRaiderMob)
-					.forEach(m -> m.ai.blackboard.submitEvent("startRaid" + mob.raidingGroup, new AIEvent()));
-			startRaid(mob);
-		}
-
-		for (Object ignored : blackboard.getLastCustomEvents("startRaid" + mob.raidingGroup)) mob.phase = RaiderMobPhase.RAIDING;
 	}
 
 	private static void startRaid(ItemAttackerRaiderMob mob) {
