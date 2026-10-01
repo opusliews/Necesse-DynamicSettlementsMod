@@ -1,7 +1,7 @@
 # Dynamic Settlements vanilla recipe ingredient replacements
 # resultItemID	techStringID	ingredientID:amount,ingredientID:amount
 agedchampionshield	fallenanvil	dsanyplank:1,leather:1,bioessence:1
-alchemytable	workstation	dsanyplank:8,healthpotion:2,anystone:10
+alchemytable	workstation	anyplank:8,healthpotion:2,anystone:10
 amethysthelmet	fallenanvil	amethystplate:1,leather:1,amethyst:1,pearlescentdiamond:1,omnicrystal:1
 amethyststaff	demonicanvil	dsanyshaft:1,magicfocus:1,quartz:1,amethyst:1
 amethystsword	demonicanvil	amethystblade:1,dsanyshaft:1,amethyst:1
@@ -22,7 +22,7 @@ ancientruindoor	fallen	crystalstone:15
 ancientruinwall	fallen	crystalstone:5
 ancientstatue	demonic	demonicbar:4,quartz:4,voidshard:4
 andgate	demonic	copperbar:1,wire:5
-antiquerifle	fallenanvil	demonicplate:1,dsanyplate:1,primordialessence:1
+antiquerifle	fallenanvil	demonicplate:1,dsanyplate:1,dsanyplank:1,primordialessence:1
 apiary	demonic	anylog:20,ironbar:10,honey:5
 apiaryframe	demonic	anylog:5,wool:5
 arachnidchestplate	demonicanvil	dsanymetalplate:1,leather:1,spiderchestplate:1,frostshard:1,cavespidergland:1
@@ -62,8 +62,8 @@ bamboofloor	tungstenworkstation	bamboo:1
 bamboomodulartable	tungstencarpenter	bambooplank:4,woodenshaft:4,nail:4
 bambootoilet	tungstencarpenter	bamboo:1
 bamboowall	tungstenworkstation	bambooplank:2
-banditfence	demonic	dsanyplank:2
-banditfencegate	demonic	dsanyplank:4,hinge:4
+banditfence	demonic	anyplank:2
+banditfencegate	demonic	anyplank:4,hinge:4
 bannerofdamage	demonic	wool:30,battlepotion:10
 bannerofdefense	demonic	wool:30,resistancepotion:10
 bannerofspeed	demonic	wool:30,speedpotion:10
@@ -751,7 +751,7 @@ stonecandlepedestal	carpenter	wax:1,string:1,honey:1
 stonecolumn	carpenter	stone:1
 stonedoor	workstation	stone:15
 stonefence	workstation	stone:4
-stonefencegate	workstation	stone:4,dsanyplank:2,hinge:4
+stonefencegate	workstation	stone:4,anyplank:2,hinge:4
 stonefloor	workstation	stone:1
 stonepathtile	workstation	stone:2
 stonepressureplate	demonic	stone:10,wire:5
@@ -858,10 +858,10 @@ woodboomerang	workstation	anylog:10
 woodbow	ironanvil	woodenshaft:1,string:1
 woodbow	workstation	anylog:10
 woodcolumn	carpenter	anylog:1
-wooddoor	workstation	dsanyplank:4
+wooddoor	workstation	anyplank:4
 woodencandleset	tungstencarpenter	wax:1,string:1,honey:1
-woodfence	workstation	dsanyplank:2
-woodfencegate	workstation	dsanyplank:4,hinge:4
+woodfence	workstation	anyplank:2
+woodfencegate	workstation	anyplank:4,hinge:4
 woodfishingrod	ironanvil	woodenshaft:1,string:1,metalhook:1
 woodfishingrod	workstation	anylog:10,ironbar:1,anysapling:1
 woodfloor	workstation	anylog:1
@@ -878,7 +878,7 @@ woodspear	workstation	anylog:15
 woodstaff	ironanvil	dsanyshaft:1,magicfocus:1,batwing:1
 woodsword	ironanvil	woodenblade:1,dsanyshaft:1
 woodsword	workstation	anylog:10
-woodwall	workstation	dsanyplank:2
+woodwall	workstation	anyplank:2
 woolcarpet	carpenter	wool:1
 workstationduo	workstation	anylog:10
 wrench	demonic	ironbar:10
