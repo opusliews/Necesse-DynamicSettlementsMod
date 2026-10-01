@@ -43,6 +43,7 @@ public class VanillaRecipeRework {
 					|| "ladderdown".equals(resultID)
 					|| "deepladderdown".equals(resultID)
 					|| "brickwall".equals(resultID)
+					|| "brickdoor".equals(resultID)
 					|| "torch".equals(resultID)
 					|| "woodshovel".equals(resultID)
 					|| "woodsword".equals(resultID)
