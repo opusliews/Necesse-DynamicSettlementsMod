@@ -58,6 +58,10 @@ public final class ForgeRequirementSystem {
 	private ForgeRequirementSystem() {
 	}
 
+	public static boolean requiresRunningForge(DynamicCraftingStationObjectEntity station, Recipe recipe) {
+		return station != null && station.supportsForgeLinks() && requiresRunningForge(recipe);
+	}
+
 	public static boolean requiresRunningForge(Recipe recipe) {
 		if (recipe == null || isArrowRecipe(recipe)) return false;
 		if (forceForgeRequiredOutputs.contains(recipe.resultStringID)) return true;
@@ -81,8 +85,7 @@ public final class ForgeRequirementSystem {
 			Recipe recipe,
 			Collection inventories
 	) {
-		if (!requiresRunningForge(recipe)) return Status.NOT_REQUIRED;
-		if (station == null || !station.supportsForgeLinks()) return Status.NO_LINKED_FORGE;
+		if (!requiresRunningForge(station, recipe)) return Status.NOT_REQUIRED;
 
 		List<ProcessingForgeObjectEntity> forges = station.getValidLinkedForges();
 		if (forges.isEmpty()) return Status.NO_LINKED_FORGE;
@@ -99,8 +102,7 @@ public final class ForgeRequirementSystem {
 			Recipe recipe,
 			CraftingStoragePool storagePool
 	) {
-		if (!requiresRunningForge(recipe)) return Status.NOT_REQUIRED;
-		if (station == null || !station.supportsForgeLinks()) return Status.NO_LINKED_FORGE;
+		if (!requiresRunningForge(station, recipe)) return Status.NOT_REQUIRED;
 
 		List<ProcessingForgeObjectEntity> forges = station.getValidLinkedForges();
 		if (forges.isEmpty()) return Status.NO_LINKED_FORGE;
@@ -118,8 +120,8 @@ public final class ForgeRequirementSystem {
 			CraftingStoragePool storagePool,
 			long requiredDurationMs
 	) {
-		if (!requiresRunningForge(recipe)) return true;
-		if (station == null || !station.supportsForgeLinks() || !station.getLevel().isServer()) return false;
+		if (!requiresRunningForge(station, recipe)) return true;
+		if (!station.getLevel().isServer()) return false;
 
 		List<ProcessingForgeObjectEntity> forges = station.getValidLinkedForges();
 		if (forges.isEmpty()) return false;
@@ -137,8 +139,8 @@ public final class ForgeRequirementSystem {
 			Collection inventories,
 			long requiredDurationMs
 	) {
-		if (!requiresRunningForge(recipe)) return true;
-		if (station == null || !station.supportsForgeLinks() || !station.getLevel().isServer()) return false;
+		if (!requiresRunningForge(station, recipe)) return true;
+		if (!station.getLevel().isServer()) return false;
 
 		List<ProcessingForgeObjectEntity> forges = station.getValidLinkedForges();
 		if (forges.isEmpty()) return false;

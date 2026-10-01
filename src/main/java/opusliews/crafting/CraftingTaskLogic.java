@@ -196,7 +196,7 @@ public final class CraftingTaskLogic {
 		if (stationProblem != null) return CraftResult.problem(stationProblem);
 
 		DynamicCraftingStationObjectEntity station = getStationEntity(board);
-		if (ForgeRequirementSystem.requiresRunningForge(recipe)) {
+		if (ForgeRequirementSystem.requiresRunningForge(station, recipe)) {
 			ForgeRequirementSystem.Status forgeStatus = ForgeRequirementSystem.getStatus(station, recipe, pool);
 			if (forgeStatus == ForgeRequirementSystem.Status.NO_LINKED_FORGE) {
 				return CraftResult.problem(Localization.translate("ui", "craftingrequireslinkedforge"));

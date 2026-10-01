@@ -33,7 +33,7 @@ public final class ForgeCookingRecipeRegistry {
 				DSItemRegistry.brickStringID,
 				1,
 				0.5f
-		));
+		), false);
 
 	}
 	private static void registerMoldedBars() {
@@ -176,7 +176,13 @@ public final class ForgeCookingRecipeRegistry {
 	}
 
 	public static void register(ForgeCookingRecipe recipe) {
+		register(recipe, true);
+	}
+
+	private static void register(ForgeCookingRecipe recipe, boolean marksForgeWorkedIngredients) {
 		recipes.add(recipe);
+		if (!marksForgeWorkedIngredients) return;
+
 		if (recipe.firstInput != null && recipe.firstInput.resultBehavior == ForgeCookingInput.ResultBehavior.CONSUME) {
 			forgeWorkedIngredients.add(recipe.firstInput.itemStringID);
 		}

@@ -561,7 +561,7 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 						status = CraftingTask.STATUS_PROBLEM;
 						details = Collections.singletonList(stationProblem);
 					} else if (!taskRecipe.isForgeRecipe()
-							&& ForgeRequirementSystem.requiresRunningForge(taskRecipe.recipe)
+							&& ForgeRequirementSystem.requiresRunningForge(getLinkedStationEntity(), taskRecipe.recipe)
 							&& ForgeRequirementSystem.getStatus(
 									getLinkedStationEntity(),
 									taskRecipe.recipe,
@@ -570,7 +570,7 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 						status = CraftingTask.STATUS_PROBLEM;
 						details = Collections.singletonList(Localization.translate("ui", "craftingrequireslinkedforge"));
 					} else if (!taskRecipe.isForgeRecipe()
-							&& ForgeRequirementSystem.requiresRunningForge(taskRecipe.recipe)
+							&& ForgeRequirementSystem.requiresRunningForge(getLinkedStationEntity(), taskRecipe.recipe)
 							&& ForgeRequirementSystem.getStatus(
 									getLinkedStationEntity(),
 									taskRecipe.recipe,

@@ -268,7 +268,7 @@ public class CraftingStationLevelJob extends TileLevelJob {
 					Recipe selectedRecipe = selectedTaskRecipe.recipe;
 					int actionDelay = station.getSettlerCraftingActionDelay(human, selectedRecipe);
 					currentRecipe = selectedRecipe;
-					currentRecipeRequiresForge = ForgeRequirementSystem.requiresRunningForge(selectedRecipe);
+					currentRecipeRequiresForge = ForgeRequirementSystem.requiresRunningForge(station, selectedRecipe);
 					waitingForForgeHeat = false;
 
 					if (currentRecipeRequiresForge) {

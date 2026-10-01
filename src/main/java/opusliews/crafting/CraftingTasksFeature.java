@@ -7,7 +7,7 @@ import opusliews.container.CraftingTaskBoardContainer;
 import opusliews.forms.CraftingTaskBoardContainerForm;
 import opusliews.jobs.CraftingStationLevelJob;
 import opusliews.logging.Logging;
-import opusliews.network.PacketAnvilCraftingSound;
+import opusliews.network.PacketCraftingStationSound;
 import opusliews.object.CraftingTaskBoardObject;
 import opusliews.object.CraftingTaskBoardObjectEntity;
 
@@ -26,7 +26,7 @@ public class CraftingTasksFeature {
 		registered = true;
 
 		CraftingTaskBoardObject.registerBoard();
-		PacketRegistry.registerPacket(PacketAnvilCraftingSound.class);
+		PacketRegistry.registerPacket(PacketCraftingStationSound.class);
 		craftingStationJobID = LevelJobRegistry.registerJob(
 				"craftingstation",
 				CraftingStationLevelJob.class,

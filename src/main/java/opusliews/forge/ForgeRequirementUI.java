@@ -25,7 +25,7 @@ public final class ForgeRequirementUI {
 
 	public static GameMessage getUsableError(Container container, Recipe recipe) {
 		DynamicCraftingStationObjectEntity station = getForgeStation(container);
-		if (station == null || !ForgeRequirementSystem.requiresRunningForge(recipe)) return null;
+		if (station == null || !ForgeRequirementSystem.requiresRunningForge(station, recipe)) return null;
 
 		ForgeRequirementSystem.Status status = ForgeRequirementSystem.getStatus(
 				station, recipe, container.getCraftInventories()
@@ -42,7 +42,7 @@ public final class ForgeRequirementUI {
 	public static void addRequirementTooltip(Container container, Recipe recipe, boolean hovering) {
 		if (!hovering) return;
 		DynamicCraftingStationObjectEntity station = getForgeStation(container);
-		if (station == null || !ForgeRequirementSystem.requiresRunningForge(recipe)) return;
+		if (station == null || !ForgeRequirementSystem.requiresRunningForge(station, recipe)) return;
 
 		InventoryItem forgeItem = new InventoryItem(ObjectRegistry.getObject("forge").getObjectItem());
 		ForgeRequirementSystem.Status status = ForgeRequirementSystem.getStatus(

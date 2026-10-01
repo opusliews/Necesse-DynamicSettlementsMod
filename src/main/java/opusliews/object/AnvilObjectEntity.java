@@ -4,7 +4,7 @@ import necesse.engine.localization.Localization;
 import necesse.entity.mobs.friendly.human.HumanMob;
 import necesse.entity.mobs.friendly.human.humanShop.BlacksmithHumanMob;
 import necesse.level.maps.Level;
-import opusliews.network.PacketAnvilCraftingSound;
+import opusliews.network.PacketCraftingStationSound;
 
 public class AnvilObjectEntity extends DynamicCraftingStationObjectEntity {
 	public static final String TYPE = "dynamicanvil";
@@ -48,7 +48,7 @@ public class AnvilObjectEntity extends DynamicCraftingStationObjectEntity {
 	public void playSettlerCraftingWorkEffect() {
 		if (!getLevel().isServer() || getLevel().getServer() == null) return;
 		getLevel().getServer().network.sendToClientsWithTile(
-				new PacketAnvilCraftingSound(tileX, tileY),
+				new PacketCraftingStationSound(tileX, tileY, PacketCraftingStationSound.ANVIL),
 				getLevel(),
 				tileX,
 				tileY

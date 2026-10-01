@@ -106,7 +106,8 @@ public class DSRecipeRegistry {
 	}
 
 	private static void registerVanillaRecipes() {
-		register("brickwall", 1, RecipeTechRegistry.WORKSTATION, ingredient(brickStringID, 4), ingredient("demonicbar", 1));
+		register("brickwall", 1, RecipeTechRegistry.WORKSTATION, ingredient(brickStringID, 4));
+		register("brickdoor", 1, RecipeTechRegistry.WORKSTATION, ingredient(brickStringID, 4));
 		register("torch", 4, RecipeTechRegistry.WORKSTATION, ingredient(woodenshaftStringID, 1), ingredient("charcoal", 1), ingredient("groundfiremone", 1));
 
 		register("woodshovel", 1, CrudeWorkbenchFeature.tech, ingredient("dsanyplank", 1));
