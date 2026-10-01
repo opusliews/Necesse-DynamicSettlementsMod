@@ -5,6 +5,7 @@ import necesse.engine.localization.message.LocalMessage;
 import necesse.engine.modLoader.LoadedMod;
 import necesse.engine.modLoader.ModListData;
 import necesse.engine.modLoader.ModLoader;
+import necesse.engine.modLoader.ModSettings;
 import necesse.engine.modLoader.annotations.ModEntry;
 import necesse.engine.network.PacketReader;
 import necesse.engine.registries.*;
@@ -74,6 +75,10 @@ import java.util.List;
 
 @ModEntry
 public class DynamicSettlements {
+	public ModSettings initSettings() {
+		return new DynamicSettlementsSettings();
+	}
+
 	public static int blueprintWorkstationContainerID;
 	public static int crudeWorkbenchContainerID;
 	public static boolean debugBlueprintMaterialGrant = false;
