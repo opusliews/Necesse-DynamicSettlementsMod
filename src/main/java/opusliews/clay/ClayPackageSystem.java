@@ -19,6 +19,7 @@ import opusliews.logging.Logging;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.function.Predicate;
 
 public final class ClayPackageSystem {
 	private static final String contentsKey = "clayPackageContents";
@@ -107,6 +108,75 @@ public final class ClayPackageSystem {
 			if (item != null && item.getAmount() > 0) result.add(item.copy());
 		}
 		return result;
+	}
+
+
+	public static List<InventoryItem> getExpandedContents(Iterable items) {
+		ArrayList<InventoryItem> result = new ArrayList<>();
+		if (items == null) return result;
+
+		for (Object value : items) {
+			if (!(value instanceof InventoryItem)) continue;
+			InventoryItem item = (InventoryItem)value;
+			if (item == null || item.getAmount() <= 0) continue;
+			if (isPackage(item)) result.addAll(getContents(item));
+			else result.add(item.copy());
+		}
+
+		return result;
+	}
+
+	public static int getExpandedAmount(Iterable items, String itemStringID) {
+		if (itemStringID == null) return 0;
+		return getExpandedAmount(items, item -> itemStringID.equals(item.item.getStringID()));
+	}
+
+	public static int getExpandedAmount(Iterable items, Predicate<InventoryItem> filter) {
+		if (filter == null) return 0;
+		int total = 0;
+		for (InventoryItem item : getExpandedContents(items)) {
+			if (filter.test(item)) total += item.getAmount();
+		}
+		return total;
+	}
+
+	public static boolean consumeFromWorkInventory(WorkInventory workInventory, String itemStringID, int amount) {
+		if (workInventory == null || itemStringID == null || amount <= 0) return false;
+		if (getExpandedAmount(workInventory.items(), itemStringID) < amount) return false;
+
+		int remaining = amount;
+		ListIterator iterator = workInventory.listIterator();
+		while (iterator.hasNext() && remaining > 0) {
+			Object value = iterator.next();
+			if (!(value instanceof InventoryItem)) continue;
+			InventoryItem item = (InventoryItem)value;
+			if (item == null || item.getAmount() <= 0) continue;
+
+			if (isPackage(item)) {
+				while (remaining > 0) {
+					InventoryItem removed = remove(item, itemStringID, remaining);
+					if (removed == null || removed.getAmount() <= 0) break;
+					remaining -= removed.getAmount();
+				}
+				if (isEmpty(item)) iterator.remove();
+				continue;
+			}
+
+			if (!itemStringID.equals(item.item.getStringID())) continue;
+			int removed = Math.min(remaining, item.getAmount());
+			item.setAmount(item.getAmount() - removed);
+			remaining -= removed;
+			if (item.getAmount() <= 0) iterator.remove();
+		}
+
+		if (remaining != 0) {
+			Logging.logMessage("[ClayPackage] consumeFromWorkInventory accounting mismatch item=" + itemStringID
+					+ " requested=" + amount + " remaining=" + remaining);
+			return false;
+		}
+
+		workInventory.markDirty();
+		return true;
 	}
 
 	public static InventoryItem remove(InventoryItem clayPackage, String itemStringID, int amount) {

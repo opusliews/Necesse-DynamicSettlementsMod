@@ -34,6 +34,7 @@ import necesse.level.maps.levelData.settlementData.storage.SettlementStorageReco
 import opusliews.blueprint.*;
 import opusliews.blueprint.BlueprintInfrastructureSupport.BlueprintLogicGateTarget;
 import opusliews.blueprint.BlueprintInfrastructureSupport.BlueprintWireTarget;
+import opusliews.clay.ClayPackageSystem;
 import opusliews.logging.Logging;
 import opusliews.mobs.BuilderHumanMob;
 import opusliews.network.PacketBlueprintBlockedState;
@@ -739,16 +740,16 @@ public class ConstructionLevelJob extends TileLevelJob {
 		}
 
 		for (BuilderHumanMob builder : area.getAssignedBuilders(level)) {
-			for (InventoryItem item : builder.getWorkInventory().items()) {
-				if (item != null && required.containsKey(item.item.getStringID())) {
+			for (InventoryItem item : ClayPackageSystem.getExpandedContents(builder.getWorkInventory().items())) {
+				if (required.containsKey(item.item.getStringID())) {
 					available.merge(item.item.getStringID(), item.getAmount(), Integer::sum);
 				}
 			}
 		}
 
 		if (candidateBuilder != null && !area.isBuilderAssigned(candidateBuilder.getUniqueID())) {
-			for (InventoryItem item : candidateBuilder.getWorkInventory().items()) {
-				if (item != null && required.containsKey(item.item.getStringID())) {
+			for (InventoryItem item : ClayPackageSystem.getExpandedContents(candidateBuilder.getWorkInventory().items())) {
+				if (required.containsKey(item.item.getStringID())) {
 					available.merge(item.item.getStringID(), item.getAmount(), Integer::sum);
 				}
 			}
@@ -1119,11 +1120,7 @@ public class ConstructionLevelJob extends TileLevelJob {
 	) {
 		List<InventoryItem> currentItems = new ArrayList<>();
 
-		for (InventoryItem item : worker.getWorkInventory().items()) {
-			if (item != null && item.getAmount() > 0) {
-				currentItems.add(item.copy());
-			}
-		}
+		currentItems.addAll(ClayPackageSystem.getExpandedContents(worker.getWorkInventory().items()));
 
 		for (InventoryItem item : currentItems) {
 			ArrayList<HasStorageLevelJob.DropOffFind> dropOffLocations =

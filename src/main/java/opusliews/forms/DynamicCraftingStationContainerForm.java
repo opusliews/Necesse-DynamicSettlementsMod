@@ -9,6 +9,8 @@ import necesse.engine.network.client.Client;
 import necesse.gfx.forms.Form;
 import necesse.gfx.forms.MainGameFormManager;
 import necesse.gfx.forms.components.FormComponent;
+import necesse.gfx.forms.components.FormCheckBox;
+import necesse.gfx.forms.components.localComponents.FormLocalCheckBox;
 import necesse.gfx.forms.components.FormProgressBar;
 import necesse.gfx.forms.components.containerSlot.FormContainerSlot;
 import necesse.gfx.forms.position.FormFixedPosition;
@@ -58,6 +60,13 @@ public class DynamicCraftingStationContainerForm extends CraftingStationContaine
 		}
 
 		craftingForm.setWidth(vanillaWidth + leftOffset + OUTPUT_PANEL_GAP + OUTPUT_PANEL_WIDTH + 4);
+
+		FormCheckBox autoStockCheckbox = craftingForm.addComponent(new FormLocalCheckBox(
+				"ui", "craftingautostockmissing", 7, 58,
+				stationContainer.stationEntity.isAutoStockMissingIngredients(), LEFT_PANEL_WIDTH - 14));
+		autoStockCheckbox.onClicked(event -> stationContainer.setAutoStockMissingIngredients.runAndSend(
+				((FormCheckBox)event.from).checked
+		));
 
 		FormTwoLineTextButton inputButton = craftingForm.addComponent(new FormTwoLineTextButton(
 				Localization.translate("ui", "setinput"), Localization.translate("ui", "storage"),

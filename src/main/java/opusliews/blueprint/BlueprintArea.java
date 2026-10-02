@@ -13,6 +13,7 @@ import necesse.level.gameObject.WallTorchObject;
 import necesse.level.gameTile.GameTile;
 import necesse.level.maps.Level;
 import necesse.level.maps.multiTile.MultiTile;
+import opusliews.clay.ClayPackageSystem;
 import opusliews.mobs.BuilderHumanMob;
 import opusliews.tools.BlueprintData;
 import opusliews.tools.BlueprintElement;
@@ -402,25 +403,9 @@ public class BlueprintArea {
 
 	public BuilderHumanMob consumeBuilderMaterial(Level level, String itemID) {
 		for (BuilderHumanMob builder : getAssignedBuilders(level)) {
-			ListIterator<InventoryItem> iterator = builder.getWorkInventory().listIterator();
-
-			while (iterator.hasNext()) {
-				InventoryItem item = iterator.next();
-
-				if (!item.item.getStringID().equals(itemID) || item.getAmount() <= 0) {
-					continue;
-				}
-
-				item.setAmount(item.getAmount() - 1);
-
-				if (item.getAmount() <= 0) {
-					iterator.remove();
-				}
-
-				builder.getWorkInventory().markDirty();
-				consumeBuilderMaterialAllocation(builder.getUniqueID(), itemID, 1);
-				return builder;
-			}
+			if (!ClayPackageSystem.consumeFromWorkInventory(builder.getWorkInventory(), itemID, 1)) continue;
+			consumeBuilderMaterialAllocation(builder.getUniqueID(), itemID, 1);
+			return builder;
 		}
 
 		return null;

@@ -18,6 +18,8 @@ import necesse.level.maps.LevelObject;
 import necesse.level.maps.levelData.jobs.TileLevelJob;
 import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import opusliews.crafting.CraftingTaskLogic;
+import opusliews.crafting.CraftingAutoStockSystem;
+import opusliews.crafting.CraftingInputProtectionSystem;
 import opusliews.crafting.CraftingTaskRecipe;
 import opusliews.forge.ForgeTaskSystem;
 import opusliews.forge.ForgeRequirementSystem;
@@ -33,6 +35,7 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 	private final ArrayList<CraftingTask> tasks = new ArrayList<>();
 	private final ArrayList<ForgeAssignment> forgeAssignments = new ArrayList<>();
 	private int taskRevision;
+	private long nextTaskID = 1L;
 
 	private transient CraftingStationLevelJob craftingJob;
 	private transient Integer assignedWorkerID;
@@ -87,6 +90,7 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 				}
 			}
 		}
+		ensureTaskIDs();
 		forgeAssignments.clear();
 		LoadData forgeAssignmentsData = save.getFirstLoadDataByName("forgeAssignments");
 		if (forgeAssignmentsData != null) {
@@ -350,11 +354,47 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 		return taskRevision;
 	}
 
+	private void ensureTaskIDs() {
+		java.util.HashSet<Long> used = new java.util.HashSet<>();
+		long highest = 0L;
+		for (CraftingTask task : tasks) {
+			if (task.taskID > 0L && used.add(task.taskID)) {
+				highest = Math.max(highest, task.taskID);
+			} else {
+				task.taskID = 0L;
+			}
+		}
+		nextTaskID = highest == Long.MAX_VALUE ? 1L : highest + 1L;
+		for (CraftingTask task : tasks) {
+			if (task.taskID == 0L) task.taskID = allocateTaskID(used);
+		}
+	}
+
+	private long allocateTaskID() {
+		java.util.HashSet<Long> used = new java.util.HashSet<>();
+		for (CraftingTask task : tasks) if (task.taskID > 0L) used.add(task.taskID);
+		return allocateTaskID(used);
+	}
+
+	private long allocateTaskID(java.util.Set<Long> used) {
+		if (nextTaskID <= 0L) nextTaskID = 1L;
+		while (used.contains(nextTaskID)) {
+			nextTaskID++;
+			if (nextTaskID <= 0L) nextTaskID = 1L;
+		}
+		long result = nextTaskID;
+		used.add(result);
+		nextTaskID++;
+		if (nextTaskID <= 0L) nextTaskID = 1L;
+		return result;
+	}
+
 	public boolean addTask(int expectedRevision, int itemID, int sourceType) {
 		if (expectedRevision != taskRevision) return false;
 		refreshTaskStatusesNow();
-		tasks.add(new CraftingTask(itemID, sourceType, CraftingTask.CONDITION_CRAFT_UNITS, 0));
+		tasks.add(new CraftingTask(allocateTaskID(), itemID, sourceType, CraftingTask.CONDITION_CRAFT_UNITS, 0));
 		commitTaskEdit();
+		CraftingInputProtectionSystem.refreshBoardConfiguration(this);
 		return true;
 	}
 
@@ -363,6 +403,7 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 		tasks.remove(index);
 		if (nextTaskIndex >= tasks.size()) nextTaskIndex = 0;
 		commitTaskEdit();
+		CraftingInputProtectionSystem.refreshBoardConfiguration(this);
 		return true;
 	}
 
@@ -592,7 +633,18 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 							if (missing.size() == 1 && missing.get(0).equals(Localization.translate("ui", "craftinginputnotlinked"))) {
 								details = missing;
 							} else {
-								details = Collections.singletonList(Localization.translate("ui", "craftingmissingingredientslist", "ingredients", String.join(", ", missing)));
+								ArrayList<String> missingDetails = new ArrayList<>();
+								missingDetails.add(Localization.translate("ui", "craftingmissingingredientslist", "ingredients", String.join(", ", missing)));
+								DynamicCraftingStationObjectEntity linkedStationEntity = getLinkedStationEntity();
+								if (linkedStationEntity != null && linkedStationEntity.isAutoStockMissingIngredients()) {
+									if (CraftingAutoStockSystem.isTaskDeliveryInProgress(this, task.taskID)) {
+										missingDetails.add(Localization.translate("ui", "craftingdeliveryinprogress"));
+									}
+									if (CraftingAutoStockSystem.isInputCapacityBlocked(linkedStationEntity, task.taskID)) {
+										missingDetails.add(Localization.translate("ui", "craftinginputfull"));
+									}
+								}
+								details = missingDetails;
 							}
 						} else if (!pendingCoversCraftUnits && taskRecipe.isForgeRecipe()
 								&& ForgeTaskSystem.hasAvailableForge(this, taskRecipe)

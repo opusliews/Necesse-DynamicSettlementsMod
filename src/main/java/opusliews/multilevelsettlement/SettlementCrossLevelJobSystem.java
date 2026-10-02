@@ -64,6 +64,7 @@ import necesse.level.maps.levelData.settlementData.storage.SettlementStorageReco
 import necesse.level.maps.levelData.settlementData.storage.SettlementStorageRecordsRegionData;
 import necesse.level.maps.levelData.settlementData.LevelSettler;
 import opusliews.guard.GuardLevelAssignmentSystem;
+import opusliews.clay.ClayPackageSystem;
 import opusliews.logging.Logging;
 
 public final class SettlementCrossLevelJobSystem {
@@ -251,10 +252,8 @@ public final class SettlementCrossLevelJobSystem {
 
 	private static boolean canDropOffWorkInventoryWithoutMutating(EntityJobWorker worker, HasStorageLevelJob job) {
 		if (worker.getWorkInventory().isEmpty()) return false;
-		Iterator<InventoryItem> iterator = worker.getWorkInventory().items().iterator();
-		while (iterator.hasNext()) {
-			InventoryItem item = iterator.next();
-			if (item != null && job.settlementInventory.canAddFutureDropOff(item) > 0) return true;
+		for (InventoryItem item : ClayPackageSystem.getExpandedContents(worker.getWorkInventory().items())) {
+			if (job.settlementInventory.canAddFutureDropOff(item) > 0) return true;
 		}
 		return false;
 	}

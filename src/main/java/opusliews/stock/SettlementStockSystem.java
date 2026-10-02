@@ -23,6 +23,7 @@ import necesse.level.maps.levelData.settlementData.storage.SettlementStorageReco
 import necesse.inventory.container.settlement.events.SettlementStorageChangeAllowedEvent;
 import necesse.inventory.container.settlement.events.SettlementStoragePriorityLimitEvent;
 import opusliews.logging.Logging;
+import opusliews.crafting.CraftingInputProtectionSystem;
 import opusliews.multilevelsettlement.SettlementLevelStorageManager;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -263,6 +264,7 @@ public final class SettlementStockSystem {
 	public static int getMaxRemovable(LevelStorage storage, InventoryItem item) {
 		if (!(storage instanceof SettlementInventory) || item == null) return item == null ? 0 : item.getAmount();
 		SettlementInventory settlementStorage = (SettlementInventory)storage;
+		if (CraftingInputProtectionSystem.isProtectedInputIngredient(settlementStorage, item)) return 0;
 		int target = getStockTarget(settlementStorage, item.item.getID());
 		if (target <= 0) return item.getAmount();
 
@@ -468,6 +470,11 @@ public final class SettlementStockSystem {
 		}
 
 		for (Map.Entry<SettlementInventory, Integer> entry : pool.remainingBySource.entrySet()) {
+			Item item = ItemRegistry.getItem(itemID);
+			if (item != null && CraftingInputProtectionSystem.isProtectedInputIngredient(entry.getKey(), new InventoryItem(item, 1))) {
+				entry.setValue(0);
+				continue;
+			}
 			int protectedAmount = getStockTarget(entry.getKey(), itemID);
 			entry.setValue(Math.max(0, entry.getValue() - protectedAmount));
 		}

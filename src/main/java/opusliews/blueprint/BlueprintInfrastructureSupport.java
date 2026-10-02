@@ -10,6 +10,7 @@ import necesse.level.gameLogicGate.entities.LogicGateEntity;
 import necesse.level.maps.Level;
 import necesse.level.maps.presets.PresetRotation;
 import necesse.level.maps.wireManager.WireManager;
+import opusliews.clay.ClayPackageSystem;
 import opusliews.logging.Logging;
 import opusliews.tools.BlueprintElement;
 
@@ -188,11 +189,7 @@ public final class BlueprintInfrastructureSupport {
 		int count = 0;
 
 		for (opusliews.mobs.BuilderHumanMob builder : area.getAssignedBuilders(level)) {
-			for (InventoryItem item : builder.getWorkInventory().items()) {
-				if (item != null && itemID.equals(item.item.getStringID())) {
-					count += item.getAmount();
-				}
-			}
+			count += ClayPackageSystem.getExpandedAmount(builder.getWorkInventory().items(), itemID);
 		}
 
 		return count;

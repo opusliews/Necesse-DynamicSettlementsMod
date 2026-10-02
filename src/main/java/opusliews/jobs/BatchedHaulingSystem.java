@@ -24,6 +24,7 @@ import necesse.level.maps.levelData.settlementData.SettlementStoragePickupSlot;
 import necesse.level.maps.levelData.settlementData.SettlementRequestInventory;
 import necesse.level.maps.levelData.settlementData.ZoneTester;
 import opusliews.clay.ClayPackageSystem;
+import opusliews.crafting.CraftingAutoStockSystem;
 import opusliews.logging.Logging;
 import opusliews.mobs.BuilderHumanMob;
 import opusliews.stock.SettlementStockSystem;
@@ -52,6 +53,7 @@ public final class BatchedHaulingSystem {
 			JobTypeHandler.TypePriority priority
 	) {
 		if (primary == null || worker == null || primary.item == null) return null;
+		if (CraftingAutoStockSystem.removeIfInvalidAutoStockJob(primary)) return null;
 
 		InventoryRange sourceRange = primary.getInventoryRange();
 		if (sourceRange == null) {
@@ -103,7 +105,7 @@ public final class BatchedHaulingSystem {
 		);
 		LinkedListJobSequence sequence = new LinkedListJobSequence(activityDescription, false);
 
-		int reservedPrimary = addJobToSequence(sequence, worker, priority, primary, destination.storage, primarySlots);
+		int reservedPrimary = addJobToSequence(sequence, worker, priority, primary, destination, primarySlots);
 		if (reservedPrimary <= 0) {
 			logPrimaryFailure(primary, worker, "sequence construction returned zero destination=" + describeStorage(destination.storage));
 			removeSlots(primarySlots);
@@ -126,6 +128,7 @@ public final class BatchedHaulingSystem {
 				.filter(job -> job instanceof HaulFromLevelJob)
 				.map(job -> (HaulFromLevelJob)job)
 				.filter(job -> job != primary)
+				.filter(job -> !CraftingAutoStockSystem.removeIfInvalidAutoStockJob(job))
 				.filter(job -> sameStorage(job.storage, primary.storage))
 				.filter(job -> job.item != null && job.item.getAmount() > 0)
 				.filter(job -> getMatchingDestination(job, destination.storage, worker) != null)
@@ -173,7 +176,7 @@ public final class BatchedHaulingSystem {
 				continue;
 			}
 
-			int reserved = addJobToSequence(sequence, worker, priority, sibling, destination.storage, slots);
+			int reserved = addJobToSequence(sequence, worker, priority, sibling, siblingDestination, slots);
 			if (reserved <= 0) {
 				if (Logging.logEnabled) Logging.logMessage("[BatchedHauling] Candidate rejected: sequence reservation produced zero item="
 						+ sibling.item.item.getStringID());
@@ -194,11 +197,12 @@ public final class BatchedHaulingSystem {
 
 	public static boolean shouldPreventVanillaFallback(HaulFromLevelJob job) {
 		if (job == null || job.storage == null || job.item == null || job.item.getAmount() <= 0) return false;
+		if (CraftingAutoStockSystem.removeIfInvalidAutoStockJob(job)) return true;
 
 		boolean hasOrdinaryDestination = false;
 		for (Object value : job.dropOffPositions) {
 			HaulFromLevelJob.HaulPosition pos = (HaulFromLevelJob.HaulPosition)value;
-			if (SettlementStockSystem.isStockDestination(pos)) return true;
+			if (SettlementStockSystem.isStockDestination(pos) || CraftingAutoStockSystem.isAutoStockDestination(pos)) return true;
 			if (!(pos.storage instanceof SettlementRequestInventory)) {
 				hasOrdinaryDestination = true;
 			}
@@ -286,8 +290,10 @@ public final class BatchedHaulingSystem {
 		if (range == null || pos.storage == null || pos.storage.level == null) return false;
 		if (getDestinationAmount(job, pos) <= 0) return false;
 
-		int filterAmount = pos.storage.getFilter().getAddAmount(pos.storage.level, job.item, range, false);
-		if (filterAmount <= 0) return false;
+		if (!CraftingAutoStockSystem.isAutoStockDestination(pos)) {
+			int filterAmount = pos.storage.getFilter().getAddAmount(pos.storage.level, job.item, range, false);
+			if (filterAmount <= 0) return false;
+		}
 		if (range.inventory.canAddItem(
 				pos.storage.level,
 				(PlayerMob)null,
@@ -353,8 +359,13 @@ public final class BatchedHaulingSystem {
 	}
 
 	private static int getDestinationAmount(HaulFromLevelJob job, HaulFromLevelJob.HaulPosition destination) {
-		int capacity = destination.storage.canAddFutureDropOff(job.item);
-		int demand = SettlementStockSystem.getRemainingStockDemand(destination, job.item);
+		boolean autoStock = CraftingAutoStockSystem.isAutoStockDestination(destination);
+		int capacity = autoStock
+				? CraftingAutoStockSystem.getUnfilteredFutureDropOffCapacity(destination.storage, job.item)
+				: destination.storage.canAddFutureDropOff(job.item);
+		int demand = autoStock
+				? CraftingAutoStockSystem.getRemainingDeliveryDemand(destination, job.item)
+				: SettlementStockSystem.getRemainingStockDemand(destination, job.item);
 		return Math.max(0, Math.min(destination.amount, Math.min(capacity, demand)));
 	}
 
@@ -363,8 +374,11 @@ public final class BatchedHaulingSystem {
 			HaulFromLevelJob.HaulPosition destination,
 			DestinationCapacity destinationCapacity
 	) {
-		int globalReservedCapacity = destination.storage.canAddFutureDropOff(job.item);
-		int batchCapacity = destinationCapacity.getCanPlanAmount(job.item);
+		boolean autoStock = CraftingAutoStockSystem.isAutoStockDestination(destination);
+		int globalReservedCapacity = autoStock
+				? CraftingAutoStockSystem.getUnfilteredFutureDropOffCapacity(destination.storage, job.item)
+				: destination.storage.canAddFutureDropOff(job.item);
+		int batchCapacity = destinationCapacity.getCanPlanAmount(job.item, autoStock);
 		int amount = Math.min(
 				Math.min(globalReservedCapacity, batchCapacity),
 				Math.min(getDestinationAmount(job, destination), job.item.itemStackSize())
@@ -383,9 +397,10 @@ public final class BatchedHaulingSystem {
 			EntityJobWorker worker,
 			JobTypeHandler.TypePriority priority,
 			HaulFromLevelJob job,
-			LevelStorage destination,
+			HaulFromLevelJob.HaulPosition destinationPosition,
 			LinkedList<SettlementStoragePickupSlot> slots
 	) {
+		LevelStorage destination = destinationPosition.storage;
 		int reserved = 0;
 		ArrayList<PickupSettlementStorageActiveJob> pickups = new ArrayList<>();
 		ArrayList<DropOffSettlementStorageActiveJob> dropOffs = new ArrayList<>();
@@ -393,14 +408,15 @@ public final class BatchedHaulingSystem {
 		for (SettlementStoragePickupSlot slot : slots) {
 			AtomicReference<InventoryItem> pickedUpItemRef = new AtomicReference<>();
 			pickups.add(new PickupSettlementStorageActiveJob(worker, priority, slot, pickedUpItemRef));
-			dropOffs.add(new DropOffSettlementStorageActiveJob(
+			DropOffSettlementStorageActiveJob dropOff = new DropOffSettlementStorageActiveJob(
 					worker,
 					priority,
 					destination,
 					(GameObjectReservable)null,
 					false,
 					() -> slot.isRemoved() ? pickedUpItemRef.get() : slot.item
-			));
+			);
+			dropOffs.add(dropOff);
 			reserved += slot.item.getAmount();
 		}
 
@@ -446,6 +462,15 @@ public final class BatchedHaulingSystem {
 					+ " destination=" + destination.level.getIdentifier() + "@" + destination.tileX + "," + destination.tileY
 					+ " item=" + job.item.item.getStringID() + " amount=" + reserved + " route=" + route);
 		}
+		for (int i = 0; i < dropOffs.size(); i++) {
+			DropOffSettlementStorageActiveJob dropOff = dropOffs.get(i);
+			int amount = slots.get(i).item.getAmount();
+			if (!CraftingAutoStockSystem.registerDropOff(dropOff, destinationPosition, amount)) {
+				for (int j = 0; j < i; j++) CraftingAutoStockSystem.cancelTrackedDropOff(dropOffs.get(j));
+				removeSlots(slots);
+				return 0;
+			}
+		}
 		for (DropOffSettlementStorageActiveJob dropOff : dropOffs) sequence.addLast(dropOff);
 		sequence.addLast(new PerformLevelJobEventActiveJob(worker, priority, job));
 		job.item.setAmount(Math.max(0, job.item.getAmount() - reserved));
@@ -471,14 +496,17 @@ public final class BatchedHaulingSystem {
 					: new InventoryRange(range.inventory.copy(), range.startSlot, range.endSlot);
 		}
 
-		private int getCanPlanAmount(InventoryItem item) {
+		private int getCanPlanAmount(InventoryItem item, boolean bypassFilter) {
 			if (item == null || item.getAmount() <= 0 || simulatedRange == null) return 0;
 
-			ItemCategoriesFilter filter = storage.getFilter();
-			int filterAmount = filter == null
-					? item.getAmount()
-					: filter.getAddAmount(storage.level, item, simulatedRange, true);
-			if (filterAmount <= 0) return 0;
+			int filterAmount = item.getAmount();
+			if (!bypassFilter) {
+				ItemCategoriesFilter filter = storage.getFilter();
+				filterAmount = filter == null
+						? item.getAmount()
+						: filter.getAddAmount(storage.level, item, simulatedRange, true);
+				if (filterAmount <= 0) return 0;
+			}
 
 			int inventoryAmount = simulatedRange.inventory.canAddItem(
 					storage.level,

@@ -29,6 +29,7 @@ import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import necesse.level.maps.levelData.settlementData.settler.SettlerMob;
 import necesse.level.maps.levelData.settlementData.zones.SettlementWorkZone;
 import opusliews.charcoal.CharcoalProductionZone;
+import opusliews.clay.ClayPackageSystem;
 import opusliews.logging.Logging;
 import opusliews.network.PacketBuilderTilePlaceSound;
 import opusliews.tile.ShallowHoleTile;
@@ -237,13 +238,7 @@ public class CharcoalCleanupLevelJob extends TileLevelJob {
 			JobTypeHandler.TypePriority priority,
 			List<ActiveJob> jobs
 	) {
-		List<InventoryItem> currentItems = new ArrayList<>();
-
-		for (InventoryItem item : worker.getWorkInventory().items()) {
-			if (item != null && item.getAmount() > 0) {
-				currentItems.add(item.copy());
-			}
-		}
+		List<InventoryItem> currentItems = ClayPackageSystem.getExpandedContents(worker.getWorkInventory().items());
 
 		if (!currentItems.isEmpty()) {
 			Logging.logMessage("[FiringInventory] Planning deposit of " + currentItems.size()

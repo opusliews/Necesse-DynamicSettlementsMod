@@ -21,6 +21,8 @@ import necesse.inventory.InventoryItem;
 import necesse.inventory.InventoryRange;
 import necesse.inventory.recipe.Recipe;
 import opusliews.crafting.CraftingTime;
+import opusliews.crafting.CraftingAutoStockSystem;
+import opusliews.crafting.CraftingInputProtectionSystem;
 import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
 
@@ -33,6 +35,8 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 	private final ArrayList<Point> outputStorages = new ArrayList<>();
 	private final ArrayList<Point> linkedForges = new ArrayList<>();
 	private Point taskBoard;
+	private boolean autoStockMissingIngredients;
+	private transient boolean inputProtectionInitialized;
 
 	protected DynamicCraftingStationObjectEntity(Level level, String type, int tileX, int tileY) {
 		super(level, type, tileX, tileY);
@@ -48,6 +52,7 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		addLinkListSaveData(save, "outputStorages", outputStorages);
 		addLinkListSaveData(save, "linkedForges", linkedForges);
 		addLinkSaveData(save, "taskBoard", taskBoard);
+		save.addBoolean("autoStockMissingIngredients", autoStockMissingIngredients);
 	}
 
 	@Override
@@ -63,6 +68,7 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		linkedForges.clear();
 		linkedForges.addAll(readLinkListSaveData(save, "linkedForges"));
 		taskBoard = readLinkSaveData(save, "taskBoard");
+		autoStockMissingIngredients = save.getBoolean("autoStockMissingIngredients", false);
 	}
 
 	@Override
@@ -73,6 +79,7 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		writeLinks(writer, outputStorages);
 		writeLinks(writer, linkedForges);
 		writeLink(writer, taskBoard);
+		writer.putNextBoolean(autoStockMissingIngredients);
 	}
 
 	@Override
@@ -86,6 +93,7 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		linkedForges.clear();
 		linkedForges.addAll(readLinks(reader));
 		taskBoard = readLink(reader);
+		autoStockMissingIngredients = reader.getNextBoolean();
 	}
 
 	@Override
@@ -93,6 +101,13 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		ArrayList<InventoryItem> list = new ArrayList<>();
 		if (!inventory.isSlotClear(0)) list.add(inventory.getItem(0));
 		return list;
+	}
+
+	@Override
+	public void remove() {
+		CraftingAutoStockSystem.removeStation(this);
+		CraftingInputProtectionSystem.removeStation(this);
+		super.remove();
 	}
 
 	@Override
@@ -108,6 +123,11 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		validateForgeLinks();
 		validateTaskBoard();
 		inventory.tickItems(this);
+		if (!inputProtectionInitialized) {
+			inputProtectionInitialized = true;
+			CraftingInputProtectionSystem.refreshStation(this);
+		}
+		CraftingAutoStockSystem.tickStation(this);
 		serverTickInventorySync(getLevel().getServer(), this);
 	}
 
@@ -115,6 +135,10 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		boolean changed = inputStorages.removeIf(point -> !isValidLinkedStorage(point));
 		changed |= outputStorages.removeIf(point -> !isValidLinkedStorage(point));
 		if (changed) {
+			if (getLevel().isServer()) {
+			CraftingAutoStockSystem.onStationLinksChanged(this);
+			CraftingInputProtectionSystem.refreshStation(this);
+		}
 			markDirty();
 			syncContent();
 		}
@@ -140,6 +164,10 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		if (!supportsForgeLinks()) {
 			if (!linkedForges.isEmpty()) {
 				linkedForges.clear();
+				if (getLevel().isServer()) {
+			CraftingAutoStockSystem.onStationLinksChanged(this);
+			CraftingInputProtectionSystem.refreshStation(this);
+		}
 				markDirty();
 				syncContent();
 			}
@@ -148,6 +176,10 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 
 		boolean changed = linkedForges.removeIf(point -> !isValidLinkedForge(point));
 		if (changed) {
+			if (getLevel().isServer()) {
+			CraftingAutoStockSystem.onStationLinksChanged(this);
+			CraftingInputProtectionSystem.refreshStation(this);
+		}
 			markDirty();
 			syncContent();
 		}
@@ -217,6 +249,19 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		return copyPoints(linkedForges);
 	}
 
+
+	public boolean isAutoStockMissingIngredients() {
+		return autoStockMissingIngredients;
+	}
+
+	public void setAutoStockMissingIngredients(boolean value) {
+		if (autoStockMissingIngredients == value) return;
+		autoStockMissingIngredients = value;
+		if (getLevel().isServer() && !value) CraftingAutoStockSystem.removeStation(this);
+		markDirty();
+		syncContent();
+	}
+
 	public Point getTaskBoard() {
 		return taskBoard == null ? null : new Point(taskBoard);
 	}
@@ -236,12 +281,20 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 	public void addInputStorage(Point point) {
 		if (point == null || containsPoint(inputStorages, point)) return;
 		inputStorages.add(new Point(point));
+		if (getLevel().isServer()) {
+			CraftingAutoStockSystem.onStationLinksChanged(this);
+			CraftingInputProtectionSystem.refreshStation(this);
+		}
 		markDirty();
 		syncContent();
 	}
 
 	public void removeInputStorage(Point point) {
 		if (point == null || !inputStorages.remove(point)) return;
+		if (getLevel().isServer()) {
+			CraftingAutoStockSystem.onStationLinksChanged(this);
+			CraftingInputProtectionSystem.refreshStation(this);
+		}
 		markDirty();
 		syncContent();
 	}
@@ -249,12 +302,20 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 	public void addOutputStorage(Point point) {
 		if (point == null || containsPoint(outputStorages, point)) return;
 		outputStorages.add(new Point(point));
+		if (getLevel().isServer()) {
+			CraftingAutoStockSystem.onStationLinksChanged(this);
+			CraftingInputProtectionSystem.refreshStation(this);
+		}
 		markDirty();
 		syncContent();
 	}
 
 	public void removeOutputStorage(Point point) {
 		if (point == null || !outputStorages.remove(point)) return;
+		if (getLevel().isServer()) {
+			CraftingAutoStockSystem.onStationLinksChanged(this);
+			CraftingInputProtectionSystem.refreshStation(this);
+		}
 		markDirty();
 		syncContent();
 	}
@@ -262,6 +323,10 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 	public void clearInputStorages() {
 		if (inputStorages.isEmpty()) return;
 		inputStorages.clear();
+		if (getLevel().isServer()) {
+			CraftingAutoStockSystem.onStationLinksChanged(this);
+			CraftingInputProtectionSystem.refreshStation(this);
+		}
 		markDirty();
 		syncContent();
 	}
@@ -269,6 +334,10 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 	public void clearOutputStorages() {
 		if (outputStorages.isEmpty()) return;
 		outputStorages.clear();
+		if (getLevel().isServer()) {
+			CraftingAutoStockSystem.onStationLinksChanged(this);
+			CraftingInputProtectionSystem.refreshStation(this);
+		}
 		markDirty();
 		syncContent();
 	}
@@ -276,12 +345,20 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 	public void addLinkedForge(Point point) {
 		if (!supportsForgeLinks() || point == null || containsPoint(linkedForges, point)) return;
 		linkedForges.add(new Point(point));
+		if (getLevel().isServer()) {
+			CraftingAutoStockSystem.onStationLinksChanged(this);
+			CraftingInputProtectionSystem.refreshStation(this);
+		}
 		markDirty();
 		syncContent();
 	}
 
 	public void removeLinkedForge(Point point) {
 		if (point == null || !linkedForges.remove(point)) return;
+		if (getLevel().isServer()) {
+			CraftingAutoStockSystem.onStationLinksChanged(this);
+			CraftingInputProtectionSystem.refreshStation(this);
+		}
 		markDirty();
 		syncContent();
 	}
@@ -289,6 +366,10 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 	public void clearLinkedForges() {
 		if (linkedForges.isEmpty()) return;
 		linkedForges.clear();
+		if (getLevel().isServer()) {
+			CraftingAutoStockSystem.onStationLinksChanged(this);
+			CraftingInputProtectionSystem.refreshStation(this);
+		}
 		markDirty();
 		syncContent();
 	}
@@ -311,6 +392,11 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 	public void setTaskBoard(Point point) {
 		Point old = taskBoard == null ? null : new Point(taskBoard);
 		taskBoard = point == null ? null : new Point(point);
+		boolean changed = old == null ? taskBoard != null : !old.equals(taskBoard);
+		if (changed && getLevel().isServer()) {
+			CraftingAutoStockSystem.onStationLinksChanged(this);
+			CraftingInputProtectionSystem.refreshStation(this);
+		}
 		markDirty();
 
 		if (getLevel().isServer()) {

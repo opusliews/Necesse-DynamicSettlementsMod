@@ -19,6 +19,7 @@ public class CraftingTask {
 	public static final int STATUS_PROBLEM = 2;
 	public static final int STATUS_PAUSED = 3;
 
+	public long taskID;
 	public int itemID;
 	public int sourceType;
 	public int conditionType;
@@ -27,19 +28,25 @@ public class CraftingTask {
 	public int status = STATUS_FINISHED;
 	public final ArrayList<String> problemDetails = new ArrayList<>();
 
-	public CraftingTask(int itemID, int sourceType, int conditionType, int amount) {
+	public CraftingTask(long taskID, int itemID, int sourceType, int conditionType, int amount) {
+		this.taskID = taskID;
 		this.itemID = itemID;
 		this.sourceType = sourceType == SOURCE_FORGE ? SOURCE_FORGE : SOURCE_ANVIL;
 		this.conditionType = conditionType;
 		this.amount = Math.max(0, amount);
 	}
 
+	public CraftingTask(int itemID, int sourceType, int conditionType, int amount) {
+		this(0L, itemID, sourceType, conditionType, amount);
+	}
+
 	public CraftingTask(int itemID, int conditionType, int amount) {
-		this(itemID, SOURCE_ANVIL, conditionType, amount);
+		this(0L, itemID, SOURCE_ANVIL, conditionType, amount);
 	}
 
 	public CraftingTask(LoadData data) {
 		this(
+				data.getLong("taskID", 0L, false),
 				data.getInt("itemID", -1),
 				data.getInt("sourceType", SOURCE_ANVIL),
 				data.getInt("conditionType", CONDITION_CRAFT_UNITS),
@@ -49,7 +56,7 @@ public class CraftingTask {
 	}
 
 	public CraftingTask(PacketReader reader) {
-		this(reader.getNextInt(), reader.getNextByteUnsigned(), reader.getNextByteUnsigned(), reader.getNextInt());
+		this(reader.getNextLong(), reader.getNextInt(), reader.getNextByteUnsigned(), reader.getNextByteUnsigned(), reader.getNextInt());
 		paused = reader.getNextBoolean();
 		status = reader.getNextByteUnsigned();
 		int problemCount = reader.getNextByteUnsigned();
@@ -59,6 +66,7 @@ public class CraftingTask {
 	}
 
 	public void addSaveData(SaveData data) {
+		data.addLong("taskID", taskID);
 		data.addInt("itemID", itemID);
 		data.addInt("sourceType", sourceType);
 		data.addInt("conditionType", conditionType);
@@ -67,6 +75,7 @@ public class CraftingTask {
 	}
 
 	public void writePacket(PacketWriter writer) {
+		writer.putNextLong(taskID);
 		writer.putNextInt(itemID);
 		writer.putNextByteUnsigned(sourceType);
 		writer.putNextByteUnsigned(conditionType);
@@ -88,7 +97,7 @@ public class CraftingTask {
 	}
 
 	public CraftingTask copy() {
-		CraftingTask copy = new CraftingTask(itemID, sourceType, conditionType, amount);
+		CraftingTask copy = new CraftingTask(taskID, itemID, sourceType, conditionType, amount);
 		copy.paused = paused;
 		copy.status = status;
 		copy.problemDetails.addAll(problemDetails);

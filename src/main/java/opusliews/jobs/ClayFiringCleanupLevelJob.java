@@ -188,14 +188,7 @@ public class ClayFiringCleanupLevelJob extends TileLevelJob {
 			JobTypeHandler.TypePriority priority,
 			List<ActiveJob> jobs
 	) {
-		ArrayList<InventoryItem> toDeposit = new ArrayList<>();
-		for (Object value : worker.getWorkInventory().items()) {
-			if (!(value instanceof InventoryItem)) continue;
-			InventoryItem item = (InventoryItem)value;
-			if (item == null || item.getAmount() <= 0) continue;
-			if (ClayPackageSystem.isPackage(item)) toDeposit.addAll(ClayPackageSystem.getContents(item));
-			else toDeposit.add(item.copy());
-		}
+		List<InventoryItem> toDeposit = ClayPackageSystem.getExpandedContents(worker.getWorkInventory().items());
 
 		for (InventoryItem item : toDeposit) {
 			ArrayList<HasStorageLevelJob.DropOffFind> locations = HasStorageLevelJob.findDropOffLocation(worker, item.copy());

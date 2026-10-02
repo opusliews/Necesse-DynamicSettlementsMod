@@ -45,6 +45,7 @@ public class DynamicCraftingStationContainer extends CraftingStationContainer {
 	public final PointCustomAction setTaskBoard;
 	public final PointCustomAction setForge;
 	public final BooleanCustomAction setSelectingLinkedElement;
+	public final BooleanCustomAction setAutoStockMissingIngredients;
 
 	private final String stationName;
 	private boolean crafting;
@@ -110,6 +111,13 @@ public class DynamicCraftingStationContainer extends CraftingStationContainer {
 			@Override
 			protected void run(boolean value) {
 				selectingStorage = value;
+			}
+		});
+
+		setAutoStockMissingIngredients = registerAction(new BooleanCustomAction() {
+			@Override
+			protected void run(boolean value) {
+				if (client.isServer()) stationEntity.setAutoStockMissingIngredients(value);
 			}
 		});
 	}
