@@ -33,6 +33,7 @@ import opusliews.multilevelsettlement.SettlementLevelDomain;
 import opusliews.multilevelsettlement.SettlementLevelType;
 import opusliews.multilevelsettlement.SettlementMultiLevelSystem;
 
+import opusliews.settler.SettlerHappinessScaling;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -42,7 +43,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public final class BatchedHaulingSystem {
-	private static final int vanillaWorkInventoryStacks = 5;
 
 	private BatchedHaulingSystem() {
 	}
@@ -558,7 +558,7 @@ public final class BatchedHaulingSystem {
 
 			if (supportsClayPackage() && ClayPackageSystem.isClayItem(item)) {
 				if (virtualClayPackage) return item.getAmount();
-				return virtualItems.size() < BuilderHumanMob.maxWorkInventoryStacks ? item.getAmount() : 0;
+				return virtualItems.size() < getMaxStacks() ? item.getAmount() : 0;
 			}
 
 			int maxByWorkerRules = getMaxByWorkerRules(item);
@@ -572,7 +572,7 @@ public final class BatchedHaulingSystem {
 				}
 			}
 
-			if (virtualItems.size() >= vanillaWorkInventoryStacks) return 0;
+			if (virtualItems.size() >= getMaxStacks()) return 0;
 			return Math.min(item.getAmount(), Math.min(item.itemStackSize(), maxByWorkerRules));
 		}
 
@@ -584,7 +584,7 @@ public final class BatchedHaulingSystem {
 
 			float brokerValue = 0.0F;
 			for (InventoryItem existing : virtualItems) brokerValue += existing.getBrokerValue();
-			float remainingValue = 300.0F - brokerValue;
+			float remainingValue = SettlerHappinessScaling.getScaledBrokerValueLimit((HumanMob)worker.getMobWorker()) - brokerValue;
 			if (remainingValue < 0.0F) return 0;
 
 			float singleItemBrokerValue = item.item.getBrokerValue(item);
@@ -617,6 +617,15 @@ public final class BatchedHaulingSystem {
 			}
 
 			if (left > 0) virtualItems.add(item.copy(left));
+		}
+
+		private int getMaxStacks() {
+			if (!(worker.getMobWorker() instanceof HumanMob)) return SettlerHappinessScaling.vanillaWorkInventoryStacks;
+			HumanMob human = (HumanMob)worker.getMobWorker();
+			int baseStacks = human instanceof BuilderHumanMob
+					? BuilderHumanMob.maxWorkInventoryStacks
+					: SettlerHappinessScaling.vanillaWorkInventoryStacks;
+			return SettlerHappinessScaling.getScaledStackLimit(human, baseStacks);
 		}
 
 		private boolean supportsClayPackage() {

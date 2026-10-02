@@ -193,6 +193,7 @@ public class DynamicSettlements {
 		BuffRegistry.registerBuff(DeepHoleDiggingBuff.stringID, new DeepHoleDiggingBuff());
 		BuffRegistry.registerBuff(DeepHoleCaveFallBuff.stringID, new DeepHoleCaveFallBuff());
 		BuffRegistry.registerBuff(DeepHoleLadderDescentBuff.stringID, new DeepHoleLadderDescentBuff());
+		BuffRegistry.registerBuff(HaulingHappinessSpeedBuff.stringID, new HaulingHappinessSpeedBuff());
 		SettlerRegistry.registerSettler("builder", new BuilderSettler());
 		SettlerRegistry.registerSettler("carpenter", new CarpenterSettler());
 		SettlementCaveBedSystem.registerThought();

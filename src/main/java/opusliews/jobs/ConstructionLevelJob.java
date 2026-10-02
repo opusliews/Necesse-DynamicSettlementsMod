@@ -42,6 +42,7 @@ import opusliews.network.PacketBuilderObjectPlaceSound;
 import opusliews.network.PacketBuilderTilePlaceSound;
 import opusliews.network.PacketSyncBlueprintAreas;
 
+import opusliews.settler.SettlerHappinessScaling;
 import java.awt.*;
 import java.util.List;
 import java.util.*;
@@ -1092,6 +1093,18 @@ public class ConstructionLevelJob extends TileLevelJob {
 		Map<String, Integer> alreadyAllocated = area.getAllocatedMaterialsExcept(builderUniqueID);
 		List<InventoryItem> simulatedInventory = new ArrayList<>();
 		Map<String, Integer> allocation = new LinkedHashMap<>();
+		BuilderHumanMob assignedBuilder = null;
+		for (BuilderHumanMob builder : area.getAssignedBuilders(level)) {
+			if (builder.getUniqueID() == builderUniqueID) {
+				assignedBuilder = builder;
+				break;
+			}
+		}
+		if (assignedBuilder == null && Logging.logEnabled) {
+			Logging.logMessage("[HappinessScaling] Could not resolve assigned builder for inventory allocation builderID="
+					+ builderUniqueID + "; using base builder capacity");
+		}
+		int maxStacks = SettlerHappinessScaling.getScaledStackLimit(assignedBuilder, BuilderHumanMob.maxWorkInventoryStacks);
 
 		for (String itemID : orderedMaterials) {
 			int allocatedAmount = alreadyAllocated.getOrDefault(itemID, 0);
@@ -1101,7 +1114,7 @@ public class ConstructionLevelJob extends TileLevelJob {
 				continue;
 			}
 
-			if (simulatedInventory.size() >= BuilderHumanMob.maxWorkInventoryStacks) {
+			if (simulatedInventory.size() >= maxStacks) {
 				break;
 			}
 

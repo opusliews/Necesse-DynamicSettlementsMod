@@ -28,6 +28,7 @@ import opusliews.damage.WeatheringLevelData;
 import opusliews.logging.Logging;
 import opusliews.network.PacketBuilderObjectPlaceSound;
 
+import opusliews.settler.SettlerHappinessScaling;
 import java.awt.Point;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -627,16 +628,16 @@ public class BuilderHumanMob extends HumanShop {
 			public int getCanAddAmount(InventoryItem item) {
 				if (ClayPackageSystem.isClayItem(item)) {
 					if (ClayPackageSystem.hasPackage(BuilderHumanMob.this.workInventory)) return item.getAmount();
-					return getTotalItemStacks() < maxWorkInventoryStacks ? item.getAmount() : 0;
+					return getTotalItemStacks() < SettlerHappinessScaling.getScaledStackLimit(BuilderHumanMob.this, maxWorkInventoryStacks) ? item.getAmount() : 0;
 				}
 
-				if (getTotalItemStacks() >= maxWorkInventoryStacks) return 0;
+				if (getTotalItemStacks() >= SettlerHappinessScaling.getScaledStackLimit(BuilderHumanMob.this, maxWorkInventoryStacks)) return 0;
 				return item.getAmount();
 			}
 
 			@Override
 			public boolean isFull() {
-				if (getTotalItemStacks() < maxWorkInventoryStacks) return false;
+				if (getTotalItemStacks() < SettlerHappinessScaling.getScaledStackLimit(BuilderHumanMob.this, maxWorkInventoryStacks)) return false;
 				return !ClayPackageSystem.hasPackage(BuilderHumanMob.this.workInventory);
 			}
 
