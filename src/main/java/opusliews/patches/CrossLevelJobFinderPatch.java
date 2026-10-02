@@ -14,7 +14,8 @@ public class CrossLevelJobFinderPatch {
 			@Advice.Argument(0) boolean ignoreRecreationJobs,
 			@Advice.Local("dsCrossLevelFoundJob") FoundJob foundJob
 	) {
-		foundJob = SettlementCrossLevelJobSystem.findRemoteRelocation(finder, ignoreRecreationJobs);
+		foundJob = SettlementCrossLevelJobSystem.findPendingExactJob(finder, ignoreRecreationJobs);
+		if (foundJob == null) foundJob = SettlementCrossLevelJobSystem.findRemoteRelocation(finder, ignoreRecreationJobs);
 		return foundJob != null;
 	}
 

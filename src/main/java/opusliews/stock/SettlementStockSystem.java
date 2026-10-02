@@ -281,6 +281,21 @@ public final class SettlementStockSystem {
 		return result;
 	}
 
+	public static int getMaxAutoStockRemovable(LevelStorage storage, InventoryItem item) {
+		if (!(storage instanceof SettlementInventory) || item == null) return item == null ? 0 : item.getAmount();
+		SettlementInventory settlementStorage = (SettlementInventory)storage;
+		int unreserved = countFutureUnreservedItem(storage, item.item.getID());
+		int result = Math.min(item.getAmount(), Math.max(0, unreserved));
+		if (Logging.logEnabled) {
+			Logging.logMessage("[AutoStockSource] chest=" + settlementStorage.tileX + "," + settlementStorage.tileY
+					+ " item=" + item.item.getStringID()
+					+ " requested=" + item.getAmount()
+					+ " unreserved=" + unreserved
+					+ " allowed=" + result);
+		}
+		return result;
+	}
+
 	public static void tickStockJobs(ServerSettlementData settlement) {
 		if (settlement == null || settlement.storageRecords == null) return;
 		ArrayList<SettlementInventory> storages = new ArrayList<>();

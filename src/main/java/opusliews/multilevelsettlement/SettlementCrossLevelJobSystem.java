@@ -10,6 +10,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -81,9 +82,132 @@ public final class SettlementCrossLevelJobSystem {
 	private static final long JOB_KEY_CLEANUP_INTERVAL_MS = 60_000L;
 
 	private static final Map<JobKey, SeenJob> seenJobs = new HashMap<>();
+	private static final Map<HumanMob, PendingCrossLevelJob> pendingCrossLevelJobs = new WeakHashMap<>();
 	private static long nextSeenJobCleanupTime;
 
 	private SettlementCrossLevelJobSystem() {
+	}
+
+	/**
+	 * Attempts to resume the exact jobsLayer job that caused the most recent successful
+	 * cross-level relocation. This does not search for another job of the same type: the
+	 * underlying AbstractLevelJob instance must still be present and valid on this level.
+	 */
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	public static FoundJob findPendingExactJob(JobFinder finder, boolean ignoreRecreationJobs) {
+		if (finder == null || !(finder.mob instanceof HumanMob)) return null;
+		HumanMob human = (HumanMob)finder.mob;
+		if (human.getLevel() == null || !human.getLevel().isServer() || !human.isSettler()) return null;
+
+		PendingCrossLevelJob pending;
+		synchronized (pendingCrossLevelJobs) {
+			pending = pendingCrossLevelJobs.get(human);
+		}
+		if (pending == null) return null;
+
+		// Do not consume a pending normal-work recall from special/custom JobFinder calls.
+		if (finder.zoneTester != null || finder.searchBounds != null || finder.levelJobPredicate != null || human.getJobFollowingMob() != null) return null;
+
+		AbstractLevelJob job = pending.job;
+		Level jobLevel = job == null ? null : job.getLevel();
+		if (jobLevel == null || !pending.targetLevel.equals(jobLevel.getIdentifier())) {
+			clearPendingExactJob(human, pending, "remembered job level changed/disappeared");
+			return null;
+		}
+		if (!pending.targetLevel.equals(human.getLevel().getIdentifier())) return null;
+
+		JobTypeHandler handler = finder.handler;
+		if (handler == null) {
+			clearPendingExactJob(human, pending, "worker has no job handler");
+			return null;
+		}
+
+		try {
+			// Identity check is intentional. If the original job object was removed and a new
+			// job of the same type/tile appeared, it must not count as the recalled job.
+			boolean stillPresent = finder.worker.streamValidJobsWithinRange(null).anyMatch(candidate -> candidate == job);
+			if (!stillPresent) {
+				clearPendingExactJob(human, pending, "exact job is no longer present");
+				return null;
+			}
+			if (!job.isValid()) {
+				clearPendingExactJob(human, pending, "exact job is no longer valid");
+				return null;
+			}
+			if (!job.reservable.isAvailable(finder.mob)) {
+				clearPendingExactJob(human, pending, "exact job is reserved by another worker");
+				return null;
+			}
+
+			ZoneTester restrictZone = finder.worker.getJobRestrictZone();
+			if (!job.isWithinRestrictZone(restrictZone)) {
+				clearPendingExactJob(human, pending, "exact job is outside current restrict zone");
+				return null;
+			}
+			if (ignoreRecreationJobs && job.jobType.getID() == JobTypeRegistry.recreationID) {
+				clearPendingExactJob(human, pending, "recreation jobs are currently ignored");
+				return null;
+			}
+			if (!finder.worker.allowsFindingJobType(job.jobType)) {
+				clearPendingExactJob(human, pending, "worker no longer allows this job type");
+				return null;
+			}
+
+			FoundJob found = new HandlerFoundJobGenerator(job, handler, new PreSequenceComputes()).generateJob(finder.worker);
+			if (found == null || found.isDisabled()) {
+				clearPendingExactJob(human, pending, "exact job handler rejected it");
+				return null;
+			}
+			if (!found.canMoveTo()) {
+				clearPendingExactJob(human, pending, "exact job is not reachable after relocation");
+				return null;
+			}
+
+			JobSequence sequence = found.getSequence();
+			if (sequence == null || ignoreRecreationJobs && sequence.isRecreationJob()) {
+				clearPendingExactJob(human, pending, "exact job could not build an executable sequence");
+				return null;
+			}
+
+			clearPendingExactJob(human, pending, "recalled successfully");
+			if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Recalled exact post-transition job settler=" + human.getUniqueID()
+					+ " job=" + job.getStringID() + "@" + job.getTileX() + "," + job.getTileY()
+					+ " level=" + pending.targetLevel);
+			return found;
+		}
+		catch (Throwable error) {
+			clearPendingExactJob(human, pending, "exception " + error.getClass().getSimpleName());
+			if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Exact post-transition recall failed settler=" + human.getUniqueID()
+					+ " job=" + (job == null ? "null" : job.getStringID() + "@" + job.getTileX() + "," + job.getTileY())
+					+ " error=" + error.getClass().getSimpleName() + ": " + error.getMessage());
+			return null;
+		}
+	}
+
+	private static void rememberPendingExactJob(HumanMob human, AbstractLevelJob job, SettlementLevelType targetType) {
+		if (human == null || job == null || job.getLevel() == null || targetType == null) return;
+		PendingCrossLevelJob pending = new PendingCrossLevelJob(job, job.getLevel().getIdentifier(), targetType);
+		synchronized (pendingCrossLevelJobs) {
+			pendingCrossLevelJobs.put(human, pending);
+		}
+		if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Remembered exact post-transition job settler=" + human.getUniqueID()
+				+ " job=" + job.getStringID() + "@" + job.getTileX() + "," + job.getTileY()
+				+ " targetLevel=" + targetType + " identifier=" + pending.targetLevel);
+	}
+
+	private static void clearPendingExactJob(HumanMob human, PendingCrossLevelJob expected, String reason) {
+		boolean removed = false;
+		synchronized (pendingCrossLevelJobs) {
+			if (pendingCrossLevelJobs.get(human) == expected) {
+				pendingCrossLevelJobs.remove(human);
+				removed = true;
+			}
+		}
+		if (removed && Logging.logEnabled && !"recalled successfully".equals(reason)) {
+			Logging.logMessage("[CrossLevelJobs] Cleared exact post-transition job settler=" + human.getUniqueID()
+					+ " job=" + (expected.job == null ? "null" : expected.job.getStringID() + "@" + expected.job.getTileX() + "," + expected.job.getTileY())
+					+ " reason=" + reason);
+		}
 	}
 
 	/**
@@ -500,6 +624,10 @@ public final class SettlementCrossLevelJobSystem {
 				if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Ignoring remote jobsLayer entry with mismatched level settler=" + human.getUniqueID() + " expected=" + remoteIdentifier + " job=" + job.getStringID() + " actual=" + (job.getLevel() == null ? "null" : job.getLevel().getIdentifier()));
 				continue;
 			}
+			if (!worker.allowsFindingJobType(job.jobType)) {
+				if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Remote jobsLayer candidate rejected because worker does not allow job type settler=" + human.getUniqueID() + " level=" + remoteType + " job=" + job.getStringID() + " tile=" + job.getTileX() + "," + job.getTileY() + " type=" + job.jobType.getStringID());
+				continue;
+			}
 			if (!job.reservable.isAvailable(human)) continue;
 			if (!job.isWithinRestrictZone(restrictZone)) continue;
 			if (ignoreRecreationJobs && job.jobType.getID() == JobTypeRegistry.recreationID) continue;
@@ -831,6 +959,18 @@ public final class SettlementCrossLevelJobSystem {
 
 	private static final Comparator<Candidate> CANDIDATE_PRIORITY_COMPARATOR = (a, b) -> a.priorityKey.compareTo(b.priorityKey);
 
+	private static final class PendingCrossLevelJob {
+		final AbstractLevelJob job;
+		final LevelIdentifier targetLevel;
+		final SettlementLevelType targetType;
+
+		PendingCrossLevelJob(AbstractLevelJob job, LevelIdentifier targetLevel, SettlementLevelType targetType) {
+			this.job = job;
+			this.targetLevel = targetLevel;
+			this.targetType = targetType;
+		}
+	}
+
 	private static final class Candidate {
 		final FoundJob found;
 		final SettlementLevelType levelType;
@@ -1106,15 +1246,8 @@ public final class SettlementCrossLevelJobSystem {
 
 		@Override
 		protected JobSequence getNewSequence() {
-			JobTypeHandler handler = human.getJobTypeHandler();
-			if (handler != null) {
-				// Bias the immediate post-transition vanilla search back toward the job that
-				// justified the relocation, without reserving/capturing its sequence early.
-				handler.prioritizeNextJobID = selected.found.job.getID();
-				handler.resetPrioritizeNextJobIfFound = true;
-			}
 			LinkedListJobSequence sequence = new LinkedListJobSequence(new StaticMessage("Travelling to work"), false);
-			sequence.add(new RelocationActiveJob(human, selected.found.priority, selected.route, selected.levelType, selected.found.job.getStringID(), selected.found.job.getTileX(), selected.found.job.getTileY()));
+			sequence.add(new RelocationActiveJob(human, selected.found.priority, selected.route, selected.levelType, selected.found.job));
 			return sequence;
 		}
 	}
@@ -1123,18 +1256,14 @@ public final class SettlementCrossLevelJobSystem {
 		final HumanMob human;
 		final SettlementCrossLevelRoute route;
 		final SettlementLevelType targetType;
-		final String selectedJobStringID;
-		final int selectedJobTileX;
-		final int selectedJobTileY;
+		final AbstractLevelJob selectedJob;
 
-		RelocationActiveJob(HumanMob human, JobTypeHandler.TypePriority priority, SettlementCrossLevelRoute route, SettlementLevelType targetType, String selectedJobStringID, int selectedJobTileX, int selectedJobTileY) {
+		RelocationActiveJob(HumanMob human, JobTypeHandler.TypePriority priority, SettlementCrossLevelRoute route, SettlementLevelType targetType, AbstractLevelJob selectedJob) {
 			super(human, priority);
 			this.human = human;
 			this.route = route;
 			this.targetType = targetType;
-			this.selectedJobStringID = selectedJobStringID;
-			this.selectedJobTileX = selectedJobTileX;
-			this.selectedJobTileY = selectedJobTileY;
+			this.selectedJob = selectedJob;
 		}
 
 		@Override
@@ -1210,16 +1339,17 @@ public final class SettlementCrossLevelJobSystem {
 
 			boolean transitioned = SettlementLadderSystem.transitionMob(human, route.ladder, targetType);
 			if (!transitioned) {
-				if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Relocation transition FAILED settler=" + human.getUniqueID() + " targetLevel=" + targetType + " ladder=" + ladderX + "," + ladderY + " selectedJob=" + selectedJobStringID + "@" + selectedJobTileX + "," + selectedJobTileY);
+				if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Relocation transition FAILED settler=" + human.getUniqueID() + " targetLevel=" + targetType + " ladder=" + ladderX + "," + ladderY + " selectedJob=" + (selectedJob == null ? "null" : selectedJob.getStringID() + "@" + selectedJob.getTileX() + "," + selectedJob.getTileY()));
 				return ActiveJobResult.FAILED;
 			}
-			if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Relocation transition completed settler=" + human.getUniqueID() + " targetLevel=" + targetType + " selectedJob=" + selectedJobStringID + "@" + selectedJobTileX + "," + selectedJobTileY);
+			rememberPendingExactJob(human, selectedJob, targetType);
+			if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Relocation transition completed settler=" + human.getUniqueID() + " targetLevel=" + targetType + " selectedJob=" + (selectedJob == null ? "null" : selectedJob.getStringID() + "@" + selectedJob.getTileX() + "," + selectedJob.getTileY()));
 			return ActiveJobResult.FINISHED;
 		}
 
 		@Override
 		public void onCancelled(boolean becauseOfInvalid, boolean isCurrent, boolean isMovingTo) {
-			if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Relocation cancelled settler=" + human.getUniqueID() + " invalid=" + becauseOfInvalid + " moving=" + isMovingTo + " targetLevel=" + targetType + " selectedJob=" + selectedJobStringID + "@" + selectedJobTileX + "," + selectedJobTileY);
+			if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Relocation cancelled settler=" + human.getUniqueID() + " invalid=" + becauseOfInvalid + " moving=" + isMovingTo + " targetLevel=" + targetType + " selectedJob=" + (selectedJob == null ? "null" : selectedJob.getStringID() + "@" + selectedJob.getTileX() + "," + selectedJob.getTileY()));
 		}
 	}
 }

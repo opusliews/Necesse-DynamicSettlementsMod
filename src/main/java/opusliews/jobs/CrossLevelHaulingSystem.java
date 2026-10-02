@@ -17,6 +17,7 @@ import opusliews.multilevelsettlement.SettlementLevelStorageManager;
 import opusliews.multilevelsettlement.SettlementLevelZoneSystem;
 import opusliews.multilevelsettlement.SettlementLadderSystem;
 import opusliews.multilevelsettlement.SettlementMultiLevelSystem;
+import opusliews.stock.SettlementStockSystem;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -65,6 +66,14 @@ public final class CrossLevelHaulingSystem {
 				if (item == null || item.getAmount() <= 0) continue;
 
 				int sourceRemoveAmount = Math.max(0, source.getFilter().getRemoveAmount(source.level, item, sourceRange));
+				int protectedRemoveAmount = SettlementStockSystem.getMaxRemovable(source, item);
+				if (protectedRemoveAmount <= 0) {
+					if (Logging.logEnabled) Logging.logMessage("[CrossLevelHaulingDebug] Skipped protected source item source="
+							+ source.level.getIdentifier() + "@" + source.tileX + "," + source.tileY
+							+ " item=" + item.item.getStringID()
+							+ " amount=" + item.getAmount());
+					continue;
+				}
 				HaulFromLevelJob job = null;
 
 				for (SettlementInventory destination : storages) {
@@ -90,7 +99,9 @@ public final class CrossLevelHaulingSystem {
 					int addAmount = Math.min(filterAmount, Math.min(inventoryAmount, futureAmount));
 					if (addAmount <= 0) continue;
 
-					int transferable = higherPriority ? item.getAmount() : Math.min(item.getAmount(), sourceRemoveAmount);
+					int transferable = higherPriority
+							? Math.min(item.getAmount(), protectedRemoveAmount)
+							: Math.min(item.getAmount(), Math.min(sourceRemoveAmount, protectedRemoveAmount));
 					addAmount = Math.min(addAmount, transferable);
 					if (addAmount <= 0) continue;
 

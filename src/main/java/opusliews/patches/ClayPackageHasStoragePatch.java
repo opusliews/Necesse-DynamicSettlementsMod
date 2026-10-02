@@ -52,7 +52,7 @@ public class ClayPackageHasStoragePatch {
 								storageJob.settlementInventory,
 								(GameObjectReservable)null,
 								false,
-								() -> addItem
+								new ClayPackageDropOffItemSupplier(addItem)
 						),
 						new LocalMessage("activities", "droppingoffinv")
 				).withPerformedLevelJob(foundJob.job);
