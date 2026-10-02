@@ -265,9 +265,8 @@ public final class SettlementStockSystem {
 		if (!(storage instanceof SettlementInventory) || item == null) return item == null ? 0 : item.getAmount();
 		SettlementInventory settlementStorage = (SettlementInventory)storage;
 		if (CraftingInputProtectionSystem.isProtectedInputIngredient(settlementStorage, item)) return 0;
-		int target = getStockTarget(settlementStorage, item.item.getID());
-		if (target <= 0) return item.getAmount();
 
+		int target = getStockTarget(settlementStorage, item.item.getID());
 		int unreserved = countFutureUnreservedItem(storage, item.item.getID());
 		int result = Math.min(item.getAmount(), Math.max(0, unreserved - target));
 		if (Logging.logEnabled) {
@@ -276,6 +275,21 @@ public final class SettlementStockSystem {
 					+ " requested=" + item.getAmount()
 					+ " unreserved=" + unreserved
 					+ " stock=" + target
+					+ " allowed=" + result);
+		}
+		return result;
+	}
+
+	public static int getMaxAutoStockRemovable(LevelStorage storage, InventoryItem item) {
+		if (!(storage instanceof SettlementInventory) || item == null) return item == null ? 0 : item.getAmount();
+		SettlementInventory settlementStorage = (SettlementInventory)storage;
+		int unreserved = countFutureUnreservedItem(storage, item.item.getID());
+		int result = Math.min(item.getAmount(), Math.max(0, unreserved));
+		if (Logging.logEnabled) {
+			Logging.logMessage("[AutoStockSource] chest=" + settlementStorage.tileX + "," + settlementStorage.tileY
+					+ " item=" + item.item.getStringID()
+					+ " requested=" + item.getAmount()
+					+ " unreserved=" + unreserved
 					+ " allowed=" + result);
 		}
 		return result;

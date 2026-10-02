@@ -602,7 +602,7 @@ public final class CraftingAutoStockSystem {
 			for (Map.Entry<Integer, Integer> entry : counts.entrySet()) {
 				Item item = ItemRegistry.getItem(entry.getKey());
 				if (item == null) continue;
-				int removable = SettlementStockSystem.getMaxRemovable(storage, new InventoryItem(item, entry.getValue()));
+				int removable = SettlementStockSystem.getMaxAutoStockRemovable(storage, new InventoryItem(item, entry.getValue()));
 				int available = Math.max(0, removable - state.getReservedSource(storage, item.getID()));
 				if (available > 0) result.add(new SourceCandidate(storage, item, available));
 			}

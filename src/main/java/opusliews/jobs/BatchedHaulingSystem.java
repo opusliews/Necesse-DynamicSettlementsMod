@@ -71,7 +71,7 @@ public final class BatchedHaulingSystem {
 		BatchCapacity capacity = new BatchCapacity(worker);
 		int primaryCapacity = Math.min(
 				capacity.getCanPlanAmount(primary.item),
-				getSourceRemovalLimit(primary, destination.storage)
+				getSourceRemovalLimit(primary, destination)
 		);
 		if (primaryCapacity <= 0) {
 			logPrimaryFailure(primary, worker, "source removal/worker capacity is zero destination=" + describeStorage(destination.storage));
@@ -152,7 +152,7 @@ public final class BatchedHaulingSystem {
 
 			int capacityAmount = Math.min(
 					capacity.getCanPlanAmount(sibling.item),
-					getSourceRemovalLimit(sibling, siblingDestination.storage)
+					getSourceRemovalLimit(sibling, siblingDestination)
 			);
 			if (capacityAmount <= 0) {
 				if (Logging.logEnabled) Logging.logMessage("[BatchedHauling] Candidate rejected after destination match: no worker capacity item="
@@ -221,8 +221,12 @@ public final class BatchedHaulingSystem {
 		return prevent;
 	}
 
-	private static int getSourceRemovalLimit(HaulFromLevelJob job, LevelStorage destination) {
-		if (destination instanceof SettlementRequestInventory) return job.item.getAmount();
+	private static int getSourceRemovalLimit(HaulFromLevelJob job, HaulFromLevelJob.HaulPosition destination) {
+		if (job == null || job.item == null || destination == null) return 0;
+		if (CraftingAutoStockSystem.isAutoStockDestination(destination)) {
+			return SettlementStockSystem.getMaxAutoStockRemovable(job.storage, job.item);
+		}
+		if (destination.storage instanceof SettlementRequestInventory) return job.item.getAmount();
 		return SettlementStockSystem.getMaxRemovable(job.storage, job.item);
 	}
 
@@ -244,7 +248,7 @@ public final class BatchedHaulingSystem {
 
 		for (Object value : job.dropOffPositions) {
 			HaulFromLevelJob.HaulPosition pos = (HaulFromLevelJob.HaulPosition)value;
-			if (getSourceRemovalLimit(job, pos.storage) <= 0) continue;
+			if (getSourceRemovalLimit(job, pos) <= 0) continue;
 			if (!canUseDestination(job, pos, worker)) continue;
 			valid.add(pos);
 		}
