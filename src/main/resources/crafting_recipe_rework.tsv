@@ -307,10 +307,8 @@ factorydoor	fallen	junk:15
 factorywall	fallen	junk:5
 fallenaltar	tungstenworkstation	gatewaytablet:0,tungstenbar:10,glacialbar:10,myceliumbar:10,ancientfossilbar:10
 fallenanvil	fallenanvil	thicktungstenplate:2,anytier1essence:10,upgradeshard:10
-fallencarpentersbench	fallencarpenter	carpentersbench,bone:2,upgradeshard:1
-fallencarpentersbench	fallencarpenter	dsanyplank:4,woodenshaft:4,nail:4,bone:2,upgradeshard:1
+fallencarpentersbench	fallencarpenter	carpentersbench:1,bone:2,upgradeshard:1
 fallenworkstation	fallen	workstationduo:1,upgradeshard:15,alchemyshard:15
-fallenworkstation	fallen	saw:1,dsanyplank:4,woodenshaft:4,nail:4,upgradeshard:15,alchemyshard:15
 farmland	workstation	anylog:5
 feedingtrough	workstation	anylog:20,ironbar:5
 fins	demonic	sharkscales:8
@@ -794,8 +792,7 @@ tungstenaxe	tungstenanvil	tungstenaxehead:1,woodenshaft:1
 tungstenboomerang	tungstenanvil	tungstenshaft:1
 tungstenboots	tungstenanvil	tungstenplate:1,leather:1
 tungstenbow	tungstenanvil	tungstenshaft:1,string:1
-tungstencarpentersbench	tungstencarpenter	carpentersbench,tungstenplate:4
-tungstencarpentersbench	tungstencarpenter	dsanyplank:4,woodenshaft:4,nail:4,tungstenplate:4
+tungstencarpentersbench	tungstencarpenter	carpentersbench:1,tungstenplate:4
 tungstenchestplate	tungstenanvil	tungstenplate:1,leather:1
 tungstendoublestreetlamp	tungstencarpenter	tungstenshaft:1,glass:1,string:1
 tungstengreatbow	tungstenanvil	tungstenshaft:1,string:1,ectoplasm:1
@@ -807,7 +804,6 @@ tungstenspear	tungstenanvil	tungstenshaft:1,woodenshaft:1
 tungstenstreetlamp	tungstencarpenter	tungstenshaft:1,glass:1,string:1
 tungstensword	tungstenanvil	tungstenblade:1,dsanyshaft:1
 tungstenworkstation	tungstenworkstation	workstationduo:1,tungstenplate:4,quartz:4
-tungstenworkstation	tungstenworkstation	saw:1,dsanyplank:4,woodenshaft:4,nail:4,tungstenplate:4,quartz:4
 unlabeledpotion	tungstenanvil	necroticflask:1,sapphire:1,amethyst:1,ruby:1,emerald:1,battlepotion:1,attackspeedpotion:1,fireresistancepotion:1,thornspotion:1
 upgradestation	fallen	upgradeshard:10,alchemyshard:10
 vampiricbanner	fallencarpenter	clothpanel:1,woodenshaft:1,string:1,batwing:1,phantomdust:1

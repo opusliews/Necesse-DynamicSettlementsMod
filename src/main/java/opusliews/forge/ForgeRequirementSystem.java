@@ -61,10 +61,6 @@ public final class ForgeRequirementSystem {
 	}
 
 	public static boolean requiresRunningForge(DynamicCraftingStationObjectEntity station, Recipe recipe) {
-		if (forgeExcluded(recipe)) {
-			return false;
-		}
-
 		return station != null && station.supportsForgeLinks() && requiresRunningForge(recipe);
 	}
 
@@ -77,6 +73,11 @@ public final class ForgeRequirementSystem {
 
 	public static boolean requiresRunningForge(Recipe recipe) {
 		if (recipe == null || isArrowRecipe(recipe)) return false;
+
+		if (forgeExcluded(recipe)) {
+			return false;
+		}
+
 		if (forceForgeRequiredOutputs.contains(recipe.resultStringID)) return true;
 
 		for (Ingredient ingredient : recipe.ingredients) {
