@@ -166,6 +166,8 @@ public class DSItemRegistry {
     public static final String sawBladeStringID = "sawblade";
     public static final String sawStringID = "saw";
     public static final String thickIronPlateStringID = "thickironplate";
+    public static final String thickDemonicPlateStringID = "thickdemonicplate";
+    public static final String thickTungstenPlateStringID = "thicktungstenplate";
     public static final String clayPackageStringID = "claypackage";
 
     public static void registerItems() {
@@ -339,6 +341,8 @@ public class DSItemRegistry {
        registerMaterial(unfiredThickPlateMoldStringID, new FireableMatItem(500, Item.Rarity.NORMAL, thickPlateMoldStringID), 4.0F, null, null, null);
        registerMaterial(thickPlateMoldStringID, new FiredClayMatItem(500, Item.Rarity.NORMAL), 6.0F, null, null, null);
        registerMaterial(thickIronPlateStringID, new MatItem(500, Item.Rarity.NORMAL), 24.0F, null, null, null);
+       registerMaterial(thickDemonicPlateStringID, new MatItem(500, Item.Rarity.NORMAL), 24.0F, null, null, null);
+       registerMaterial(thickTungstenPlateStringID, new MatItem(500, Item.Rarity.NORMAL), 24.0F, null, null, null);
     }
 
     private static void registerGlobalGroups() {

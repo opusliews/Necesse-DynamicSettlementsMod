@@ -17,6 +17,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static opusliews.DSItemRegistry.sawStringID;
+
 public final class ForgeRequirementSystem {
 	public enum Status {
 		NOT_REQUIRED,
@@ -59,7 +61,18 @@ public final class ForgeRequirementSystem {
 	}
 
 	public static boolean requiresRunningForge(DynamicCraftingStationObjectEntity station, Recipe recipe) {
+		if (forgeExcluded(recipe)) {
+			return false;
+		}
+
 		return station != null && station.supportsForgeLinks() && requiresRunningForge(recipe);
+	}
+
+	public static boolean forgeExcluded(Recipe recipe) {
+		if (recipe.resultStringID.equals(sawStringID)) {
+			return true;
+		}
+		return false;
 	}
 
 	public static boolean requiresRunningForge(Recipe recipe) {

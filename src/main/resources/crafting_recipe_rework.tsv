@@ -135,8 +135,8 @@ candle	carpenter	wax:1,string:1,honey:1
 cannonball	tungstenanvil	ironbar:1,handcannon:0
 carapacedagger	tungstenanvil	bonehilt:1,wormcarapace:1
 carapaceshield	tungstenanvil	dsanyplank:1,leather:1,wormcarapace:1
-carpentersbench	carpenter	dsanyplank:1,woodenshaft:4,nail:4
-carpentersbench	workstation	anylog:10,ironbar:5
+carpentersbench	carpenter	dsanyplank:4,woodenshaft:4,nail:4
+carpentersbench	workstation	dsanyplank:4,woodenshaft:4,nail:4
 cartographertable	workstation	anylog:10,mapfragment:2
 causticexecutioner	fallenanvil	spideressence:1,spideritebar:1,spidervenom:1
 chainshirt	demonic	ironbar:10,leather:10
@@ -238,7 +238,7 @@ deepswampstonewall	tungstenworkstation	deepswampstone:5
 delaygate	demonic	ironbar:2,wire:10
 demonchest	carpenter	dsanyplank:4,nail:4,hinge:2
 demonclaw	demonic	demonicbar:5
-demonicanvil	demonicanvil	demonicbar:5
+demonicanvil	demonicanvil	thickdemonicplate:2
 demonicaxe	demonicanvil	demonicaxehead:1,woodenshaft:1
 demonicboots	demonicanvil	demonicplate:1,leather:1,voidshard:1
 demonicbow	demonicanvil	demonicshaft:1,string:1
@@ -248,7 +248,7 @@ demonicpickaxe	demonicanvil	demonicpickaxehead:1,woodenshaft:1
 demonicshovel	demonicanvil	demonicshovelhead:1,woodenshaft:1
 demonicspear	demonicanvil	demonicshaft:1,woodenshaft:1
 demonicsword	demonicanvil	demonicblade:1,dsanyshaft:1
-demonicworkstationduo	demonic	demonicbar:5
+demonicworkstationduo	demonic	saw:1,dsanyplank:4,woodenshaft:4,nail:4,demonicplate:4
 depthscatcher	fallenanvil	shadowessence:1
 desertcandlepedestal	carpenter	wax:1,string:1,honey:1
 diggingclaw	fallen	primordialessence:20
@@ -306,9 +306,11 @@ explorersatchel	demonic	leatherglove:1,trackerboot:1,shinebelt:1
 factorydoor	fallen	junk:15
 factorywall	fallen	junk:5
 fallenaltar	tungstenworkstation	gatewaytablet:0,tungstenbar:10,glacialbar:10,myceliumbar:10,ancientfossilbar:10
-fallenanvil	fallenanvil	anytier1essence:10,upgradeshard:10
-fallencarpentersbench	fallencarpenter	dsanyplank:1,woodenshaft:4,nail:4,bone:2,upgradeshard:1
-fallenworkstation	fallen	upgradeshard:15,alchemyshard:15
+fallenanvil	fallenanvil	thicktungstenplate:2,anytier1essence:10,upgradeshard:10
+fallencarpentersbench	fallencarpenter	carpentersbench,bone:2,upgradeshard:1
+fallencarpentersbench	fallencarpenter	dsanyplank:4,woodenshaft:4,nail:4,bone:2,upgradeshard:1
+fallenworkstation	fallen	workstationduo:1,upgradeshard:15,alchemyshard:15
+fallenworkstation	fallen	saw:1,dsanyplank:4,woodenshaft:4,nail:4,upgradeshard:15,alchemyshard:15
 farmland	workstation	anylog:5
 feedingtrough	workstation	anylog:20,ironbar:5
 fins	demonic	sharkscales:8
@@ -399,7 +401,6 @@ icewall	demonic	snowstone:3,frostshard:1
 iciclestaff	tungstenanvil	dsanyshaft:1,magicfocus:1,glacialshard:1
 ignitionkey	fallenanvil	fuelskull:1,pristinegear:1,radiatedessence:1
 incinerator	workstation	ironbar:10,clay:10
-ironanvil	workstation	ironbar:5
 ironarrow	ironanvil	woodenshaft:1,ironplate:1,feather:1
 ironaxe	ironanvil	ironaxehead:1,woodenshaft:1
 ironboots	ironanvil	ironplate:1,leather:1
@@ -788,12 +789,13 @@ trackerboot	workstation	leather:10,ironbar:2
 trainingdummy	carpenter	anylog:1,wool:1
 transmutationstation	fallen	anytier1essence:10,alchemyshard:10
 travelercloak	demonic	mobilitycloak:1,fins:1
-tungstenanvil	tungstenanvil	tungstenbar:6,quartz:8
+tungstenanvil	tungstenanvil	thicktungstenplate:2,quartz:8
 tungstenaxe	tungstenanvil	tungstenaxehead:1,woodenshaft:1
 tungstenboomerang	tungstenanvil	tungstenshaft:1
 tungstenboots	tungstenanvil	tungstenplate:1,leather:1
 tungstenbow	tungstenanvil	tungstenshaft:1,string:1
-tungstencarpentersbench	tungstencarpenter	dsanyplank:1,woodenshaft:4,nail:4
+tungstencarpentersbench	tungstencarpenter	carpentersbench,tungstenplate:4
+tungstencarpentersbench	tungstencarpenter	dsanyplank:4,woodenshaft:4,nail:4,tungstenplate:4
 tungstenchestplate	tungstenanvil	tungstenplate:1,leather:1
 tungstendoublestreetlamp	tungstencarpenter	tungstenshaft:1,glass:1,string:1
 tungstengreatbow	tungstenanvil	tungstenshaft:1,string:1,ectoplasm:1
@@ -804,7 +806,8 @@ tungstenshovel	tungstenanvil	tungstenshovelhead:1,woodenshaft:1
 tungstenspear	tungstenanvil	tungstenshaft:1,woodenshaft:1
 tungstenstreetlamp	tungstencarpenter	tungstenshaft:1,glass:1,string:1
 tungstensword	tungstenanvil	tungstenblade:1,dsanyshaft:1
-tungstenworkstation	tungstenworkstation	tungstenbar:8,quartz:4
+tungstenworkstation	tungstenworkstation	workstationduo:1,tungstenplate:4,quartz:4
+tungstenworkstation	tungstenworkstation	saw:1,dsanyplank:4,woodenshaft:4,nail:4,tungstenplate:4,quartz:4
 unlabeledpotion	tungstenanvil	necroticflask:1,sapphire:1,amethyst:1,ruby:1,emerald:1,battlepotion:1,attackspeedpotion:1,fireresistancepotion:1,thornspotion:1
 upgradestation	fallen	upgradeshard:10,alchemyshard:10
 vampiricbanner	fallencarpenter	clothpanel:1,woodenshaft:1,string:1,batwing:1,phantomdust:1
@@ -880,7 +883,7 @@ woodsword	ironanvil	woodenblade:1,dsanyshaft:1
 woodsword	workstation	anylog:10
 woodwall	workstation	dsanyplank:2
 woolcarpet	carpenter	wool:1
-workstationduo	workstation	anylog:10
+workstationduo	workstation	saw:1,dsanyplank:4,woodenshaft:4,nail:4
 wrench	demonic	ironbar:10
 xorgate	demonic	copperbar:1,wire:5
 zephyrboots	workstation	leatherdashers:1,zephyrcharm:1

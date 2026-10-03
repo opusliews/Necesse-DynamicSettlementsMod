@@ -52,7 +52,8 @@ public class VanillaRecipeRework {
 					|| "campfire".equals(resultID)
 					|| "roastingstation".equals(resultID)
 					|| "ironanvil".equals(resultID)
-					|| "workstationduo".equals(resultID)) return true;
+					|| "workstationduo".equals(resultID)
+					|| "carpentersbench".equals(resultID)) return true;
 
 			if (recipe.tech == RecipeTechRegistry.NONE) {
 				switch (resultID) {

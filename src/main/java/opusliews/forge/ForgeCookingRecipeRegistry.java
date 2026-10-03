@@ -21,7 +21,7 @@ public final class ForgeCookingRecipeRegistry {
 		registerMoldedToolHeads();
 		registerMoldedBlades();
 		registerSawBlade();
-		registerThickIronPlateRecipes();
+		registerThickPlateRecipes();
 		registerOtherRecipes();
 	}
 
@@ -155,7 +155,7 @@ public final class ForgeCookingRecipeRegistry {
 		}
 	}
 
-	private static void registerThickIronPlateRecipes() {
+	private static void registerThickPlateRecipes() {
 		register(new ForgeCookingRecipe(
 				"thickironplate_from_bars",
 				ForgeCookingInput.consume("ironbar", 4),
@@ -170,6 +170,33 @@ public final class ForgeCookingRecipeRegistry {
 				ForgeCookingInput.consume("ironore", 16),
 				ForgeCookingInput.durabilityUse("thickplatemold"),
 				"thickironplate",
+				1,
+				DEFAULT_PROCESS_TIME
+		));
+
+		register(new ForgeCookingRecipe(
+				"thickdemonicplate_from_bars",
+				ForgeCookingInput.consume("demonicbar", 4),
+				ForgeCookingInput.durabilityUse("thickplatemold"),
+				"thickdemonicplate",
+				1,
+				DEFAULT_PROCESS_TIME
+		));
+
+		register(new ForgeCookingRecipe(
+				"thicktungstenplate_from_bars",
+				ForgeCookingInput.consume("tungstenbar", 4),
+				ForgeCookingInput.durabilityUse("thickplatemold"),
+				"thicktungstenplate",
+				1,
+				DEFAULT_PROCESS_TIME
+		));
+
+		register(new ForgeCookingRecipe(
+				"thicktungstenplate_from_ore",
+				ForgeCookingInput.consume("tungstenore", 16),
+				ForgeCookingInput.durabilityUse("thickplatemold"),
+				"thicktungstenplate",
 				1,
 				DEFAULT_PROCESS_TIME
 		));

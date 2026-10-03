@@ -98,8 +98,8 @@ public class DSRecipeRegistry {
 				ingredient("firemone", 1),
 				ingredient("grass", 1));
 
-		register(sawStringID, 1, CrudeWorkbenchFeature.tech, ingredient(sawBladeStringID, 1), ingredient("dsanyplank", 1));
-		register(sawStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient(sawBladeStringID, 1), ingredient("dsanyplank", 1));
+		register(sawStringID, 1, CrudeAnvilFeature.tech, ingredient(sawBladeStringID, 1), ingredient("dsanyplank", 1));
+		register(sawStringID, 1, RecipeTechRegistry.IRON_ANVIL, ingredient(sawBladeStringID, 1), ingredient("dsanyplank", 1));
 	}
 
 	private static void registerVanillaRecipes() {
