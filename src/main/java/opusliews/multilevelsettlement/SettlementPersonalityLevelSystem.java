@@ -18,7 +18,11 @@ public final class SettlementPersonalityLevelSystem {
 		SettlementBed bed = human.levelSettler.getBed();
 		if (!(bed instanceof SettlementCaveBed)) return;
 		Level level = ((SettlementCaveBed)bed).getBedLevel();
-		if (level != null) levelContext.set(new LevelContext(settlement, level));
+		if (level != null) beginLevelContext(settlement, level);
+	}
+
+	public static void beginLevelContext(ServerSettlementData settlement, Level level) {
+		if (settlement != null && level != null) levelContext.set(new LevelContext(settlement, level));
 	}
 
 	public static void endBedLevelContext() {

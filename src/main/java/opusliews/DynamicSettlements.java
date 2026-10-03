@@ -44,6 +44,7 @@ import opusliews.earlygame.EarlyGameLevelData;
 import opusliews.forms.BlueprintWorkstationContainerForm;
 import opusliews.forms.CrudeWorkbenchContainerForm;
 import opusliews.forge.ForgeCookingRecipeRegistry;
+import opusliews.fishing.FishingAreaLevelData;
 import opusliews.item.*;
 import opusliews.jobs.CharcoalCleanupLevelJob;
 import opusliews.jobs.CharcoalProductionLevelJob;
@@ -56,7 +57,6 @@ import opusliews.mobs.CarpenterHumanMob;
 import opusliews.multilevelsettlement.SettlementLadderLevelData;
 import opusliews.multilevelsettlement.SettlementCaveBedLevelData;
 import opusliews.multilevelsettlement.SettlementLevelManagerLevelData;
-import opusliews.multilevelsettlement.SettlementLevelZoneLevelData;
 import opusliews.multilevelsettlement.SettlementCaveBedSystem;
 import opusliews.multilevelsettlement.SettlementLevelPreferenceSystem;
 import opusliews.network.*;
@@ -69,6 +69,7 @@ import opusliews.story.GuideStoryObjectiveRegistry;
 import opusliews.tile.*;
 import opusliews.torch.CrudeTorchLevelData;
 import opusliews.worldgengating.WorldgenGatingLevelData;
+import opusliews.zones.SettlementIndependentZonesLevelData;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -298,7 +299,8 @@ public class DynamicSettlements {
 		LevelDataRegistry.registerLevelData(SettlementLadderLevelData.managerKey, SettlementLadderLevelData.class);
 		LevelDataRegistry.registerLevelData(SettlementCaveBedLevelData.managerKey, SettlementCaveBedLevelData.class);
 		LevelDataRegistry.registerLevelData(SettlementLevelManagerLevelData.managerKey, SettlementLevelManagerLevelData.class);
-		LevelDataRegistry.registerLevelData(SettlementLevelZoneLevelData.managerKey, SettlementLevelZoneLevelData.class);
+		LevelDataRegistry.registerLevelData(FishingAreaLevelData.managerKey, FishingAreaLevelData.class);
+		LevelDataRegistry.registerLevelData(SettlementIndependentZonesLevelData.managerKey, SettlementIndependentZonesLevelData.class);
 
 		JobTypeRegistry.registerType(
 				"construction",
@@ -428,6 +430,11 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketSettlerLevelPreference.class);
 		PacketRegistry.registerPacket(PacketSettlementBedLevelRequest.class);
 		PacketRegistry.registerPacket(PacketSettlementBedLevelSync.class);
+		PacketRegistry.registerPacket(PacketFishingAreasRequest.class);
+		PacketRegistry.registerPacket(PacketFishingAreasSync.class);
+		PacketRegistry.registerPacket(PacketFishingAreaAction.class);
+		PacketRegistry.registerPacket(PacketSettlementIndependentZonesRequest.class);
+		PacketRegistry.registerPacket(PacketSettlementIndependentZonesSync.class);
 
 		CraftingStationFeature.register();
 		CraftingTasksFeature.register();

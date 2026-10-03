@@ -266,6 +266,13 @@ craftingtaskboard=Crafting Task Board
 openbuilderform=Open Builder Form
 
 [ui]
+settlementassignfishingareas=Assign Fishing Areas
+settlementmanagefishingareas=Manage Fishing Areas
+settlementfishanywhere=Fish Anywhere
+settlementfishingareanew=Create new area
+settlementnofishinganglers=No anglers found
+settlementfishingareaotherlevel=This fishing area belongs to another level. Travel to that level to edit it.
+settlementfishingareadeleteconfirm=Delete fishing area <area>?
 settlementassigncaveaccessladder=Assign Cave Access Ladder
 settlementcaveaccessladdertip=Select a cave access ladder to toggle whether settlers may use it for cross-level travel.
 settlementnotcaveaccessladder=This is not a cave access ladder.

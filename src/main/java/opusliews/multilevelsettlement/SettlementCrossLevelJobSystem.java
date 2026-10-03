@@ -66,6 +66,7 @@ import necesse.level.maps.levelData.settlementData.storage.SettlementStorageReco
 import necesse.level.maps.levelData.settlementData.LevelSettler;
 import opusliews.guard.GuardLevelAssignmentSystem;
 import opusliews.clay.ClayPackageSystem;
+import opusliews.fishing.FishingAreaSystem;
 import opusliews.logging.Logging;
 
 public final class SettlementCrossLevelJobSystem {
@@ -142,6 +143,10 @@ public final class SettlementCrossLevelJobSystem {
 			ZoneTester restrictZone = finder.worker.getJobRestrictZone();
 			if (!job.isWithinRestrictZone(restrictZone)) {
 				clearPendingExactJob(human, pending, "exact job is outside current restrict zone");
+				return null;
+			}
+			if (!FishingAreaSystem.isFishingJobAllowed(human, job)) {
+				clearPendingExactJob(human, pending, "exact fishing job is outside assigned fishing area");
 				return null;
 			}
 			if (ignoreRecreationJobs && job.jobType.getID() == JobTypeRegistry.recreationID) {
@@ -630,6 +635,7 @@ public final class SettlementCrossLevelJobSystem {
 			}
 			if (!job.reservable.isAvailable(human)) continue;
 			if (!job.isWithinRestrictZone(restrictZone)) continue;
+			if (!FishingAreaSystem.isFishingJobAllowed(human, job)) continue;
 			if (ignoreRecreationJobs && job.jobType.getID() == JobTypeRegistry.recreationID) continue;
 
 			FoundJob found;
