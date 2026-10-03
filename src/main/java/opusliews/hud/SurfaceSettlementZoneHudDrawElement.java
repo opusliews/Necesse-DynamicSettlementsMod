@@ -14,10 +14,12 @@ import opusliews.zones.SettlementZoneClientCache;
  */
 public class SurfaceSettlementZoneHudDrawElement extends HudDrawElement {
 	private final HudDrawElement delegate;
+	private final Integer settlementUniqueID;
 	private final int zoneUniqueID;
 
-	public SurfaceSettlementZoneHudDrawElement(HudDrawElement delegate, int zoneUniqueID) {
+	public SurfaceSettlementZoneHudDrawElement(HudDrawElement delegate, Integer settlementUniqueID, int zoneUniqueID) {
 		this.delegate = delegate;
+		this.settlementUniqueID = settlementUniqueID;
 		this.zoneUniqueID = zoneUniqueID;
 	}
 
@@ -25,7 +27,7 @@ public class SurfaceSettlementZoneHudDrawElement extends HudDrawElement {
 	public void addDrawables(List list, GameCamera camera, PlayerMob perspective) {
 		if (delegate == null || perspective == null || perspective.getLevel() == null) return;
 		LevelIdentifier current = perspective.getLevel().getIdentifier();
-		LevelIdentifier owner = SettlementZoneClientCache.findWorkOwner(zoneUniqueID);
+		LevelIdentifier owner = settlementUniqueID == null ? null : SettlementZoneClientCache.getWorkOwner(settlementUniqueID, zoneUniqueID);
 		if (owner == null) {
 			if (!current.isSurface()) return;
 		}

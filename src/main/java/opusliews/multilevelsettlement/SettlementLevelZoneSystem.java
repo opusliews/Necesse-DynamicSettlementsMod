@@ -46,6 +46,11 @@ public final class SettlementLevelZoneSystem {
 		if (settlement == null || levelIdentifier == null || restrictUniqueID == 0) return restrictUniqueID == 0;
 		SettlementLevelDomain domain = SettlementMultiLevelSystem.get(settlement);
 		if (domain == null || !domain.containsLevel(levelIdentifier)) return false;
+
+		LevelIdentifier owner = SettlementIndependentZoneSystem.getRestrictZoneLevel(settlement, restrictUniqueID);
+		if (owner == null) return false;
+		if (!owner.equals(levelIdentifier)) return true;
+
 		return SettlementIndependentZoneSystem.isTileInRestriction(settlement, restrictUniqueID, levelIdentifier, tileX, tileY);
 	}
 
