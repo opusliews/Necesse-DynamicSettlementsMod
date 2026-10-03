@@ -135,8 +135,8 @@ candle	carpenter	wax:1,string:1,honey:1
 cannonball	tungstenanvil	ironbar:1,handcannon:0
 carapacedagger	tungstenanvil	bonehilt:1,wormcarapace:1
 carapaceshield	tungstenanvil	dsanyplank:1,leather:1,wormcarapace:1
-carpentersbench	carpenter	dsanyplank:4,woodenshaft:4,nail:4
-carpentersbench	workstation	dsanyplank:4,woodenshaft:4,nail:4
+carpentersbench	carpenter	saw:1,dsanyplank:4,woodenshaft:4,nail:4
+carpentersbench	workstation	saw:1,dsanyplank:4,woodenshaft:4,nail:4
 cartographertable	workstation	anylog:10,mapfragment:2
 causticexecutioner	fallenanvil	spideressence:1,spideritebar:1,spidervenom:1
 chainshirt	demonic	ironbar:10,leather:10
@@ -248,7 +248,7 @@ demonicpickaxe	demonicanvil	demonicpickaxehead:1,woodenshaft:1
 demonicshovel	demonicanvil	demonicshovelhead:1,woodenshaft:1
 demonicspear	demonicanvil	demonicshaft:1,woodenshaft:1
 demonicsword	demonicanvil	demonicblade:1,dsanyshaft:1
-demonicworkstationduo	demonic	saw:1,dsanyplank:4,woodenshaft:4,nail:4,demonicplate:4
+demonicworkstationduo	demonic	workstationduo:1,demonicplate:4
 depthscatcher	fallenanvil	shadowessence:1
 desertcandlepedestal	carpenter	wax:1,string:1,honey:1
 diggingclaw	fallen	primordialessence:20

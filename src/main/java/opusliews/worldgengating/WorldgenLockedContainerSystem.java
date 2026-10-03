@@ -1,6 +1,5 @@
 package opusliews.worldgengating;
 
-import java.util.ArrayList;
 import necesse.engine.localization.Localization;
 import necesse.engine.network.client.Client;
 import necesse.engine.network.gameNetworkData.GNDItem;
@@ -10,9 +9,9 @@ import necesse.engine.registries.ItemRegistry;
 import necesse.engine.registries.JournalChallengeRegistry;
 import necesse.engine.sound.SoundEffect;
 import necesse.engine.sound.SoundManager;
+import necesse.entity.mobs.PlayerMob;
 import necesse.entity.objectEntity.ObjectEntity;
 import necesse.entity.objectEntity.interfaces.OEInventory;
-import necesse.entity.mobs.PlayerMob;
 import necesse.gfx.GameResources;
 import necesse.gfx.gameTooltips.GameTooltipManager;
 import necesse.gfx.gameTooltips.ListGameTooltips;
@@ -21,13 +20,14 @@ import necesse.gfx.gameTooltips.TooltipLocation;
 import necesse.inventory.Inventory;
 import necesse.inventory.InventoryItem;
 import necesse.inventory.PlayerInventorySlot;
-import necesse.inventory.item.Item;
 import necesse.level.gameObject.GameObject;
 import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
 import necesse.level.maps.hudManager.floatText.ChatBubbleText;
 import opusliews.journal.GuideJournalRegistry;
 import opusliews.logging.Logging;
+
+import java.util.ArrayList;
 
 public final class WorldgenLockedContainerSystem {
 	public static final String discoveryChallengeStringID = "ds_lockedcontainers_discovered";
