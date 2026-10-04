@@ -1,9 +1,13 @@
 package opusliews.stock;
 
 import necesse.engine.localization.message.LocalMessage;
+import necesse.engine.save.LoadData;
+import necesse.engine.save.SaveData;
+import necesse.engine.window.WindowManager;
 import necesse.engine.registries.ItemRegistry;
 import necesse.gfx.forms.Form;
 import necesse.gfx.forms.components.FormInputSize;
+import necesse.gfx.forms.components.FormContentIconButton;
 import necesse.gfx.forms.components.FormTextInput;
 import necesse.gfx.forms.components.localComponents.FormLocalTextButton;
 import necesse.gfx.forms.presets.ItemCategoriesFilterForm;
@@ -26,6 +30,8 @@ public final class SettlementStockUI {
 	private static final int inputWidth = 106;
 	private static final int columnGap = 4;
 	private static final int rightPadding = 20;
+	private static final String clipboardStockKey = "dynamicStockClipboard";
+	private static final String clipboardStockEntryKey = "item";
 	private static final WeakHashMap<SettlementStorageConfigForm, FormState> forms = new WeakHashMap<>();
 	private static final WeakHashMap<Form, Integer> advancedRowWidths = new WeakHashMap<>();
 
@@ -81,19 +87,27 @@ public final class SettlementStockUI {
 		}
 	}
 
-	private static int getRequiredMax(ItemCategoriesFilter.ItemLimitMode mode, Map<Integer, Integer> targets) {
+	private static int getRequiredMax(ItemCategoriesFilter filter, Map<Integer, Integer> targets) {
 		long value = 0;
-		switch (mode) {
+		switch (filter.limitMode) {
 			case TOTAL_ITEMS:
-				for (int stock : targets.values()) value += Math.max(0, stock);
+				for (Map.Entry<Integer, Integer> entry : targets.entrySet()) {
+					Item item = ItemRegistry.getItem(entry.getKey());
+					if (item == null || !filter.isItemAllowed(item)) continue;
+					value += Math.max(0, entry.getValue());
+				}
 				break;
 			case TOTAL_EACH_ITEM:
-				for (int stock : targets.values()) value = Math.max(value, Math.max(0, stock));
+				for (Map.Entry<Integer, Integer> entry : targets.entrySet()) {
+					Item item = ItemRegistry.getItem(entry.getKey());
+					if (item == null || !filter.isItemAllowed(item)) continue;
+					value = Math.max(value, Math.max(0, entry.getValue()));
+				}
 				break;
 			case TOTAL_STACKS:
 				for (Map.Entry<Integer, Integer> entry : targets.entrySet()) {
 					Item item = ItemRegistry.getItem(entry.getKey());
-					if (item == null) continue;
+					if (item == null || !filter.isItemAllowed(item)) continue;
 					int stackSize = Math.max(1, item.getStackSize());
 					value += (Math.max(0, entry.getValue()) + stackSize - 1L) / stackSize;
 				}
@@ -101,7 +115,7 @@ public final class SettlementStockUI {
 			case TOTAL_STACKS_EACH_ITEM:
 				for (Map.Entry<Integer, Integer> entry : targets.entrySet()) {
 					Item item = ItemRegistry.getItem(entry.getKey());
-					if (item == null) continue;
+					if (item == null || !filter.isItemAllowed(item)) continue;
 					int stackSize = Math.max(1, item.getStackSize());
 					long stacks = (Math.max(0, entry.getValue()) + stackSize - 1L) / stackSize;
 					value = Math.max(value, stacks);
@@ -142,11 +156,143 @@ public final class SettlementStockUI {
 						refreshVisibility();
 					});
 				}
+				installClipboardHooks(mainForm);
 				addItemControls();
 				refreshVisibility();
 			} catch (Exception exception) {
 				Logging.logMessage("[StockUI] attach failed: " + exception.getClass().getName() + ": " + exception.getMessage());
 				exception.printStackTrace();
+			}
+		}
+
+		private void installClipboardHooks(Form mainForm) {
+			if (mainForm == null) return;
+
+			try {
+				FormContentIconButton pasteButton = (FormContentIconButton)getFieldValue(form, "pasteButton");
+				FormContentIconButton copyButton = findCopyButton(mainForm, pasteButton);
+				if (copyButton == null || pasteButton == null) {
+					Logging.logMessage("[StockUI] Could not extend storage clipboard buttons tile=" + form.tile.x + "," + form.tile.y
+							+ " copy=" + (copyButton != null) + " paste=" + (pasteButton != null));
+					return;
+				}
+
+				copyButton.onClicked(event -> copyExtendedConfig());
+				pasteButton.onClicked(event -> pasteStockConfig());
+				if (Logging.logEnabled) Logging.logMessage("[StockUI] Extended storage Copy/Paste with stock settings tile=" + form.tile.x + "," + form.tile.y);
+			} catch (Exception exception) {
+				Logging.logMessage("[StockUI] Failed to extend storage Copy/Paste tile=" + form.tile.x + "," + form.tile.y
+						+ " error=" + exception.getClass().getName() + ": " + exception.getMessage());
+			}
+		}
+
+		private FormContentIconButton findCopyButton(Form mainForm, FormContentIconButton pasteButton) {
+			if (mainForm == null || pasteButton == null) return null;
+			int expectedX = pasteButton.getX() - 28;
+			int expectedY = pasteButton.getY();
+
+			for (Object componentObject : mainForm.getComponentList()) {
+				if (!(componentObject instanceof FormContentIconButton)) continue;
+				FormContentIconButton button = (FormContentIconButton)componentObject;
+				if (button.getX() == expectedX && button.getY() == expectedY) return button;
+			}
+			return null;
+		}
+
+		private void copyExtendedConfig() {
+			try {
+				SaveData save = new SaveData("config");
+				save.addInt("priority", (Integer)form.prioritySelect.getSelected());
+
+				SaveData filterSave = new SaveData("filter");
+				form.filter.addSaveData(filterSave);
+				save.addSaveData(filterSave);
+
+				SaveData stockSave = new SaveData(clipboardStockKey);
+				stockSave.addInt("version", 2);
+				for (Map.Entry<Integer, Integer> entry : targets.entrySet()) {
+					Item item = ItemRegistry.getItem(entry.getKey());
+					int stock = entry.getValue() == null ? 0 : Math.max(0, entry.getValue());
+					if (item == null || stock <= 0) continue;
+
+					SaveData itemSave = new SaveData(clipboardStockEntryKey);
+					itemSave.addItemStringID("id", item.getStringID());
+					itemSave.addInt("stock", stock);
+					itemSave.addBoolean("allowed", form.filter.isItemAllowed(item));
+					stockSave.addSaveData(itemSave);
+				}
+				save.addSaveData(stockSave);
+
+				WindowManager.getWindow().putClipboard(save.getScript());
+				if (Logging.logEnabled) Logging.logMessage("[StockUI] Copied storage config with stock settings tile=" + form.tile.x + "," + form.tile.y
+						+ " stockTargets=" + targets.size());
+			} catch (Exception exception) {
+				Logging.logMessage("[StockUI] Failed copying stock settings tile=" + form.tile.x + "," + form.tile.y
+						+ " error=" + exception.getClass().getName() + ": " + exception.getMessage());
+			}
+		}
+
+		private void pasteStockConfig() {
+			try {
+				String clipboard = WindowManager.getWindow().getClipboard();
+				if (clipboard == null || clipboard.isEmpty()) return;
+
+				LoadData root = new LoadData(clipboard);
+				LoadData stockData = root.getFirstLoadDataByName(clipboardStockKey);
+				if (stockData == null) {
+					if (Logging.logEnabled) Logging.logMessage("[StockUI] Pasted legacy storage config without stock settings tile=" + form.tile.x + "," + form.tile.y);
+					return;
+				}
+
+				int clipboardVersion = stockData.getInt("version", 1, false);
+				LinkedHashMap<Integer, Integer> nextTargets = new LinkedHashMap<>();
+				LinkedHashMap<Integer, Boolean> copiedAllowedStates = new LinkedHashMap<>();
+				for (Object dataObject : stockData.getLoadDataByName(clipboardStockEntryKey)) {
+					LoadData itemData = (LoadData)dataObject;
+					String stringID = itemData.getItemStringID("id", null, false);
+					Item item = stringID == null ? null : ItemRegistry.getItem(stringID);
+					if (item == null) continue;
+					int stock = Math.max(0, itemData.getInt("stock", 0, false));
+					if (stock > 0) nextTargets.put(item.getID(), stock);
+					if (clipboardVersion >= 2) copiedAllowedStates.put(item.getID(), itemData.getBoolean("allowed", true, false));
+				}
+
+				LinkedHashMap<Integer, Integer> previousTargets = new LinkedHashMap<>(targets);
+				LinkedHashMap<Integer, Boolean> changedItemIDs = new LinkedHashMap<>();
+				for (int itemID : previousTargets.keySet()) changedItemIDs.put(itemID, true);
+				for (int itemID : nextTargets.keySet()) changedItemIDs.put(itemID, true);
+
+				setTargets(nextTargets);
+
+				for (Map.Entry<Integer, Boolean> entry : copiedAllowedStates.entrySet()) {
+					Item item = ItemRegistry.getItem(entry.getKey());
+					if (item == null) continue;
+					boolean allowed = entry.getValue();
+
+					form.filter.setItemAllowed(item, allowed);
+					form.filterForm.updateButton(item.getID());
+					form.onItemsChanged(new Item[]{item}, allowed);
+					if (Logging.logEnabled) Logging.logMessage("[StockUI] Forced copied stock allowed state item="
+							+ item.getStringID() + " allowed=" + allowed + " tile=" + form.tile.x + "," + form.tile.y);
+				}
+
+				for (int itemID : changedItemIDs.keySet()) {
+					int previous = Math.max(0, previousTargets.getOrDefault(itemID, 0));
+					int next = Math.max(0, nextTargets.getOrDefault(itemID, 0));
+					if (previous == next) continue;
+					form.client.network.sendPacket(new PacketSettlementStockUpdate(
+							form.tile.x,
+							form.tile.y,
+							itemID,
+							next
+					));
+				}
+
+				if (Logging.logEnabled) Logging.logMessage("[StockUI] Pasted storage config stock settings tile=" + form.tile.x + "," + form.tile.y
+						+ " previousTargets=" + previousTargets.size() + " nextTargets=" + nextTargets.size());
+			} catch (Exception exception) {
+				Logging.logMessage("[StockUI] Failed pasting stock settings tile=" + form.tile.x + "," + form.tile.y
+						+ " error=" + exception.getClass().getName() + ": " + exception.getMessage());
 			}
 		}
 
@@ -319,7 +465,7 @@ public final class SettlementStockUI {
 
 		private void enforceLocalMax() {
 			if (form.limitInput.isTyping() || form.filter.maxAmount == Integer.MAX_VALUE) return;
-			int required = getRequiredMax(form.filter.limitMode, targets);
+			int required = getRequiredMax(form.filter, targets);
 			if (required <= 0 || form.filter.maxAmount >= required) return;
 			form.filter.maxAmount = required;
 			form.updateLimitInput();

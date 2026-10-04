@@ -8,7 +8,6 @@ import necesse.engine.network.server.Server;
 import necesse.engine.network.server.ServerClient;
 import necesse.engine.registries.ItemRegistry;
 import necesse.inventory.container.settlement.SettlementDependantContainer;
-import necesse.inventory.container.settlement.events.SettlementStorageChangeAllowedEvent;
 import necesse.inventory.item.Item;
 import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import necesse.level.maps.levelData.settlementData.SettlementInventory;
@@ -55,18 +54,9 @@ public class PacketSettlementStockUpdate extends Packet {
 
 		SettlementStockSystem.setStockTarget(storage, itemID, stock);
 		if (stock > 0) GuideProgressionSystem.onStockTargetCreated(client);
-		if (stock > 0 && !storage.filter.isItemAllowed(item)) {
-			storage.filter.setItemAllowed(item, true);
-			new SettlementStorageChangeAllowedEvent(
-					settlement,
-					tileX,
-					tileY,
-					new Item[]{item},
-					true
-			).applyAndSendToClientsAt(storage.level);
-		}
-		SettlementStockSystem.enforceConfiguredMax(settlement, storage, true);
+
 		SettlementLevelStorageManager.persistStorageConfig(settlement, storage);
+		SettlementStockSystem.enforceConfiguredMax(settlement, storage, true);
 		server.network.sendToClientsAtEntireLevel(
 				new PacketSettlementStockSync(tileX, tileY, SettlementStockSystem.getTargets(storage)),
 				storage.level

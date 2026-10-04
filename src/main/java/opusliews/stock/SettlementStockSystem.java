@@ -62,6 +62,13 @@ public final class SettlementStockSystem {
 		return state == null ? 0 : Math.max(0, state.targets.getOrDefault(itemID, 0));
 	}
 
+	private static int getEnabledStockTarget(SettlementInventory storage, int itemID) {
+		if (storage == null) return 0;
+		Item item = ItemRegistry.getItem(itemID);
+		if (item == null || !storage.filter.isItemAllowed(item)) return 0;
+		return getStockTarget(storage, itemID);
+	}
+
 	public static synchronized boolean hasAnyStock(SettlementInventory storage) {
 		StorageState state = getState(storage);
 		return state != null && state.targets.values().stream().anyMatch(value -> value != null && value > 0);
@@ -104,7 +111,7 @@ public final class SettlementStockSystem {
 		if (!isStockDestination(position)) return item.getAmount();
 		SettlementInventory storage = (SettlementInventory)position.storage;
 		int itemID = item.item.getID();
-		int target = getStockTarget(storage, itemID);
+		int target = getEnabledStockTarget(storage, itemID);
 		if (target <= 0 || !isRestocking(storage, itemID)) return 0;
 
 		storage.canAddFutureDropOff(item);
@@ -165,15 +172,23 @@ public final class SettlementStockSystem {
 		long value = 0;
 		switch (storage.filter.limitMode) {
 			case TOTAL_ITEMS:
-				for (int stock : state.targets.values()) value += Math.max(0, stock);
+				for (Map.Entry<Integer, Integer> entry : state.targets.entrySet()) {
+					Item item = ItemRegistry.getItem(entry.getKey());
+					if (item == null || !storage.filter.isItemAllowed(item)) continue;
+					value += Math.max(0, entry.getValue());
+				}
 				break;
 			case TOTAL_EACH_ITEM:
-				for (int stock : state.targets.values()) value = Math.max(value, Math.max(0, stock));
+				for (Map.Entry<Integer, Integer> entry : state.targets.entrySet()) {
+					Item item = ItemRegistry.getItem(entry.getKey());
+					if (item == null || !storage.filter.isItemAllowed(item)) continue;
+					value = Math.max(value, Math.max(0, entry.getValue()));
+				}
 				break;
 			case TOTAL_STACKS:
 				for (Map.Entry<Integer, Integer> entry : state.targets.entrySet()) {
 					Item item = ItemRegistry.getItem(entry.getKey());
-					if (item == null) continue;
+					if (item == null || !storage.filter.isItemAllowed(item)) continue;
 					int stackSize = Math.max(1, item.getStackSize());
 					value += (Math.max(0, entry.getValue()) + stackSize - 1L) / stackSize;
 				}
@@ -181,7 +196,7 @@ public final class SettlementStockSystem {
 			case TOTAL_STACKS_EACH_ITEM:
 				for (Map.Entry<Integer, Integer> entry : state.targets.entrySet()) {
 					Item item = ItemRegistry.getItem(entry.getKey());
-					if (item == null) continue;
+					if (item == null || !storage.filter.isItemAllowed(item)) continue;
 					int stackSize = Math.max(1, item.getStackSize());
 					long stacks = (Math.max(0, entry.getValue()) + stackSize - 1L) / stackSize;
 					value = Math.max(value, stacks);
@@ -241,7 +256,7 @@ public final class SettlementStockSystem {
 		if (storage == null) return vanillaAmount;
 
 		int itemID = item.item.getID();
-		int target = getStockTarget(storage, itemID);
+		int target = getEnabledStockTarget(storage, itemID);
 		if (target <= 0) return vanillaAmount;
 
 		int simulatedCount = countItem(range, itemID, Integer.MAX_VALUE);
@@ -266,7 +281,7 @@ public final class SettlementStockSystem {
 		SettlementInventory settlementStorage = (SettlementInventory)storage;
 		if (CraftingInputProtectionSystem.isProtectedInputIngredient(settlementStorage, item)) return 0;
 
-		int target = getStockTarget(settlementStorage, item.item.getID());
+		int target = getEnabledStockTarget(settlementStorage, item.item.getID());
 		int unreserved = countFutureUnreservedItem(storage, item.item.getID());
 		int result = Math.min(item.getAmount(), Math.max(0, unreserved - target));
 		if (Logging.logEnabled) {
@@ -307,7 +322,6 @@ public final class SettlementStockSystem {
 
 		for (SettlementInventory storage : storages) {
 			getState(storage);
-			ensureStockedItemsAllowed(settlement, storage);
 			enforceConfiguredMax(settlement, storage, true);
 		}
 
@@ -325,7 +339,7 @@ public final class SettlementStockSystem {
 				int itemID = targetEntry.getKey();
 				int stock = Math.max(0, targetEntry.getValue());
 				Item item = ItemRegistry.getItem(itemID);
-				if (item == null || stock <= 0) continue;
+				if (item == null || stock <= 0 || !destination.filter.isItemAllowed(item)) continue;
 
 				int physicalCount = countItem(destinationRange, itemID, Integer.MAX_VALUE);
 				int threshold = getRestockThreshold(stock);
@@ -489,7 +503,7 @@ public final class SettlementStockSystem {
 				entry.setValue(0);
 				continue;
 			}
-			int protectedAmount = getStockTarget(entry.getKey(), itemID);
+			int protectedAmount = getEnabledStockTarget(entry.getKey(), itemID);
 			entry.setValue(Math.max(0, entry.getValue() - protectedAmount));
 		}
 
@@ -523,23 +537,6 @@ public final class SettlementStockSystem {
 			}
 		}
 		return false;
-	}
-
-	private static void ensureStockedItemsAllowed(ServerSettlementData settlement, SettlementInventory storage) {
-		StorageState state = getState(storage);
-		for (Map.Entry<Integer, Integer> entry : new ArrayList<>(state.targets.entrySet())) {
-			if (entry.getValue() == null || entry.getValue() <= 0) continue;
-			Item item = ItemRegistry.getItem(entry.getKey());
-			if (item == null || storage.filter.isItemAllowed(item)) continue;
-			storage.filter.setItemAllowed(item, true);
-			new SettlementStorageChangeAllowedEvent(
-					settlement,
-					storage.tileX,
-					storage.tileY,
-					new Item[]{item},
-					true
-			).applyAndSendToClientsAt(storage.level);
-		}
 	}
 
 
