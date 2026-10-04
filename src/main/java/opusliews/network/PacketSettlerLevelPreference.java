@@ -8,12 +8,9 @@ import necesse.engine.network.client.Client;
 import necesse.engine.network.server.Server;
 import necesse.engine.network.server.ServerClient;
 import necesse.engine.util.GameUtils;
-import necesse.engine.world.worldData.SettlementsWorldData;
 import necesse.entity.mobs.Mob;
-import necesse.entity.mobs.friendly.human.GuardHumanMob;
 import necesse.entity.mobs.friendly.human.HumanMob;
 import necesse.level.maps.Level;
-import necesse.level.maps.levelData.settlementData.CachedSettlementData;
 import opusliews.logging.Logging;
 import opusliews.multilevelsettlement.SettlementLevelPreference;
 import opusliews.multilevelsettlement.SettlementLevelPreferenceSystem;
@@ -39,29 +36,10 @@ public class PacketSettlerLevelPreference extends Packet {
 
 	@Override
 	public void processServer(NetworkPacket packet, Server server, ServerClient client) {
-		Level level = client.getLevel();
-		if (level == null) return;
-		Mob mob = GameUtils.getLevelMob(mobUniqueID, level);
-		if (!(mob instanceof HumanMob)) {
-			if (Logging.logEnabled) Logging.logMessage("[LevelPreference] Rejected update because mob was not a HumanMob mob=" + mobUniqueID);
-			return;
+		if (Logging.logEnabled) {
+			Logging.logMessage("[LevelPreference] Rejected client preference update because level preferences are generated traits mob="
+					+ mobUniqueID + " requestedPreference=" + preference);
 		}
-		HumanMob human = (HumanMob)mob;
-		if (human instanceof GuardHumanMob) {
-			if (Logging.logEnabled) Logging.logMessage("[LevelPreference] Rejected update because guards use Guard Level instead mob=" + mobUniqueID);
-			return;
-		}
-		if (!human.isSettlerOnCurrentLevel() || human.adventureParty.isInAdventureParty()) {
-			if (Logging.logEnabled) Logging.logMessage("[LevelPreference] Rejected update because settler is unavailable mob=" + mobUniqueID);
-			return;
-		}
-		CachedSettlementData cached = SettlementsWorldData.getSettlementsData(server).getCachedData(human.getSettlementUniqueID());
-		if (cached == null || !cached.hasAccess(client)) {
-			if (Logging.logEnabled) Logging.logMessage("[LevelPreference] Rejected update because player lacks settlement access mob=" + mobUniqueID);
-			return;
-		}
-		SettlementLevelPreferenceSystem.setPreference(human, preference);
-		server.network.sendToClientsWithEntity(new PacketSettlerLevelPreference(mobUniqueID, preference), human);
 	}
 
 	@Override

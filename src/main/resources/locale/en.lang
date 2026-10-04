@@ -50,6 +50,7 @@ buildertip=test string
 carpentertip=Carpenters can handle crafting tasks at the carpentry bench
 strandedfromsurface=I cannot reach my bed on the surface
 strandedfromcave=I cannot reach my bed underground
+surfacelevelpreference=I enjoy living on the surface
 cavelevelpreference=I enjoy living underground
 
 [item]
@@ -310,6 +311,10 @@ guardlevelcave=Guard Level: Caves
 levelpreferenceauto=Level preference: Automatic
 levelpreferencesurface=Level preference: Surface
 levelpreferencecave=Level preference: Underground
+levelpreferencesurfacetrait=Surface Preference
+levelpreferencesurfacetip=This settler likes the sky and open spaces\nand would prefer to live on the surface.
+levelpreferencecavetrait=Cave Preference
+levelpreferencecavetip=This settler finds cramped spaces cozy\nand would very much love to live underground.
 fatiguedmgout=Damage dealt: -<penalty>%
 fatiguemovespeed=Movement speed: -<penalty>%
 fatiguedmgin=Damage taken: +<penalty>%

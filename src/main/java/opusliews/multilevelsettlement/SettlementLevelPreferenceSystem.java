@@ -21,8 +21,9 @@ import java.util.WeakHashMap;
  * otherwise comparable work exists on more than one settlement level.
  */
 public final class SettlementLevelPreferenceSystem {
+	public static final String surfaceResidenceThoughtStringID = "dssurfacelevelpreference";
 	public static final String caveResidenceThoughtStringID = "dscavelevelpreference";
-	public static final int caveResidenceHappinessModifier = 15;
+	public static final int preferredResidenceHappinessModifier = 20;
 	private static final Map<HumanMob, SettlementLevelPreference> preferences = Collections.synchronizedMap(new WeakHashMap<>());
 	private static final Map<HumanMob, Boolean> initializedPreferences = Collections.synchronizedMap(new WeakHashMap<>());
 
@@ -30,8 +31,10 @@ public final class SettlementLevelPreferenceSystem {
 	}
 
 	public static void registerThought() {
+		SettlerThoughtRegistry.registerSettlerThought(surfaceResidenceThoughtStringID,
+				new necesse.level.maps.levelData.settlementData.settler.thoughts.SimpleSettlerThought("settlement", "surfacelevelpreference", preferredResidenceHappinessModifier));
 		SettlerThoughtRegistry.registerSettlerThought(caveResidenceThoughtStringID,
-				new necesse.level.maps.levelData.settlementData.settler.thoughts.SimpleSettlerThought("settlement", "cavelevelpreference", caveResidenceHappinessModifier));
+				new necesse.level.maps.levelData.settlementData.settler.thoughts.SimpleSettlerThought("settlement", "cavelevelpreference", preferredResidenceHappinessModifier));
 	}
 
 	public static SettlementLevelPreference getPreference(HumanMob human) {
@@ -70,8 +73,10 @@ public final class SettlementLevelPreferenceSystem {
 	}
 
 	public static SettlementLevelPreference getGeneratedPreference(int settlerSeed) {
-		int index = new necesse.engine.util.GameRandom((long)settlerSeed).nextInt(SettlementLevelPreference.values().length);
-		return SettlementLevelPreference.values()[index];
+		int roll = new necesse.engine.util.GameRandom((long)settlerSeed).nextInt(100);
+		if (roll < 40) return SettlementLevelPreference.AUTO;
+		if (roll < 70) return SettlementLevelPreference.SURFACE;
+		return SettlementLevelPreference.CAVE;
 	}
 
 	public static boolean isPreferredJobLevel(HumanMob human, LevelIdentifier targetLevel) {
@@ -92,16 +97,28 @@ public final class SettlementLevelPreferenceSystem {
 	}
 
 	public static String getHappinessThoughtStringID(HumanMob human) {
-		if (human == null || human instanceof GuardHumanMob || !human.isSettler() || getPreference(human) != SettlementLevelPreference.CAVE) return null;
+		if (human == null || human instanceof GuardHumanMob || !human.isSettler()) return null;
+		SettlementLevelPreference preference = getPreference(human);
+		if (preference == SettlementLevelPreference.AUTO) return null;
+
 		ServerSettlementData settlement = human.getSettlerSettlementServerData();
 		if (settlement == null) return null;
 		LevelSettler settler = settlement.getSettler(human.getUniqueID());
 		if (settler == null) return null;
 		SettlementBed bed = settler.getBed();
 		if (bed == null) return null;
+
 		LevelIdentifier bedLevel = SettlementCaveBedSystem.getBedLevelIdentifier(settler, bed);
 		SettlementLevelDomain domain = SettlementMultiLevelSystem.get(settlement);
 		if (bedLevel == null || domain == null) return null;
-		return domain.getLevelType(bedLevel) == SettlementLevelType.CAVE ? caveResidenceThoughtStringID : null;
+
+		SettlementLevelType bedLevelType = domain.getLevelType(bedLevel);
+		if (preference == SettlementLevelPreference.SURFACE && bedLevelType == SettlementLevelType.SURFACE) {
+			return surfaceResidenceThoughtStringID;
+		}
+		if (preference == SettlementLevelPreference.CAVE && bedLevelType == SettlementLevelType.CAVE) {
+			return caveResidenceThoughtStringID;
+		}
+		return null;
 	}
 }

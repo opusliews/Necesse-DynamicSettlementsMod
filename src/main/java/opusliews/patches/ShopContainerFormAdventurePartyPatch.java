@@ -11,12 +11,9 @@ import opusliews.guard.GuardDutySystem;
 import opusliews.guard.GuardLevelAssignment;
 import opusliews.guard.GuardLevelAssignmentSystem;
 import opusliews.mobs.BuilderHumanMob;
-import opusliews.multilevelsettlement.SettlementLevelPreference;
-import opusliews.multilevelsettlement.SettlementLevelPreferenceSystem;
 import opusliews.network.PacketBuilderRoadRepairToggle;
 import opusliews.network.PacketGuardDutyToggle;
 import opusliews.network.PacketGuardLevelAssignment;
-import opusliews.network.PacketSettlerLevelPreference;
 
 @ModMethodPatch(
 		target = ShopContainerForm.class,
@@ -26,29 +23,9 @@ import opusliews.network.PacketSettlerLevelPreference;
 public class ShopContainerFormAdventurePartyPatch {
 	@Advice.OnMethodEnter(skipOn = Advice.OnNonDefaultValue.class)
 	static boolean onEnter(@Advice.This ShopContainerForm form) {
-		addLevelPreferenceOption(form);
 		addGuardDutyOption(form);
 		addGuardLevelOption(form);
 		return handleBuilderAdventurePartyOptions(form);
-	}
-
-	public static void addLevelPreferenceOption(ShopContainerForm form) {
-		ShopContainer container = (ShopContainer)form.getContainer();
-		if (!container.hasSettlerAccess || container.isInYourAdventureParty || container.isSettlerOutsideSettlement) return;
-		if (!(container.humanShop instanceof necesse.entity.mobs.friendly.human.HumanMob)) return;
-		if (container.humanShop instanceof GuardHumanMob) return;
-
-		necesse.entity.mobs.friendly.human.HumanMob human = container.humanShop;
-		SettlementLevelPreference preference = SettlementLevelPreferenceSystem.getPreference(human);
-		String key = preference == SettlementLevelPreference.SURFACE ? "levelpreferencesurface"
-				: preference == SettlementLevelPreference.CAVE ? "levelpreferencecave"
-				: "levelpreferenceauto";
-		form.dialogueForm.addDialogueOption(new LocalMessage("ui", key), () -> {
-			SettlementLevelPreference next = SettlementLevelPreferenceSystem.getPreference(human).next();
-			SettlementLevelPreferenceSystem.setPreference(human, next);
-			form.getClient().network.sendPacket(new PacketSettlerLevelPreference(human.getUniqueID(), next));
-			form.updateDialogue();
-		});
 	}
 
 	public static void addGuardDutyOption(ShopContainerForm form) {
