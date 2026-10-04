@@ -3,6 +3,7 @@ package opusliews.journal;
 import necesse.engine.journal.JournalChallenge;
 import necesse.engine.journal.JournalEntry;
 import necesse.engine.localization.message.GameMessage;
+import necesse.engine.localization.message.LocalMessage;
 import necesse.engine.network.server.ServerClient;
 import necesse.engine.registries.*;
 import necesse.engine.storyObjectives.StoryObjective;
@@ -31,7 +32,7 @@ public class GuideJournalRegistry {
 	}
 
 	public static void registerInfoSection(String categoryStringID, String sectionStringID, GameMessage title, GameMessage[] body) {
-		registerSectionInternal(categoryStringID, sectionStringID, title, body, null, null, null);
+		registerSectionInternal(categoryStringID, sectionStringID, title, body, new LocalMessage("journalguide", "completedbutton"), null, null);
 	}
 
 	public static void registerInfoSectionAfterObjective(String categoryStringID, String sectionStringID, GameMessage title, GameMessage body, String revealAfterObjectiveStringID) {
@@ -39,7 +40,7 @@ public class GuideJournalRegistry {
 	}
 
 	public static void registerInfoSectionAfterObjective(String categoryStringID, String sectionStringID, GameMessage title, GameMessage[] body, String revealAfterObjectiveStringID) {
-		registerSectionInternal(categoryStringID, sectionStringID, title, body, null, null, null, revealAfterObjectiveStringID, new String[0]);
+		registerSectionInternal(categoryStringID, sectionStringID, title, body, new LocalMessage("journalguide", "completedbutton"), null, null, revealAfterObjectiveStringID, new String[0]);
 	}
 
 	public static void registerDiscoveryChallenge(String challengeStringID) {
@@ -56,7 +57,7 @@ public class GuideJournalRegistry {
 		if (revealAfterChallengeStringID == null || revealAfterChallengeStringID.isEmpty() || !JournalChallengeRegistry.doesChallengeExists(revealAfterChallengeStringID)) {
 			throw new IllegalArgumentException("Unknown journal section reveal challenge " + revealAfterChallengeStringID + " for section " + sectionStringID);
 		}
-		registerSectionInternal(categoryStringID, sectionStringID, title, body, null, null, null, "challenge:" + revealAfterChallengeStringID, new String[0]);
+		registerSectionInternal(categoryStringID, sectionStringID, title, body, new LocalMessage("journalguide", "completedbutton"), null, null, "challenge:" + revealAfterChallengeStringID, new String[0]);
 	}
 
 	public static boolean isDiscoveryChallengeCompleted(ServerClient client, String challengeStringID) {

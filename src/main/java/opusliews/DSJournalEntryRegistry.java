@@ -285,11 +285,12 @@ public class DSJournalEntryRegistry {
 	}
 
 	private static void registerTriggeredAuto(String sectionStringID) {
-		GuideJournalRegistry.registerAutoSectionAfterChallenge(
+		GuideJournalRegistry.registerButtonSectionAfterChallenge(
 				categoryStringID,
 				sectionStringID,
 				new LocalMessage("journalguide", sectionStringID + "title"),
 				new LocalMessage("journalguide", sectionStringID + "body"),
+				new LocalMessage("journalguide", "completedbutton"),
 				GuideProgressionSystem.revealChallengeID(sectionStringID)
 		);
 	}
