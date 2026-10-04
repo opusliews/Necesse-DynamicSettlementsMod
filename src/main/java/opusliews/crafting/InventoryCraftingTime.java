@@ -6,6 +6,7 @@ import java.util.WeakHashMap;
 import necesse.engine.GlobalData;
 import necesse.engine.journal.listeners.CraftedRecipeJournalChallengeListener;
 import necesse.engine.network.NetworkClient;
+import necesse.engine.network.client.Client;
 import necesse.engine.network.server.ServerClient;
 import necesse.engine.registries.JournalChallengeRegistry;
 import necesse.entity.mobs.PlayerMob;
@@ -20,10 +21,12 @@ import necesse.inventory.recipe.Recipe;
 import necesse.level.maps.Level;
 import opusliews.worldgengating.WorldgenStationProgressionSystem;
 import opusliews.progression.GuideProgressionSystem;
+import opusliews.logging.Logging;
 import necesse.level.maps.levelData.settlementData.settler.romancePersonalities.PlayerRomanceManager;
 
 public final class InventoryCraftingTime {
 	private static final Map<Container, CraftState> states = new WeakHashMap<>();
+	private static final Map<Client, ClientProgressState> clientProgressStates = new WeakHashMap<>();
 
 	private InventoryCraftingTime() {
 	}
@@ -51,13 +54,26 @@ public final class InventoryCraftingTime {
 		state.recipeHash = recipeHash;
 		state.startTime = System.currentTimeMillis();
 		state.durationMs = CraftingTime.get(recipe);
+
+		if (container.client.isClient() && container.client.playerMob != null) {
+			Client client = container.client.playerMob.getClient();
+			if (client != null) {
+				synchronized (clientProgressStates) {
+					ClientProgressState progressState = clientProgressStates.computeIfAbsent(client, ignored -> new ClientProgressState());
+					progressState.startTime = state.startTime;
+					progressState.durationMs = state.durationMs;
+					progressState.active = true;
+				}
+				if (Logging.logEnabled) Logging.logMessage("[InventoryCrafting] Client progress started recipe=" + recipeID + " durationMs=" + state.durationMs);
+			}
+		}
 		return 1;
 	}
 
 	public static void tick(Container container) {
 		if (!isInventoryContainer(container)) return;
 
-		CraftState state = states.get(container);
+		CraftState state = getExistingState(container);
 		if (state == null || !state.crafting || state.completing) return;
 		if (System.currentTimeMillis() - state.startTime < state.durationMs) return;
 
@@ -75,10 +91,29 @@ public final class InventoryCraftingTime {
 	public static float getProgress(Container container) {
 		if (!isInventoryContainer(container)) return 0.0F;
 
-		CraftState state = states.get(container);
+		CraftState state;
+		synchronized (states) {
+			state = states.get(container);
+		}
 		if (state == null || !state.crafting) return 0.0F;
 		if (state.durationMs <= 0L) return 1.0F;
 		return Math.min(1.0F, (float)(System.currentTimeMillis() - state.startTime) / (float)state.durationMs);
+	}
+
+	public static float getClientProgress(Client client) {
+		if (client == null) return 0.0F;
+		ClientProgressState state;
+		synchronized (clientProgressStates) {
+			state = clientProgressStates.get(client);
+			if (state == null || !state.active) return 0.0F;
+			long elapsed = System.currentTimeMillis() - state.startTime;
+			if (state.durationMs <= 0L) return 1.0F;
+			if (elapsed >= state.durationMs) {
+				state.active = false;
+				return 0.0F;
+			}
+			return Math.min(1.0F, (float)elapsed / (float)state.durationMs);
+		}
 	}
 
 	public static int getOutputSlot(Container container) {
@@ -102,11 +137,18 @@ public final class InventoryCraftingTime {
 		}
 
 		if (!isInventoryContainer(container)) return;
-		CraftState state = states.get(container);
+		CraftState state = getExistingState(container);
 		if (state == null) return;
 
 		state.resetCraft();
 		collectOutput(container, state);
+
+		if (networkClient.isClient() && player.getClient() != null) {
+			synchronized (clientProgressStates) {
+				ClientProgressState progressState = clientProgressStates.get(player.getClient());
+				if (progressState != null) progressState.active = false;
+			}
+		}
 	}
 
 	private static void completeCraft(Container container, CraftState state) {
@@ -176,19 +218,33 @@ public final class InventoryCraftingTime {
 		return container != null && container.getClass() == Container.class && container.uniqueSeed == 0;
 	}
 
-	private static CraftState getState(Container container) {
-		CraftState state = states.get(container);
-		if (state != null) return state;
+	private static CraftState getExistingState(Container container) {
+		synchronized (states) {
+			return states.get(container);
+		}
+	}
 
-		state = new CraftState();
-		state.outputInventory = new Inventory(1);
-		state.outputInventory.filter = (slot, item) -> item == null;
-		state.outputSlot = container.addSlot(new ExtractOnlyContainerSlot(state.outputInventory, 0));
-		container.getCraftInventories().remove(state.outputInventory);
-		container.addQuickTransferOption(state.outputSlot, state.outputSlot, container.CLIENT_HOTBAR_START, container.CLIENT_HOTBAR_END);
-		container.addQuickTransferOption(state.outputSlot, state.outputSlot, container.CLIENT_INVENTORY_START, container.CLIENT_INVENTORY_END);
-		states.put(container, state);
-		return state;
+	private static CraftState getState(Container container) {
+		synchronized (states) {
+			CraftState state = getExistingState(container);
+			if (state != null) return state;
+
+			state = new CraftState();
+			state.outputInventory = new Inventory(1);
+			state.outputInventory.filter = (slot, item) -> item == null;
+			state.outputSlot = container.addSlot(new ExtractOnlyContainerSlot(state.outputInventory, 0));
+			container.getCraftInventories().remove(state.outputInventory);
+			container.addQuickTransferOption(state.outputSlot, state.outputSlot, container.CLIENT_HOTBAR_START, container.CLIENT_HOTBAR_END);
+			container.addQuickTransferOption(state.outputSlot, state.outputSlot, container.CLIENT_INVENTORY_START, container.CLIENT_INVENTORY_END);
+			states.put(container, state);
+			return state;
+		}
+	}
+
+	private static final class ClientProgressState {
+		private boolean active;
+		private long startTime;
+		private long durationMs = CraftingTime.DEFAULT_TIME_MS;
 	}
 
 	private static final class CraftState {

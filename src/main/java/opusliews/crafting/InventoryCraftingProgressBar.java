@@ -2,7 +2,6 @@ package opusliews.crafting;
 
 import necesse.engine.network.client.Client;
 import necesse.gfx.forms.components.FormProgressBar;
-import necesse.inventory.container.Container;
 
 public class InventoryCraftingProgressBar extends FormProgressBar {
 	private final Client client;
@@ -14,7 +13,6 @@ public class InventoryCraftingProgressBar extends FormProgressBar {
 
 	@Override
 	public float getProgress() {
-		Container container = client.getInventoryContainer();
-		return InventoryCraftingTime.getProgress(container);
+		return InventoryCraftingTime.getClientProgress(client);
 	}
 }
