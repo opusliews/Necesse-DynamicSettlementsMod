@@ -249,7 +249,7 @@ public class GuideJournalFormRenderer {
 				y = addAnyRequiredItems(section, client, contentBox, width, y, textColor);
 			}
 
-			if (section.challenge != null) {
+			if (section.challenge != null && section.buttonText != null) {
 				y = addCompletionRow(section, client, contentBox, width, y, textColor);
 			}
 			y += 18;
