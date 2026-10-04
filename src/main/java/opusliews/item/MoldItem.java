@@ -11,17 +11,19 @@ import necesse.engine.util.GameUtils;
 import necesse.entity.mobs.PlayerMob;
 import necesse.gfx.gameTexture.GameSprite;
 import necesse.gfx.gameTexture.GameTexture;
+import necesse.gfx.gameTexture.MergeFunction;
 import necesse.gfx.gameTooltips.ListGameTooltips;
 import necesse.inventory.InventoryItem;
 import necesse.inventory.enchants.Enchantable;
 import necesse.inventory.enchants.ItemEnchantment;
 import necesse.inventory.item.Item;
-import necesse.inventory.item.miscItem.AscendedShardItem;
+import necesse.level.maps.Level;
 import necesse.engine.registries.EnchantmentRegistry;
 import opusliews.DSEnchantmentRegistry;
 import opusliews.durability.ItemDurabilitySystem;
 import opusliews.logging.Logging;
 
+import java.awt.Color;
 import java.util.Collections;
 import java.util.Set;
 
@@ -39,7 +41,7 @@ public class MoldItem extends FiredClayMatItem implements Enchantable {
 	@Override
 	protected void loadItemTextures() {
 		super.loadItemTextures();
-		shineFrames = AscendedShardItem.addShine(itemTexture);
+		shineFrames = addMoldShine(itemTexture);
 	}
 
 	@Override
@@ -51,6 +53,12 @@ public class MoldItem extends FiredClayMatItem implements Enchantable {
 		long time = perspective == null ? System.currentTimeMillis() : perspective.getLocalTime();
 		int frame = GameUtils.getAnim(time, shineFrames.length * 2, shineFrames.length * 250);
 		return frame >= shineFrames.length ? new GameSprite(itemTexture) : new GameSprite(shineFrames[frame]);
+	}
+
+	@Override
+	public boolean canCombineItem(Level level, PlayerMob player, InventoryItem me, InventoryItem them, String purpose) {
+		if (hasUnbreaking(me) || hasUnbreaking(them)) return false;
+		return super.canCombineItem(level, player, me, them, purpose);
 	}
 
 	@Override
@@ -151,6 +159,68 @@ public class MoldItem extends FiredClayMatItem implements Enchantable {
 			tooltips.add(Localization.translate("itemtooltip", "moldunbreakingtip"));
 		}
 		return tooltips;
+	}
+
+	private static GameTexture[] addMoldShine(GameTexture iconTexture) {
+		GameTexture shineTexture = GameTexture.fromFile("items/itemshine128");
+		final int frameSize = 128;
+
+		if (shineTexture.getWidth() < frameSize || shineTexture.getWidth() % frameSize != 0) {
+			Logging.logMessage("[MoldEnchant] Invalid items/itemshine128 texture width=" + shineTexture.getWidth()
+					+ " expected a positive multiple of " + frameSize);
+			return new GameTexture[0];
+		}
+
+		if (shineTexture.getHeight() != frameSize) {
+			Logging.logMessage("[MoldEnchant] Invalid items/itemshine128 texture height=" + shineTexture.getHeight()
+					+ " expected=" + frameSize);
+			return new GameTexture[0];
+		}
+
+		if (iconTexture.getWidth() != frameSize || iconTexture.getHeight() != frameSize) {
+			Logging.logMessage("[MoldEnchant] Unexpected mold texture size itemTexture=" + iconTexture.debugName
+					+ " size=" + iconTexture.getWidth() + "x" + iconTexture.getHeight()
+					+ " expected=" + frameSize + "x" + frameSize);
+			return new GameTexture[0];
+		}
+
+		int frameCount = shineTexture.getWidth() / frameSize;
+		GameTexture[] frames = new GameTexture[frameCount];
+
+		for (int i = 0; i < frameCount; i++) {
+			frames[i] = new GameTexture(iconTexture.debugName + "-shine128-" + i, frameSize, frameSize);
+			frames[i].copy(iconTexture, 0, 0);
+			frames[i].merge(
+					shineTexture,
+					0,
+					0,
+					i * frameSize,
+					0,
+					frameSize,
+					frameSize,
+					MoldShineMergeFunction.INSTANCE
+			);
+		}
+
+		return frames;
+	}
+
+	private static final class MoldShineMergeFunction implements MergeFunction {
+		private static final MoldShineMergeFunction INSTANCE = new MoldShineMergeFunction();
+
+		@Override
+		public Color merge(Color currentColor, Color mergeColor) {
+			if (currentColor.getAlpha() == 0 || mergeColor.getAlpha() == 0) return currentColor;
+
+			Color adjustedMergeColor = new Color(
+					mergeColor.getRed(),
+					mergeColor.getGreen(),
+					mergeColor.getBlue(),
+					(int)((float)mergeColor.getAlpha() / 1.2F)
+			);
+			Color mergedColor = MergeFunction.NORMAL.merge(currentColor, adjustedMergeColor);
+			return new Color(mergedColor.getRed(), mergedColor.getGreen(), mergedColor.getBlue(), currentColor.getAlpha());
+		}
 	}
 
 	public static boolean hasUnbreaking(InventoryItem item) {
