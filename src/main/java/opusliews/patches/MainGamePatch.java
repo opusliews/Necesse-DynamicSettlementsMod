@@ -11,6 +11,7 @@ import opusliews.blueprint.BlueprintAreaHud;
 import opusliews.blueprint.BlueprintAreaSync;
 import opusliews.forms.NewBlueprintForm;
 import opusliews.hud.InspectionGlassHud;
+import opusliews.journal.GuideJournalRevealBubble;
 import opusliews.hud.CraftingStationLinkHud;
 import opusliews.item.BlueprintItem;
 
@@ -25,6 +26,7 @@ public class MainGamePatch {
 		InspectionGlassHud.frameTick(mainGame);
 
 		Client client = mainGame.getClient();
+		GuideJournalRevealBubble.frameTick(client);
 		if (client != null && client.isSingleplayer()) {
 			boolean journalOpen = client.getContainer() instanceof AdventureJournalContainer;
 
