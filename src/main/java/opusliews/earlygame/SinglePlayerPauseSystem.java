@@ -97,5 +97,7 @@ public final class SinglePlayerPauseSystem {
 
 		GameBackground.form.getDrawOptions(x, y, barWidth, barHeight).draw();
 		GameBackground.form.getDrawOptions(x + barWidth + barGap, y, barWidth, barHeight).draw();
+		GameBackground.form.getEdgeDrawOptions(x, y, barWidth, barHeight).draw();
+		GameBackground.form.getEdgeDrawOptions(x + barWidth + barGap, y, barWidth, barHeight).draw();
 	}
 }

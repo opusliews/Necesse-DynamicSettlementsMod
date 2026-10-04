@@ -725,7 +725,7 @@ multilevelraidsbody=Raiders see your surface and underground settlement as parts
 starvationtitle=Starving Settlers
 starvationbody=Settlers need a steady supply of food. If a settler's Hunger reaches zero, they will begin taking starvation damage and cannot recover health until they eat again. If starvation continues, they will eventually collapse and become downed, requiring revival like any other downed settler.\n\nA settler stranded underground is in even greater danger. If they have no accessible food and no usable settlement route back to the surface, reaching zero Hunger will down them immediately. Keep cave residents supplied, or make sure they have a working way back to the surface.
 interfacecontrolstitle=Interface Shortcuts
-interfacecontrolsbody=Dynamic Settlements adds a few QoL interface shortcuts.\n\nHold Ctrl and use the mouse wheel to change the screen zoom. Ctrl with Numpad + or Numpad - changes the interface scale.\n\nIf these controls conflict with another mod or your preferred setup, they can be disabled in the Dynamic Settlements settings.
+interfacecontrolsbody=Dynamic Settlements adds a few QoL interface shortcuts.\n\nHold Ctrl and use the mouse wheel to change the screen zoom. Ctrl with Numpad + or Numpad - changes the interface scale.\n\nAnd you can press pause on your keyboard to pause your game in single player.\n\nIf these controls conflict with another mod or your preferred setup, they can be disabled in the Dynamic Settlements settings.
 
 [enchantment]
 dsunbreaking=Unbreaking
