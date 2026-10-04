@@ -80,8 +80,8 @@ public class CrudeAnvilContainer extends CraftingStationContainer {
 		outputInventory.filter = (slot, item) -> item == null;
 
 		OUTPUT_SLOT = addSlot(new ExtractOnlyContainerSlot(outputInventory, 0));
-		addQuickTransferOption(OUTPUT_SLOT, OUTPUT_SLOT, CLIENT_HOTBAR_START, CLIENT_HOTBAR_END);
-		addQuickTransferOption(OUTPUT_SLOT, OUTPUT_SLOT, CLIENT_INVENTORY_START, CLIENT_INVENTORY_END);
+		addQuickTransferOption(slot -> slot != null && slot.getContainerIndex() == OUTPUT_SLOT, OUTPUT_SLOT, OUTPUT_SLOT, CLIENT_HOTBAR_START, CLIENT_HOTBAR_END);
+		addQuickTransferOption(slot -> slot != null && slot.getContainerIndex() == OUTPUT_SLOT, OUTPUT_SLOT, OUTPUT_SLOT, CLIENT_INVENTORY_START, CLIENT_INVENTORY_END);
 	}
 
 	@Override

@@ -77,8 +77,8 @@ public class DynamicCraftingStationContainer extends CraftingStationContainer {
 		OUTPUT_SLOT = addSlot(new ExtractOnlyContainerSlot(stationEntity.inventory, 0));
 		craftInventories.remove(stationEntity.inventory);
 
-		addQuickTransferOption(OUTPUT_SLOT, OUTPUT_SLOT, CLIENT_HOTBAR_START, CLIENT_HOTBAR_END);
-		addQuickTransferOption(OUTPUT_SLOT, OUTPUT_SLOT, CLIENT_INVENTORY_START, CLIENT_INVENTORY_END);
+		addQuickTransferOption(slot -> slot != null && slot.getContainerIndex() == OUTPUT_SLOT, OUTPUT_SLOT, OUTPUT_SLOT, CLIENT_HOTBAR_START, CLIENT_HOTBAR_END);
+		addQuickTransferOption(slot -> slot != null && slot.getContainerIndex() == OUTPUT_SLOT, OUTPUT_SLOT, OUTPUT_SLOT, CLIENT_INVENTORY_START, CLIENT_INVENTORY_END);
 
 		setInputStorage = registerAction(new PointCustomAction() {
 			@Override

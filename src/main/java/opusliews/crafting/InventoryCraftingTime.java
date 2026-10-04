@@ -234,8 +234,9 @@ public final class InventoryCraftingTime {
 			state.outputInventory.filter = (slot, item) -> item == null;
 			state.outputSlot = container.addSlot(new ExtractOnlyContainerSlot(state.outputInventory, 0));
 			container.getCraftInventories().remove(state.outputInventory);
-			container.addQuickTransferOption(state.outputSlot, state.outputSlot, container.CLIENT_HOTBAR_START, container.CLIENT_HOTBAR_END);
-			container.addQuickTransferOption(state.outputSlot, state.outputSlot, container.CLIENT_INVENTORY_START, container.CLIENT_INVENTORY_END);
+			final int outputSlot = state.outputSlot;
+			container.addQuickTransferOption(slot -> slot != null && slot.getContainerIndex() == outputSlot, outputSlot, outputSlot, container.CLIENT_HOTBAR_START, container.CLIENT_HOTBAR_END);
+			container.addQuickTransferOption(slot -> slot != null && slot.getContainerIndex() == outputSlot, outputSlot, outputSlot, container.CLIENT_INVENTORY_START, container.CLIENT_INVENTORY_END);
 			states.put(container, state);
 			return state;
 		}
