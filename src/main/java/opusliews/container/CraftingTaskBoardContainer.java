@@ -35,6 +35,7 @@ public class CraftingTaskBoardContainer extends Container {
 	public final ContentCustomAction moveTaskAction;
 	public final ContentCustomAction updateTaskAction;
 	public final ContentCustomAction setTaskPausedAction;
+	public final ContentCustomAction setTaskPriorityAction;
 
 	public CraftingTaskBoardContainer(NetworkClient client, int uniqueSeed, CraftingTaskBoardObjectEntity boardEntity) {
 		super(client, uniqueSeed);
@@ -96,6 +97,15 @@ public class CraftingTaskBoardContainer extends Container {
 				if (!boardEntity.setTaskPaused(reader.getNextInt(), reader.getNextInt(), reader.getNextBoolean()) && client.isServer()) boardEntity.syncContentNow();
 			}
 		});
+
+		setTaskPriorityAction = (ContentCustomAction)registerAction(new ContentCustomAction() {
+			@Override
+			protected void run(Packet content) {
+				if (!isCurrentBoardEntity()) return;
+				PacketReader reader = new PacketReader(content);
+				if (!boardEntity.setTaskPriority(reader.getNextInt(), reader.getNextInt(), reader.getNextBoolean()) && client.isServer()) boardEntity.syncContentNow();
+			}
+		});
 	}
 
 	public void addTask(int itemID, int sourceType) {
@@ -141,6 +151,15 @@ public class CraftingTaskBoardContainer extends Container {
 		writer.putNextInt(index);
 		writer.putNextBoolean(paused);
 		setTaskPausedAction.runAndSend(packet);
+	}
+
+	public void setTaskPriority(int index, boolean priority) {
+		Packet packet = new Packet();
+		PacketWriter writer = new PacketWriter(packet);
+		writer.putNextInt(boardEntity.getTaskRevision());
+		writer.putNextInt(index);
+		writer.putNextBoolean(priority);
+		setTaskPriorityAction.runAndSend(packet);
 	}
 
 	public necesse.level.maps.LevelObject getLinkedStation() {

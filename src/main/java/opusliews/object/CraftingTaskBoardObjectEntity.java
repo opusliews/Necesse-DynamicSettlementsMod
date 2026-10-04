@@ -446,6 +446,22 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 		return true;
 	}
 
+	public boolean setTaskPriority(int expectedRevision, int index, boolean priority) {
+		if (expectedRevision != taskRevision) {
+			if (Logging.logEnabled) Logging.logMessage("[CraftingPriority] Toggle rejected: stale revision expected="
+					+ expectedRevision + " actual=" + taskRevision + " index=" + index);
+			return false;
+		}
+		CraftingTask task = getTask(index);
+		if (task == null || task.priority == priority) return false;
+
+		task.priority = priority;
+		if (Logging.logEnabled) Logging.logMessage("[CraftingPriority] Board " + tileX + "," + tileY
+				+ " taskID=" + task.taskID + " index=" + index + " priority=" + priority);
+		commitTaskEdit();
+		return true;
+	}
+
 	public void decrementCraftAmount(int index, int produced) {
 		CraftingTask task = getTask(index);
 		if (task == null || task.conditionType != CraftingTask.CONDITION_CRAFT_UNITS) return;
@@ -522,7 +538,15 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 	}
 
 	public void advanceAfterTask(int index) {
-		nextTaskIndex = tasks.isEmpty() ? 0 : (index + 1) % tasks.size();
+		if (tasks.isEmpty()) {
+			nextTaskIndex = 0;
+			return;
+		}
+
+		CraftingTask task = getTask(index);
+		if (task == null || !task.priority) {
+			nextTaskIndex = (index + 1) % tasks.size();
+		}
 	}
 
 	public boolean hasActionableTasksCached() {
@@ -544,9 +568,21 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 		refreshTaskStatusesNow();
 		if (tasks.isEmpty()) return -1;
 
+		// Priority tasks always pre-empt normal rotation and are evaluated in board
+		// order. Starting from index 0 each time deliberately repeats the first
+		// actionable priority task until it finishes or becomes blocked.
+		for (int index = 0; index < tasks.size(); index++) {
+			CraftingTask task = tasks.get(index);
+			if (task.priority && isTaskActionableNow(index)) return index;
+		}
+
+		// With no actionable priority task, preserve the original round-robin
+		// behavior for all non-priority tasks. Priority tasks are skipped here so
+		// blocked/finished priority entries never disturb the normal task cursor.
 		for (int offset = 0; offset < tasks.size(); offset++) {
 			int index = (nextTaskIndex + offset) % tasks.size();
-			if (isTaskActionableNow(index)) return index;
+			CraftingTask task = tasks.get(index);
+			if (!task.priority && isTaskActionableNow(index)) return index;
 		}
 		return -1;
 	}

@@ -25,6 +25,7 @@ public class CraftingTask {
 	public int conditionType;
 	public int amount;
 	public boolean paused;
+	public boolean priority;
 	public int status = STATUS_FINISHED;
 	public final ArrayList<String> problemDetails = new ArrayList<>();
 
@@ -53,11 +54,13 @@ public class CraftingTask {
 				data.getInt("amount", 0)
 		);
 		paused = data.getBoolean("paused", false, false);
+		priority = data.getBoolean("priority", false, false);
 	}
 
 	public CraftingTask(PacketReader reader) {
 		this(reader.getNextLong(), reader.getNextInt(), reader.getNextByteUnsigned(), reader.getNextByteUnsigned(), reader.getNextInt());
 		paused = reader.getNextBoolean();
+		priority = reader.getNextBoolean();
 		status = reader.getNextByteUnsigned();
 		int problemCount = reader.getNextByteUnsigned();
 		for (int i = 0; i < problemCount; i++) {
@@ -72,6 +75,7 @@ public class CraftingTask {
 		data.addInt("conditionType", conditionType);
 		data.addInt("amount", amount);
 		data.addBoolean("paused", paused);
+		data.addBoolean("priority", priority);
 	}
 
 	public void writePacket(PacketWriter writer) {
@@ -81,6 +85,7 @@ public class CraftingTask {
 		writer.putNextByteUnsigned(conditionType);
 		writer.putNextInt(amount);
 		writer.putNextBoolean(paused);
+		writer.putNextBoolean(priority);
 		writer.putNextByteUnsigned(status);
 		writer.putNextByteUnsigned(Math.min(255, problemDetails.size()));
 		for (int i = 0; i < problemDetails.size() && i < 255; i++) {
@@ -99,6 +104,7 @@ public class CraftingTask {
 	public CraftingTask copy() {
 		CraftingTask copy = new CraftingTask(taskID, itemID, sourceType, conditionType, amount);
 		copy.paused = paused;
+		copy.priority = priority;
 		copy.status = status;
 		copy.problemDetails.addAll(problemDetails);
 		return copy;

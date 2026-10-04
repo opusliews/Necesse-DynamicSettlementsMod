@@ -47,7 +47,7 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 	private static final int ITEM_WIDTH = 400;
 	private static final int CONDITION_WIDTH = 400;
 	private static final int STATUS_WIDTH = 72;
-	private static final int CONFIG_WIDTH = 72;
+	private static final int CONFIG_WIDTH = 108;
 	private static final int FORM_WIDTH = ITEM_WIDTH + CONDITION_WIDTH + STATUS_WIDTH + CONFIG_WIDTH;
 
 	private final Client client;
@@ -105,6 +105,7 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 			result = 31 * result + task.conditionType;
 			result = 31 * result + task.amount;
 			result = 31 * result + (task.paused ? 1 : 0);
+			result = 31 * result + (task.priority ? 1 : 0);
 			result = 31 * result + task.status;
 			result = 31 * result + task.problemDetails.hashCode();
 		}
@@ -692,14 +693,28 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 					break;
 			}
 
+			int statusIconX = task.priority
+					? statusX + STATUS_WIDTH / 2 - 24
+					: statusX + STATUS_WIDTH / 2 - 12;
 			FormContentIconButton status = addComponent(new FormContentIconButton(
-					statusX + STATUS_WIDTH / 2 - 12,
+					statusIconX,
 					10,
 					FormInputSize.SIZE_24,
 					ButtonColor.BASE,
 					statusIcon,
 					new GameMessage[]{new StaticMessage(statusTooltip)}
 			));
+
+			if (task.priority) {
+				addComponent(new FormContentIconButton(
+						statusX + STATUS_WIDTH / 2,
+						10,
+						FormInputSize.SIZE_24,
+						ButtonColor.BASE,
+						getInterfaceStyle().priority_top,
+						new GameMessage[]{new StaticMessage(Localization.translate("ui", "prioritytask"))}
+				));
+			}
 
 			int actionX = statusX + STATUS_WIDTH;
 			FormContentIconButton pause = addComponent(new FormContentIconButton(
@@ -718,8 +733,24 @@ public class CraftingTaskBoardContainerForm extends ContainerFormSwitcher {
 				}
 			});
 
-			FormContentIconButton delete = addComponent(new FormContentIconButton(
+			FormContentIconButton priority = addComponent(new FormContentIconButton(
 					actionX + 40,
+					10,
+					FormInputSize.SIZE_24,
+					ButtonColor.BASE,
+					getInterfaceStyle().priority_top,
+					new GameMessage[]{new StaticMessage(Localization.translate("ui", "toggleprioritytask"))}
+			));
+			priority.onClicked(e -> {
+				CraftingTask current = taskContainer.boardEntity.getTask(index);
+				if (current != null) {
+					taskContainer.setTaskPriority(index, !current.priority);
+					updateBoard();
+				}
+			});
+
+			FormContentIconButton delete = addComponent(new FormContentIconButton(
+					actionX + 76,
 					10,
 					FormInputSize.SIZE_24,
 					ButtonColor.RED,
