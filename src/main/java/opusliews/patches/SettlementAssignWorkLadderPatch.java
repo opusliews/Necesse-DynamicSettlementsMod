@@ -6,11 +6,13 @@ import necesse.gfx.forms.components.FormFlow;
 import necesse.gfx.forms.presets.containerComponent.settlement.SettlementAssignWorkForm;
 import net.bytebuddy.asm.Advice;
 import opusliews.multilevelsettlement.SettlementLadderAssignUI;
+import opusliews.settlement.SettlementChestProtectionUI;
 
 @ModMethodPatch(target = SettlementAssignWorkForm.class, name = "setupButtons", arguments = {FormFlow.class, FormContentBox.class})
 public class SettlementAssignWorkLadderPatch {
 	@Advice.OnMethodExit
 	public static void onExit(@Advice.This SettlementAssignWorkForm form, @Advice.Argument(0) FormFlow flow, @Advice.Argument(1) FormContentBox content) {
 		SettlementLadderAssignUI.addAssignButton(form, flow, content);
+		SettlementChestProtectionUI.addStorageConfigButton(form, content);
 	}
 }

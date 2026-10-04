@@ -387,6 +387,9 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketSettlementSleepSettingsRequest.class);
 		PacketRegistry.registerPacket(PacketSettlementSleepSettingsSync.class);
 		PacketRegistry.registerPacket(PacketSettlementSleepSettingsUpdate.class);
+		PacketRegistry.registerPacket(PacketSettlementChestProtectionRequest.class);
+		PacketRegistry.registerPacket(PacketSettlementChestProtectionSync.class);
+		PacketRegistry.registerPacket(PacketSettlementChestProtectionUpdate.class);
 		PacketRegistry.registerPacket(PacketDigShallowHole.class);
 		PacketRegistry.registerPacket(PacketDeepHoleInteract.class);
 		PacketRegistry.registerPacket(PacketHoleCaveLadderInteract.class);

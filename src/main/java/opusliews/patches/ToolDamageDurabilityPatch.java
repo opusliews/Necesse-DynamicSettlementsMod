@@ -11,6 +11,7 @@ import opusliews.durability.DurabilityAction;
 import opusliews.durability.DurabilityContext;
 import opusliews.durability.ItemDurabilitySystem;
 import opusliews.logging.Logging;
+import opusliews.settlement.SettlementChestProtectionSystem;
 
 import java.awt.geom.Line2D;
 
@@ -29,12 +30,15 @@ public class ToolDamageDurabilityPatch {
 			@Advice.Argument(5) int tileY,
 			@Advice.Argument(6) PlayerMob player,
 			@Advice.Argument(7) Line2D playerPositionLine,
-			@Advice.Argument(8) InventoryItem item
+			@Advice.Argument(8) InventoryItem item,
+			@Advice.Argument(10) GNDItemMap mapContent
 	) {
 		if (player == null || !player.isServer()) return null;
 		if (!ItemDurabilitySystem.isBreakable(item)) return null;
 		if (!toolItem.isTileInRange(level, tileX, tileY, player, playerPositionLine, item)) return null;
 		if (!toolItem.canDamageTile(level, objectLayerID, tileX, tileY, player, item)) return null;
+		boolean ctrlDown = mapContent != null && mapContent.getBoolean(SettlementChestProtectionSystem.ctrlMapKey);
+		if (SettlementChestProtectionSystem.shouldProtectToolDamage(toolItem, level, objectLayerID, tileX, tileY, item, ctrlDown)) return null;
 		return ItemDurabilitySystem.captureToolDamageState(toolItem, level, objectLayerID, tileX, tileY, item);
 	}
 
@@ -51,14 +55,16 @@ public class ToolDamageDurabilityPatch {
 				? DurabilityContext.object(level, player, state.targetObject)
 				: DurabilityContext.player(level, player);
 
-		Logging.logMessage("[Durability] Tool damage result item=" + returnedItem.item.getStringID()
-				+ " tile=" + state.tileX + "," + state.tileY
-				+ " action=" + state.damageAction);
+		if (Logging.logEnabled) {
+			Logging.logMessage("[Durability] Tool damage result item=" + returnedItem.item.getStringID()
+					+ " tile=" + state.tileX + "," + state.tileY
+					+ " action=" + state.damageAction);
+		}
 
 		InventoryItem originalReturnedItem = returnedItem;
 		returnedItem = ItemDurabilitySystem.applyActionAndGetItem(returnedItem, state.damageAction, context);
 		if (returnedItem == null) {
-			Logging.logMessage("[Durability] Tool broke during " + state.damageAction + "; returning depleted item for attack-handler cleanup");
+			if (Logging.logEnabled) Logging.logMessage("[Durability] Tool broke during " + state.damageAction + "; returning depleted item for attack-handler cleanup");
 			returnedItem = originalReturnedItem;
 		}
 
@@ -66,11 +72,11 @@ public class ToolDamageDurabilityPatch {
 			DurabilityAction destroyedAction = state.damageAction == DurabilityAction.OBJECT_DAMAGE
 					? DurabilityAction.OBJECT_DESTROYED
 					: DurabilityAction.TILE_DESTROYED;
-			Logging.logMessage("[Durability] Target destroyed tile=" + state.tileX + "," + state.tileY + " action=" + destroyedAction);
+			if (Logging.logEnabled) Logging.logMessage("[Durability] Target destroyed tile=" + state.tileX + "," + state.tileY + " action=" + destroyedAction);
 			InventoryItem beforeDestroyedAction = returnedItem;
 			returnedItem = ItemDurabilitySystem.applyActionAndGetItem(returnedItem, destroyedAction, context);
 			if (returnedItem == null) {
-				Logging.logMessage("[Durability] Tool broke during " + destroyedAction + "; returning depleted item for attack-handler cleanup");
+				if (Logging.logEnabled) Logging.logMessage("[Durability] Tool broke during " + destroyedAction + "; returning depleted item for attack-handler cleanup");
 				returnedItem = beforeDestroyedAction;
 			}
 		}
