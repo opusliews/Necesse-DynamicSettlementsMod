@@ -1,23 +1,30 @@
 package opusliews.torch;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
+import java.util.WeakHashMap;
 import necesse.engine.network.packet.PacketChangeObject;
 import necesse.engine.registries.ObjectRegistry;
+import necesse.engine.registries.ObjectLayerRegistry;
 import necesse.engine.save.LoadData;
 import necesse.engine.save.SaveData;
 import necesse.entity.objectEntity.ObjectEntity;
 import necesse.level.maps.Level;
+import necesse.level.maps.regionSystem.Region;
 import necesse.level.maps.levelData.LevelData;
 import opusliews.object.CrudeTorchObject;
 import opusliews.object.CrudeWallTorchObject;
+import opusliews.logging.Logging;
 
 public class CrudeTorchLevelData extends LevelData {
 	public static final String managerKey = "opuscrudetorchdata";
 	private static final long dayDurationMultiplier = 1000L;
 
 	private final Map<Long, TrackedTorch> torches = new HashMap<>();
+	private final Set<Region> reconciledLoadedRegions = Collections.newSetFromMap(new WeakHashMap<>());
 
 	public static CrudeTorchLevelData get(Level level, boolean createNewIfNull) {
 		if (level == null) return null;
@@ -47,23 +54,92 @@ public class CrudeTorchLevelData extends LevelData {
 		torches.remove(getKey(layerID, tileX, tileY));
 	}
 
+	public static boolean isTorchActive(Level level, int layerID, int tileX, int tileY) {
+		if (level == null) return false;
+
+		CrudeTorchLevelData data = get(level, false);
+		if (data == null) return false;
+
+		TrackedTorch tracked = data.getTrackedTorch(layerID, tileX, tileY);
+		if (tracked == null) return false;
+
+		return level.getWorldTime() < tracked.expireWorldTime;
+	}
+
 	@Override
 	public void tick() {
-		if (!isServer() || torches.isEmpty()) return;
+		if (!isServer()) return;
+
+		reconcileLoadedRegions();
+
+		if (torches.isEmpty()) return;
 
 		long currentWorldTime = getWorldEntity().getWorldTime();
 		Iterator<Map.Entry<Long, TrackedTorch>> iterator = torches.entrySet().iterator();
 		while (iterator.hasNext()) {
 			TrackedTorch tracked = iterator.next().getValue();
+
+			if (!level.regionManager.isTileLoaded(tracked.tileX, tracked.tileY)) {
+				continue;
+			}
+
 			int currentObjectID = level.getObjectID(tracked.layerID, tracked.tileX, tracked.tileY);
 			if (!isTrackedCrudeTorch(currentObjectID)) {
+				Logging.logMessage("[CrudeTorch] Removed tracking because loaded tile no longer contains a crude torch"
+						+ " layer=" + tracked.layerID + " tile=" + tracked.tileX + "," + tracked.tileY
+						+ " currentObjectID=" + currentObjectID);
 				iterator.remove();
 				continue;
 			}
 
 			if (currentWorldTime >= tracked.expireWorldTime) {
+				Logging.logMessage("[CrudeTorch] Expired layer=" + tracked.layerID
+						+ " tile=" + tracked.tileX + "," + tracked.tileY
+						+ " expireWorldTime=" + tracked.expireWorldTime
+						+ " currentWorldTime=" + currentWorldTime);
 				removeTorch(tracked.layerID, tracked.tileX, tracked.tileY);
 				iterator.remove();
+			}
+		}
+	}
+
+
+	private void reconcileLoadedRegions() {
+		for (Object regionObject : level.regionManager.collectLoadedRegions()) {
+			Region region = (Region)regionObject;
+			if (!region.isLoadingComplete() || reconciledLoadedRegions.contains(region)) continue;
+
+			reconciledLoadedRegions.add(region);
+			int removed = 0;
+
+			for (int regionTileY = 0; regionTileY < region.tileHeight; regionTileY++) {
+				for (int regionTileX = 0; regionTileX < region.tileWidth; regionTileX++) {
+					int tileX = region.tileXOffset + regionTileX;
+					int tileY = region.tileYOffset + regionTileY;
+
+					for (int layerID = 0; layerID < ObjectLayerRegistry.getTotalLayers(); layerID++) {
+						int objectID = region.objectLayer.getObjectIDByRegion(layerID, regionTileX, regionTileY);
+						if (!isTrackedCrudeTorch(objectID)) continue;
+
+						TrackedTorch tracked = getTrackedTorch(layerID, tileX, tileY);
+						if (tracked != null) continue;
+
+						// Legacy/orphaned crude torches can exist in older saves if their timer
+						// record was lost while the region was unloaded. Their remaining lifetime
+						// can no longer be reconstructed, so treat them as already expired.
+						Logging.logMessage("[CrudeTorch] Removing untracked legacy torch"
+								+ " layer=" + layerID + " tile=" + tileX + "," + tileY
+								+ " objectID=" + objectID);
+						removeTorch(layerID, tileX, tileY);
+						removed++;
+					}
+				}
+			}
+
+			if (removed > 0) {
+				Logging.logMessage("[CrudeTorch] Removed " + removed
+						+ " untracked/expired legacy torches from loaded region "
+						+ region.regionX + "," + region.regionY);
 			}
 		}
 	}
@@ -113,6 +189,12 @@ public class CrudeTorchLevelData extends LevelData {
 			level.getServer().network.sendToClientsWithTile(
 					new PacketChangeObject(level, layerID, tileX, tileY, 0, 0, false), level, tileX, tileY
 			);
+		}
+
+		int remainingObjectID = level.getObjectID(layerID, tileX, tileY);
+		if (remainingObjectID != 0) {
+			Logging.logMessage("[CrudeTorch] ERROR expired torch removal left object=" + remainingObjectID
+					+ " layer=" + layerID + " tile=" + tileX + "," + tileY);
 		}
 	}
 

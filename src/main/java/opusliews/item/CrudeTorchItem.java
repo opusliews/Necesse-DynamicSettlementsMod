@@ -25,7 +25,7 @@ public class CrudeTorchItem extends TorchObjectItem implements TickItem {
 	public static final String durationGndKey = "crudeTorchDuration";
 	public static final int durabilitySteps = 1000;
 
-	private static final String requiresFirestarterError = "requiresfirestarter";
+	private static final String requiresIgnitionSourceError = "requiresignitionsource";
 
 	public CrudeTorchItem(GameObject object) {
 		super(object, false);
@@ -33,15 +33,15 @@ public class CrudeTorchItem extends TorchObjectItem implements TickItem {
 
 	@Override
 	public String canPlace(Level level, int x, int y, PlayerMob player, Line2D playerPositionLine, InventoryItem item, GNDItemMap mapContent) {
-		if (!isRunning(item) && !hasFirestarter(player)) return requiresFirestarterError;
+		if (!isRunning(item) && !hasIgnitionSource(level, player)) return requiresIgnitionSourceError;
 		return super.canPlace(level, x, y, player, playerPositionLine, item, mapContent);
 	}
 
 	@Override
 	public InventoryItem onAttemptPlace(Level level, int x, int y, PlayerMob player, InventoryItem item, GNDItemMap mapContent, String error) {
-		if (requiresFirestarterError.equals(error)) {
+		if (requiresIgnitionSourceError.equals(error)) {
 			if (level.isServer() && player != null && player.isServerClient()) {
-				player.getServerClient().sendChatMessage(new LocalMessage("misc", "crudetorchrequiresfirestarter"));
+				player.getServerClient().sendChatMessage(new LocalMessage("misc", "crudetorchrequiresignitionsource"));
 				player.endAttackHandler(false);
 			}
 			return item;
@@ -50,10 +50,25 @@ public class CrudeTorchItem extends TorchObjectItem implements TickItem {
 		return super.onAttemptPlace(level, x, y, player, item, mapContent, error);
 	}
 
-	private static boolean hasFirestarter(PlayerMob player) {
-		return player != null && player.getInv().hasAnyItem(
+	private static boolean hasIgnitionSource(Level level, PlayerMob player) {
+		if (player == null) return false;
+		long currentWorldTime = level == null ? 0L : level.getWorldTime();
+
+		return player.getInv().hasAnyItem(
 				false, false, false, false, "crudetorchplacement",
-				item -> item != null && FirestarterItem.stringID.equals(item.item.getStringID())
+				item -> {
+					if (item == null || item.item == null) return false;
+
+					String stringID = item.item.getStringID();
+					if (FirestarterItem.stringID.equals(stringID) || "torch".equals(stringID)) return true;
+
+					if ("crudetorch".equals(stringID)) {
+						long expireWorldTime = getExpireWorldTime(item);
+						return expireWorldTime > 0L && (level == null || currentWorldTime < expireWorldTime);
+					}
+
+					return false;
+				}
 		);
 	}
 
@@ -61,6 +76,13 @@ public class CrudeTorchItem extends TorchObjectItem implements TickItem {
 	public boolean canCombineItem(Level level, PlayerMob player, InventoryItem me, InventoryItem them, String purpose) {
 		if (isRunning(me) || isRunning(them)) return false;
 		return super.canCombineItem(level, player, me, them, purpose);
+	}
+
+	@Override
+	public void refreshLight(Level level, float x, float y, InventoryItem item, boolean isHolding) {
+		long expireWorldTime = getExpireWorldTime(item);
+		if (expireWorldTime <= 0L || level == null || level.getWorldTime() >= expireWorldTime) return;
+		super.refreshLight(level, x, y, item, isHolding);
 	}
 
 	@Override
