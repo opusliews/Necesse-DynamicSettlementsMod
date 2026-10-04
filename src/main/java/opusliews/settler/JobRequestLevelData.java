@@ -78,7 +78,7 @@ public class JobRequestLevelData extends LevelData implements
 		}
 		ServerSettlementData settlement = SettlementsWorldData.getSettlementsData(level)
 				.getServerDataAtTile(level.getIdentifier(), tileX, tileY);
-		if (settlement != null && settlement.networkData.doesClientHaveAccess(client)) {
+		if (GuideProgressionSystem.isSettlementMember(client, settlement)) {
 			GuideProgressionSystem.recordJobRequestBulletinPlaced(client, settlement);
 		}
 	}

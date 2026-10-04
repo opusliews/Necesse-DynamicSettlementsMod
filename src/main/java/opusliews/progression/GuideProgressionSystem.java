@@ -102,7 +102,27 @@ public final class GuideProgressionSystem {
 		ServerClient client = player.getServerClient();
 		if (client == null || client.getServer() == null) return false;
 		SettlementsWorldData settlements = SettlementsWorldData.getSettlementsData(client.getServer());
-		return !settlements.collectCachedSettlements(cache -> cache.hasAccess(client)).isEmpty();
+		return !settlements.collectCachedSettlements(cache -> isSettlementMember(client, (CachedSettlementData)cache)).isEmpty();
+	}
+
+	/**
+	 * Strict settlement membership check. Do not use NetworkSettlementData.doesClientHaveAccess here:
+	 * vanilla deliberately grants management access to public settlements and to unowned settlements
+	 * (ownerAuth == -1), which includes the hidden Elder settlement created near world spawn.
+	 */
+	public static boolean isSettlementMember(ServerClient client, ServerSettlementData settlement) {
+		return client != null && settlement != null && settlement.networkData != null
+				&& settlement.networkData.isClientPartOf(client);
+	}
+
+	/**
+	 * Cached equivalent of isSettlementMember. CachedSettlementData.hasAccess currently has the same
+	 * owner/team semantics, but spelling it out here keeps membership checks distinct from the much
+	 * broader loaded-settlement doesClientHaveAccess predicate.
+	 */
+	public static boolean isSettlementMember(ServerClient client, CachedSettlementData cached) {
+		return client != null && cached != null
+				&& (cached.getOwnerAuth() == client.authentication || client.isSameTeam(cached.getTeamID()));
 	}
 
 	public static void registerRevealChallenge(String sectionStringID) {
@@ -340,7 +360,7 @@ public final class GuideProgressionSystem {
 		}
 
 		SettlementsWorldData settlements = SettlementsWorldData.getSettlementsData(client.getServer());
-		for (Object value : settlements.collectCachedSettlements(cache -> cache.hasAccess(client))) {
+		for (Object value : settlements.collectCachedSettlements(cache -> isSettlementMember(client, (CachedSettlementData)cache))) {
 			CachedSettlementData cached = (CachedSettlementData)value;
 			ServerSettlementData settlement = settlements.getServerData(cached.uniqueID);
 			if (settlement == null) settlement = settlements.getOrLoadServerData(cached.uniqueID);
@@ -350,7 +370,7 @@ public final class GuideProgressionSystem {
 
 		if (level != null && level.isCave) {
 			SettlementLevelDomain domain = SettlementMultiLevelSystem.findDomainQuiet(client.getServer(), level.getIdentifier(), player.getTileX(), player.getTileY());
-			if (domain != null && domain.getSettlement() != null && domain.getSettlement().networkData.doesClientHaveAccess(client)) {
+			if (domain != null && isSettlementMember(client, domain.getSettlement())) {
 				reveal(client, "cavesettlements");
 			}
 		}

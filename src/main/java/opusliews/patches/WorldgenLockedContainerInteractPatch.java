@@ -11,7 +11,10 @@ import opusliews.worldgengating.WorldgenLockedContainerSystem;
 public class WorldgenLockedContainerInteractPatch {
 	@Advice.OnMethodEnter(skipOn = Advice.OnNonDefaultValue.class)
 	public static boolean onEnter(@Advice.This LevelObject levelObject, @Advice.Argument(0) PlayerMob player) {
-		if (SettlementCaveInventoryOpenSupport.tryOpen(levelObject, player)) return true;
-		return WorldgenLockedContainerSystem.handleInteract(levelObject, player);
+		// Worldgen interaction gating must run before the multi-level settlement container bridge.
+		// Otherwise a locked natural container on a cave level can be opened by the bridge before
+		// the key/progression gate gets a chance to block it.
+		if (WorldgenLockedContainerSystem.handleInteract(levelObject, player)) return true;
+		return SettlementCaveInventoryOpenSupport.tryOpen(levelObject, player);
 	}
 }

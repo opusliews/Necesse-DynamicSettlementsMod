@@ -31,6 +31,7 @@ public final class SettlementMultiLevelSystem {
 			if (Logging.logEnabled) Logging.logMessage("[MultiLevelSettlement] Cannot resolve domain for null settlement");
 			return null;
 		}
+		if (!isPlayerSettlement(settlement)) return null;
 
 		synchronized (domains) {
 			SettlementLevelDomain existing = domains.get(settlement);
@@ -44,7 +45,16 @@ public final class SettlementMultiLevelSystem {
 		}
 	}
 
-
+	/**
+	 * Multi-level settlement features are only valid for actual player-founded settlements.
+	 * Vanilla also creates ownerless hidden settlement data (notably for the spawn Elder house),
+	 * and those must never become surface/cave domains.
+	 */
+	public static boolean isPlayerSettlement(ServerSettlementData settlement) {
+		return settlement != null
+				&& settlement.networkData != null
+				&& settlement.networkData.getOwnerAuth() != -1L;
+	}
 
 	public static void ensureCaveSettlementLoaded(ServerSettlementData settlement) {
 		if (settlement == null || settlement.getServer() == null) return;
