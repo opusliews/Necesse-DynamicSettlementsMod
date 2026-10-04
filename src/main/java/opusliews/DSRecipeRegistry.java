@@ -110,9 +110,9 @@ public class DSRecipeRegistry {
 		register("woodshovel", 1, RecipeTechRegistry.WORKSTATION, ingredient("dsanyplank", 1));
 		register("woodsword", 1, CrudeWorkbenchFeature.tech, ingredient("dsanyplank", 1));
 		register("woodsword", 1, RecipeTechRegistry.WORKSTATION, ingredient("dsanyplank", 1));
-		register("forge", 1, CrudeWorkbenchFeature.tech, ingredient("brick", 8));
-		register("forge", 1, RecipeTechRegistry.WORKSTATION, ingredient("brick", 8));
-		register("campfire", 1, CrudeWorkbenchFeature.tech, ingredientsFromScript("{{anylog, 10}}"));
+		register("forge", 1, CrudeWorkbenchFeature.tech, ingredient("brick", 8), ingredient(FirestarterItem.stringID, 1));
+		register("forge", 1, RecipeTechRegistry.WORKSTATION, ingredient("brick", 8), ingredient(FirestarterItem.stringID, 1));
+		register("campfire", 1, CrudeWorkbenchFeature.tech, ingredient("anylog", 10), ingredient(FirestarterItem.stringID, 1));
 		register("roastingstation", 1, CrudeWorkbenchFeature.tech, ingredientsFromScript("{{woodenshaft, 5}, {string, 4}}"));
 
 		register("clay", 1, RecipeTechRegistry.ALCHEMY, ingredient(DirtPileItem.stringID, 1));

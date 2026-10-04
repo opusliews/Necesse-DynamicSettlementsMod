@@ -130,7 +130,7 @@ brownbearcarpet	carpenter	leather:1
 bucket	workstation	ironbar:3
 buffergate	demonic	ironbar:2,wire:10
 calmingminersbouquet	demonic	calmingrose:1,miningcharm:1
-campfire	workstation	anylog:10,anystone:20
+campfire	workstation	anylog:10,anystone:20,firestarter:1
 candle	carpenter	wax:1,string:1,honey:1
 cannonball	tungstenanvil	ironbar:1,handcannon:0
 carapacedagger	tungstenanvil	bonehilt:1,wormcarapace:1
@@ -154,7 +154,7 @@ clothrobe	ironanvil	clothpanel:1,string:1
 clothrobe	workstation	wool:16
 compostbin	workstation	anylog:20,ironbar:5
 cookingpot	workstation	clay:10,ironbar:4
-cookingstation	tungstenworkstation	tungstenbar:8,obsidian:12
+cookingstation	tungstenworkstation	tungstenbar:8,obsidian:12,firestarter:1
 coolingbox	workstation	anylog:10,anystone:10,frostshard:5
 copperaxe	ironanvil	copperaxehead:1,woodenshaft:1
 copperboots	ironanvil	copperplate:1,leather:1
@@ -398,7 +398,7 @@ icepickaxe	fallenanvil	dsanymetalplate:1,woodenshaft:1,cryoessence:1
 icewall	demonic	snowstone:3,frostshard:1
 iciclestaff	tungstenanvil	dsanyshaft:1,magicfocus:1,glacialshard:1
 ignitionkey	fallenanvil	fuelskull:1,pristinegear:1,radiatedessence:1
-incinerator	workstation	ironbar:10,clay:10
+incinerator	workstation	ironbar:10,clay:10,firestarter:1
 ironarrow	ironanvil	woodenshaft:1,ironplate:1,feather:1
 ironaxe	ironanvil	ironaxehead:1,woodenshaft:1
 ironboots	ironanvil	ironplate:1,leather:1
