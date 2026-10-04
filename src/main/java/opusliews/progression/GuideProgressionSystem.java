@@ -18,6 +18,7 @@ import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import necesse.level.maps.levelData.settlementData.zones.SettlementWorkZoneRegistry;
 import opusliews.charcoal.CharcoalProductionZone;
 import opusliews.clayfiring.ClayFiringZone;
+import opusliews.item.MoldItem;
 import opusliews.journal.GuideJournalRegistry;
 import opusliews.logging.Logging;
 import opusliews.mobs.BuilderHumanMob;
@@ -167,6 +168,12 @@ public final class GuideProgressionSystem {
 		for (Object value : settlement.networkData.getTeamMembers()) {
 			if (value instanceof ServerClient) complete((ServerClient)value, sectionStringID);
 		}
+	}
+
+	public static void onSettlerMovedIn(ServerSettlementData settlement, String settlerStringID) {
+		if (settlement == null || !"mage".equals(settlerStringID)) return;
+		if (Logging.logEnabled) Logging.logMessage("[GuideProgression] Mage moved into settlement=" + settlement.uniqueID + "; revealing mold enchanting Journal");
+		revealForSettlement(settlement, "moldenchanting");
 	}
 
 	public static void onNaturalStationBlocked(ServerClient client, WorldgenStationProgressionSystem.StationRequirement requirement) {
@@ -368,6 +375,10 @@ public final class GuideProgressionSystem {
 			pollSettlement(client, settlement);
 		}
 
+		if (isRevealed(client, "moldenchanting") && hasEnchantedMold(player)) {
+			complete(client, "moldenchanting");
+		}
+
 		if (level != null && level.isCave) {
 			SettlementLevelDomain domain = SettlementMultiLevelSystem.findDomainQuiet(client.getServer(), level.getIdentifier(), player.getTileX(), player.getTileY());
 			if (domain != null && isSettlementMember(client, domain.getSettlement())) {
@@ -383,6 +394,7 @@ public final class GuideProgressionSystem {
 		boolean hasCarpenter = false;
 		boolean hasAngler = false;
 		boolean hasGuard = false;
+		boolean hasMage = false;
 		boolean hasSpecialist = false;
 		boolean hasCaveResident = false;
 		for (Object value : settlement.getSettlers()) {
@@ -392,6 +404,7 @@ public final class GuideProgressionSystem {
 			else if ("carpenter".equals(id)) hasCarpenter = true;
 			else if ("angler".equals(id)) hasAngler = true;
 			else if ("guard".equals(id)) hasGuard = true;
+			else if ("mage".equals(id)) hasMage = true;
 			if ("builder".equals(id) || "carpenter".equals(id) || "blacksmith".equals(id)
 					|| "alchemist".equals(id) || "angler".equals(id)) hasSpecialist = true;
 			if (settler.getBed() instanceof SettlementCaveBed) hasCaveResident = true;
@@ -400,6 +413,7 @@ public final class GuideProgressionSystem {
 		if (hasCarpenter) reveal(client, "carpenters");
 		if (hasAngler) reveal(client, "fishingareas");
 		if (hasGuard) reveal(client, "guardduty");
+		if (hasMage) reveal(client, "moldenchanting");
 		if (hasSpecialist) reveal(client, "happinesswork");
 		if (hasCaveResident) reveal(client, "caveresidents");
 		if (!SettlementLevelStorageManager.getStorage(settlement).isEmpty()) reveal(client, "stockmanagement");
@@ -408,6 +422,13 @@ public final class GuideProgressionSystem {
 		boolean undergroundEstablished = domain != null && !SettlementLadderSystem.getDesignatedLinks(domain).isEmpty();
 		if (undergroundEstablished) complete(client, "cavesettlements");
 		if (settlement.isRaidOngoing() && undergroundEstablished) reveal(client, "multilevelraids");
+	}
+
+	private static boolean hasEnchantedMold(PlayerMob player) {
+		return player != null && player.getInv().hasAnyItem(
+				false, false, false, false, "moldenchanting",
+				MoldItem::hasUnbreaking
+		);
 	}
 
 	private static boolean hasObtained(ServerClient client, String itemStringID) {
