@@ -49,8 +49,11 @@ public final class ForgeCookingRecipeRegistry {
 		registerMoldedBar("ivybar", "ivyore", 4);
 
 		registerMoldedBarFromMaterial("demonicbar", "copperbar", 3);
+		registerMoldedBarFromMaterial("demonicbar", "copperore", 12);
 		registerMoldedBarFromMaterial("demonicbar", "ironbar", 2);
+		registerMoldedBarFromMaterial("demonicbar", "ironore", 8);
 		registerMoldedBarFromMaterial("demonicbar", "goldbar", 1);
+		registerMoldedBarFromMaterial("demonicbar", "goldore", 4);
 
 		register(new ForgeCookingRecipe(
 				"ironbar_from_brokenirontool",
@@ -120,6 +123,14 @@ public final class ForgeCookingRecipeRegistry {
 		register(new ForgeCookingRecipe(
 				"sawblade_from_ironbar",
 				ForgeCookingInput.consume("ironbar", 2),
+				ForgeCookingInput.durabilityUse(DSItemRegistry.sawBladeMoldStringID),
+				DSItemRegistry.sawBladeStringID,
+				1,
+				DEFAULT_PROCESS_TIME
+		));
+		register(new ForgeCookingRecipe(
+				"sawblade_from_ironore",
+				ForgeCookingInput.consume("ironore", 8),
 				ForgeCookingInput.durabilityUse(DSItemRegistry.sawBladeMoldStringID),
 				DSItemRegistry.sawBladeStringID,
 				1,
