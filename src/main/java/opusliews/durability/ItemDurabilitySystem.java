@@ -13,6 +13,7 @@ import necesse.level.gameObject.GameObject;
 import necesse.level.gameTile.GameTile;
 import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
+import opusliews.item.MoldItem;
 import opusliews.logging.Logging;
 
 import java.util.List;
@@ -158,6 +159,7 @@ public final class ItemDurabilitySystem {
 
 	public static InventoryItem applyActionAndGetItem(InventoryItem item, DurabilityAction action, DurabilityContext context) {
 		if (!isBreakable(item)) return item;
+		if (action == DurabilityAction.CRAFTING_USE && MoldItem.hasUnbreaking(item)) return item;
 		if (context != null && context.level != null && context.level.isClient()) return item;
 
 		ItemDurabilityDefinition definition = ItemDurabilityRegistry.get(item.item);

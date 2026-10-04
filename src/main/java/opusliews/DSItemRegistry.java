@@ -171,6 +171,7 @@ public class DSItemRegistry {
     public static final String clayPackageStringID = "claypackage";
 
     public static void registerItems() {
+       DSEnchantmentRegistry.registerEnchantments();
        registerGlobalGroups();
        CraftingComponentCategories.register();
 
@@ -321,25 +322,25 @@ public class DSItemRegistry {
        registerMaterial(unfiredBrickStringID, new FireableMatItem(500, Item.Rarity.NORMAL, brickStringID), 4.0F, null, null, null);
        registerMaterial(brickStringID, new FiredClayMatItem(500, Item.Rarity.NORMAL), 6.0F, null, null, null);
        registerMaterial(unfiredIngotMoldStringID, new FireableMatItem(500, Item.Rarity.NORMAL, ingotMoldStringID), 4.0F, null, null, null);
-       registerMaterial(ingotMoldStringID, new FiredClayMatItem(500, Item.Rarity.NORMAL), 6.0F, null, null, null);
+       registerMaterial(ingotMoldStringID, new MoldItem(500, Item.Rarity.NORMAL), 6.0F, null, null, null);
        registerMaterial(unfiredPickaxeHeadMoldStringID, new FireableMatItem(500, Item.Rarity.NORMAL, pickaxeHeadMoldStringID), 4.0F, null, null, null);
-       registerMaterial(pickaxeHeadMoldStringID, new FiredClayMatItem(500, Item.Rarity.NORMAL), 6.0F, null, null, null);
+       registerMaterial(pickaxeHeadMoldStringID, new MoldItem(500, Item.Rarity.NORMAL), 6.0F, null, null, null);
        registerMaterial(unfiredAxeHeadMoldStringID, new FireableMatItem(500, Item.Rarity.NORMAL, axeHeadMoldStringID), 4.0F, null, null, null);
-       registerMaterial(axeHeadMoldStringID, new FiredClayMatItem(500, Item.Rarity.NORMAL), 6.0F, null, null, null);
+       registerMaterial(axeHeadMoldStringID, new MoldItem(500, Item.Rarity.NORMAL), 6.0F, null, null, null);
        registerMaterial(unfiredShovelHeadMoldStringID, new FireableMatItem(500, Item.Rarity.NORMAL, shovelHeadMoldStringID), 4.0F, null, null, null);
-       registerMaterial(shovelHeadMoldStringID, new FiredClayMatItem(500, Item.Rarity.NORMAL), 6.0F, null, null, null);
+       registerMaterial(shovelHeadMoldStringID, new MoldItem(500, Item.Rarity.NORMAL), 6.0F, null, null, null);
        registerMaterial(unfiredSickleBladeMoldStringID, new FireableMatItem(500, Item.Rarity.NORMAL, sickleBladeMoldStringID), 4.0F, null, null, null);
-       registerMaterial(sickleBladeMoldStringID, new FiredClayMatItem(500, Item.Rarity.NORMAL), 6.0F, null, null, null);
+       registerMaterial(sickleBladeMoldStringID, new MoldItem(500, Item.Rarity.NORMAL), 6.0F, null, null, null);
        registerMaterial(unfiredShearsBladeMoldStringID, new FireableMatItem(500, Item.Rarity.NORMAL, shearsBladeMoldStringID), 4.0F, null, null, null);
-       registerMaterial(shearsBladeMoldStringID, new FiredClayMatItem(500, Item.Rarity.NORMAL), 6.0F, null, null, null);
+       registerMaterial(shearsBladeMoldStringID, new MoldItem(500, Item.Rarity.NORMAL), 6.0F, null, null, null);
        registerMaterial(unfiredSwordBladeMoldStringID, new FireableMatItem(500, Item.Rarity.NORMAL, swordBladeMoldStringID), 4.0F, null, null, null);
-       registerMaterial(swordBladeMoldStringID, new FiredClayMatItem(500, Item.Rarity.NORMAL), 6.0F, null, null, null);
+       registerMaterial(swordBladeMoldStringID, new MoldItem(500, Item.Rarity.NORMAL), 6.0F, null, null, null);
        registerMaterial(unfiredSawBladeMoldStringID, new FireableMatItem(500, Item.Rarity.NORMAL, sawBladeMoldStringID), 4.0F, null, null, null);
-       registerMaterial(sawBladeMoldStringID, new FiredClayMatItem(500, Item.Rarity.NORMAL), 6.0F, null, null, null);
+       registerMaterial(sawBladeMoldStringID, new MoldItem(500, Item.Rarity.NORMAL), 6.0F, null, null, null);
        registerMaterial(sawBladeStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL), 12.0F, "blade", "metal", "iron");
        registerMaterial(sawStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL), 12.5F, null, "metal", "iron");
        registerMaterial(unfiredThickPlateMoldStringID, new FireableMatItem(500, Item.Rarity.NORMAL, thickPlateMoldStringID), 4.0F, null, null, null);
-       registerMaterial(thickPlateMoldStringID, new FiredClayMatItem(500, Item.Rarity.NORMAL), 6.0F, null, null, null);
+       registerMaterial(thickPlateMoldStringID, new MoldItem(500, Item.Rarity.NORMAL), 6.0F, null, null, null);
        registerMaterial(thickIronPlateStringID, new MatItem(500, Item.Rarity.NORMAL), 24.0F, null, null, null);
        registerMaterial(thickDemonicPlateStringID, new MatItem(500, Item.Rarity.NORMAL), 24.0F, null, null, null);
        registerMaterial(thickTungstenPlateStringID, new MatItem(500, Item.Rarity.NORMAL), 24.0F, null, null, null);
