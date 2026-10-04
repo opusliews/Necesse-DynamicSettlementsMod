@@ -40,10 +40,26 @@ public class GuideJournalFormRenderer {
 		FormLocalLabel title = new FormLocalLabel(entry.getLocalization(), titleOptions, -1, x + 16, y + 2, entries.getWidth() - 100);
 		entries.addComponent(title);
 
-		int completed = GuideJournalRegistry.getCompletedSectionCount(entry.getStringID(), client);
 		int total = GuideJournalRegistry.getCompletableSectionCount(entry.getStringID(), client);
 		if (total > 0) {
-			FormLocalLabel progress = new FormLocalLabel(new StaticMessage(completed + "/" + total), titleOptions, 1, x + entries.getWidth() - 18, y + 2, 70);
+			FormLocalLabel progress = new FormLocalLabel(
+					new StaticMessage(GuideJournalRegistry.getCompletedSectionCount(entry.getStringID(), client) + "/" + total),
+					titleOptions,
+					1,
+					x + entries.getWidth() - 18,
+					y + 2,
+					70
+			) {
+				@Override
+				public void draw(TickManager tickManager, PlayerMob perspective, Rectangle renderBox) {
+					setLocalization(new StaticMessage(
+							GuideJournalRegistry.getCompletedSectionCount(entry.getStringID(), client)
+									+ "/"
+									+ GuideJournalRegistry.getCompletableSectionCount(entry.getStringID(), client)
+					));
+					super.draw(tickManager, perspective, renderBox);
+				}
+			};
 			entries.addComponent(progress);
 		}
 
@@ -173,7 +189,7 @@ public class GuideJournalFormRenderer {
 				JournalContainerForm.lastOpenEntryScroll = scrollY;
 			});
 
-			int checkboxWidth = section.hasCompletionState() && section.isCompleted(client) ? 24 : 0;
+			int checkboxWidth = section.hasCompletionState() ? 24 : 0;
 			int sectionTitleWidth = width - 43 - checkboxWidth;
 			FormLocalLabel sectionTitle = new FormLocalLabel(section.title, new FontOptions(18).color(textColor), -1, 14, y + 2, sectionTitleWidth);
 			contentBox.addComponent(sectionTitle);
@@ -186,7 +202,12 @@ public class GuideJournalFormRenderer {
 					ButtonColor.BASE,
 					contentBox.getInterfaceStyle().button_checked_20,
 					new StaticMessage[0]
-				);
+				) {
+					@Override
+					public void draw(TickManager tickManager, PlayerMob perspective, Rectangle renderBox) {
+						if (section.isCompleted(client)) super.draw(tickManager, perspective, renderBox);
+					}
+				};
 				contentBox.addComponent(completedIcon);
 			}
 

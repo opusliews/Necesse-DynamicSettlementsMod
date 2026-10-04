@@ -22,6 +22,7 @@ import opusliews.blueprint.BlueprintAreaManager;
 import opusliews.item.BlueprintItem;
 import opusliews.jobs.ConstructionLevelJob;
 import opusliews.logging.Logging;
+import opusliews.progression.GuideProgressionSystem;
 import opusliews.tools.BlueprintData;
 import opusliews.tools.BlueprintElement;
 
@@ -326,5 +327,6 @@ public class PacketPlaceBlueprintArea extends Packet {
 				new PacketAddBlueprintArea(area),
 				level
 		);
+		GuideProgressionSystem.onBlueprintProjectPlaced(client);
 	}
 }

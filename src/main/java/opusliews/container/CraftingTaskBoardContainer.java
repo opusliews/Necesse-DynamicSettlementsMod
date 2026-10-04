@@ -16,6 +16,8 @@ import necesse.level.gameObject.container.CraftingStationObject;
 import necesse.level.maps.Level;
 import opusliews.object.CraftingTaskBoardObjectEntity;
 import opusliews.object.DynamicCraftingStationObjectEntity;
+import opusliews.object.AnvilObjectEntity;
+import opusliews.progression.GuideProgressionSystem;
 import opusliews.forge.ForgeCookingRecipe;
 import opusliews.forge.ForgeCookingRecipeRegistry;
 
@@ -46,10 +48,15 @@ public class CraftingTaskBoardContainer extends Container {
 				int expectedRevision = reader.getNextInt();
 				int itemID = reader.getNextInt();
 				int sourceType = reader.getNextByteUnsigned();
-				if (isItemCraftableByLinkedStation(itemID, sourceType)
-						&& !boardEntity.addTask(expectedRevision, itemID, sourceType)
-						&& client.isServer()) {
-					boardEntity.syncContentNow();
+				if (isItemCraftableByLinkedStation(itemID, sourceType)) {
+					boolean added = boardEntity.addTask(expectedRevision, itemID, sourceType);
+					if (!added && client.isServer()) {
+						boardEntity.syncContentNow();
+					} else if (added && client.isServer()
+							&& (sourceType == opusliews.crafting.CraftingTask.SOURCE_FORGE
+							|| boardEntity.getLinkedStationEntity() instanceof AnvilObjectEntity)) {
+						GuideProgressionSystem.onAutomatedMetalworkingTaskCreated(client.getServerClient());
+					}
 				}
 			}
 		});

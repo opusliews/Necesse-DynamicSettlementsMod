@@ -26,6 +26,7 @@ import necesse.level.maps.LevelObject;
 import necesse.level.maps.hudManager.floatText.ChatBubbleText;
 import opusliews.journal.GuideJournalRegistry;
 import opusliews.logging.Logging;
+import opusliews.progression.GuideProgressionSystem;
 
 import java.util.ArrayList;
 
@@ -148,6 +149,9 @@ public final class WorldgenLockedContainerSystem {
 					+ " stationTier=" + (requirement == null ? -1 : requirement.tier)
 					+ " craftedTier=" + (requirement == null ? -1 : WorldgenStationProgressionSystem.getHighestCraftedTier(player, requirement.family))
 					+ " allowed=" + allowed);
+			if (!allowed && requirement != null && player.isServerClient()) {
+				GuideProgressionSystem.onNaturalStationBlocked(player.getServerClient(), requirement);
+			}
 			return !allowed;
 		}
 

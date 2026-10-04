@@ -9,6 +9,7 @@ import necesse.engine.network.server.ServerClient;
 import necesse.inventory.container.settlement.SettlementContainer;
 import necesse.level.maps.Level;
 import necesse.level.maps.levelData.settlementData.ServerSettlementData;
+import opusliews.progression.GuideProgressionSystem;
 import opusliews.sleep.SettlementSleepSettings;
 import opusliews.sleep.SettlementSleepSettingsLevelData;
 
@@ -49,5 +50,6 @@ public class PacketSettlementSleepSettingsRequest extends Packet {
 				? SettlementSleepSettings.defaults
 				: data.getSettings(settlementUniqueID);
 		client.sendPacket(new PacketSettlementSleepSettingsSync(settlementUniqueID, settings));
+		GuideProgressionSystem.onSleepSettingsOpened(client);
 	}
 }

@@ -23,6 +23,7 @@ import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
 import necesse.level.maps.levelData.settlementData.settler.romancePersonalities.PlayerRomanceManager;
 import opusliews.earlygame.CrudeWorkbenchFeature;
+import opusliews.progression.GuideProgressionSystem;
 import opusliews.network.PacketCrudeWorkbenchOutput;
 import opusliews.logging.Logging;
 import opusliews.crafting.CraftingTime;
@@ -164,6 +165,7 @@ public class CrudeWorkbenchContainer extends CraftingStationContainer {
 
 		ServerClient serverClient = client.getServerClient();
 		serverClient.sendPacket(new PacketCrudeWorkbenchOutput(resultItem));
+		GuideProgressionSystem.recordCraftedRecipe(client.playerMob, recipe);
 		serverClient.newStats.crafted_items.increment(1);
 		JournalChallengeRegistry.handleListeners(
 				serverClient,

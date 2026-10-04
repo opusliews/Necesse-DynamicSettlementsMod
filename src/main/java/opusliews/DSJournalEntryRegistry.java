@@ -6,6 +6,7 @@ import necesse.inventory.InventoryItem;
 import opusliews.journal.GuideJournalProgressObjective;
 import opusliews.journal.GuideJournalRegistry;
 import opusliews.progression.EarlyHealthProgressionSystem;
+import opusliews.progression.GuideProgressionSystem;
 import opusliews.worldgengating.WorldgenLockedContainerSystem;
 
 import java.util.List;
@@ -97,6 +98,80 @@ public class DSJournalEntryRegistry {
 				"guide24",
 				"metalworkhammer"
 		);
+
+
+		GuideJournalRegistry.registerButtonSectionAfterObjective(
+				categoryStringID, "primitivecrafting",
+				new LocalMessage("journalguide", "primitivecraftingtitle"),
+				new LocalMessage("journalguide", "primitivecraftingbody"),
+				new LocalMessage("journalguide", "completedbutton"), null, null, "guide9"
+		);
+
+		GuideJournalRegistry.registerButtonSectionAfterObjective(
+				categoryStringID, "componentcrafting",
+				new LocalMessage("journalguide", "componentcraftingtitle"),
+				new LocalMessage("journalguide", "componentcraftingbody"),
+				new LocalMessage("journalguide", "completedbutton"), null, null, "guide26"
+		);
+
+		GuideJournalRegistry.registerButtonSectionAfterObjective(
+				categoryStringID, "interfacecontrols",
+				new LocalMessage("journalguide", "interfacecontrolstitle"),
+				new LocalMessage("journalguide", "interfacecontrolsbody"),
+				new LocalMessage("journalguide", "completedbutton"), null, null, "guide1"
+		);
+
+		String[] triggeredSections = {
+				"hidingholes", "moldsanddurability", "foundstations", "treasureshovel", "farmchanges",
+				"settlementintro", "happinesswork", "builders", "blueprintcreation", "blueprintconstruction",
+				"blueprinttools", "projectmanagement", "inspectionglass", "travellingbuilder", "stockmanagement",
+				"carpenters", "workstationlinks", "craftingtasks", "craftingautostock", "automatedmetalworking",
+				"charcoalautomation", "clayautomation", "fishingareas", "settlementdefence", "warningbells",
+				"guardduty", "guardfatigue", "malignance", "sleeping", "sleepalarms", "cavesettlements",
+				"caveresidents", "caveinfrastructure", "crosslevellogistics", "crosslevelcommands", "caveguards",
+				"undergroundthreats", "multilevelraids", "starvation"
+		};
+		for (String section : triggeredSections) GuideProgressionSystem.registerRevealChallenge(section);
+
+		registerTriggeredButton("hidingholes");
+		registerTriggeredButton("moldsanddurability");
+		registerTriggeredAuto("foundstations");
+		registerTriggeredButton("treasureshovel");
+		registerTriggeredButton("farmchanges");
+		registerTriggeredButton("settlementintro");
+		registerTriggeredButton("happinesswork");
+		registerTriggeredButton("builders");
+		registerTriggeredAuto("blueprintcreation");
+		registerTriggeredAuto("blueprintconstruction");
+		registerTriggeredButton("blueprinttools");
+		registerTriggeredButton("projectmanagement");
+		registerTriggeredButton("inspectionglass");
+		registerTriggeredButton("travellingbuilder");
+		registerTriggeredAuto("stockmanagement");
+		registerTriggeredButton("carpenters");
+		registerTriggeredAuto("workstationlinks");
+		registerTriggeredButton("craftingtasks");
+		registerTriggeredButton("craftingautostock");
+		registerTriggeredAuto("automatedmetalworking");
+		registerTriggeredAuto("charcoalautomation");
+		registerTriggeredAuto("clayautomation");
+		registerTriggeredButton("fishingareas");
+		registerTriggeredAuto("settlementdefence");
+		registerTriggeredButton("warningbells");
+		registerTriggeredAuto("guardduty");
+		registerTriggeredButton("guardfatigue");
+		registerTriggeredButton("malignance");
+		registerTriggeredButton("sleeping");
+		registerTriggeredAuto("sleepalarms");
+		registerTriggeredAuto("cavesettlements");
+		registerTriggeredButton("caveresidents");
+		registerTriggeredButton("caveinfrastructure");
+		registerTriggeredButton("crosslevellogistics");
+		registerTriggeredButton("crosslevelcommands");
+		registerTriggeredButton("caveguards");
+		registerTriggeredButton("undergroundthreats");
+		registerTriggeredButton("multilevelraids");
+		registerTriggeredButton("starvation");
 
 
 		// IMPORTANT, KEEP THIS REGISTRATION AT THE VERY END OF JOURNAL REGISTRATIONS
@@ -197,4 +272,26 @@ public class DSJournalEntryRegistry {
 		);
 		*/
 	}
+
+	private static void registerTriggeredButton(String sectionStringID) {
+		GuideJournalRegistry.registerButtonSectionAfterChallenge(
+				categoryStringID,
+				sectionStringID,
+				new LocalMessage("journalguide", sectionStringID + "title"),
+				new LocalMessage("journalguide", sectionStringID + "body"),
+				new LocalMessage("journalguide", "completedbutton"),
+				GuideProgressionSystem.revealChallengeID(sectionStringID)
+		);
+	}
+
+	private static void registerTriggeredAuto(String sectionStringID) {
+		GuideJournalRegistry.registerAutoSectionAfterChallenge(
+				categoryStringID,
+				sectionStringID,
+				new LocalMessage("journalguide", sectionStringID + "title"),
+				new LocalMessage("journalguide", sectionStringID + "body"),
+				GuideProgressionSystem.revealChallengeID(sectionStringID)
+		);
+	}
+
 }

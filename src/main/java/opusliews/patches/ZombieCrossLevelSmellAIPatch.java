@@ -24,6 +24,7 @@ import necesse.level.maps.levelData.settlementData.settler.SettlerMob;
 import net.bytebuddy.asm.Advice;
 import opusliews.breaching.ZombieBreaching;
 import opusliews.logging.Logging;
+import opusliews.progression.GuideProgressionSystem;
 import opusliews.multilevelsettlement.SettlementLadderLink;
 import opusliews.multilevelsettlement.SettlementLadderSystem;
 import opusliews.multilevelsettlement.SettlementLevelDomain;
@@ -136,6 +137,7 @@ public class ZombieCrossLevelSmellAIPatch {
 				if (smellTarget == null) return AINodeResult.FAILURE;
 				if (Logging.logEnabled) Logging.logMessage("[HostileSmell] Hostile acquired cross-level scent mob=" + describeMob(mob)
 						+ " target=" + describeMob(smellTarget) + " radiusTiles=" + getSmellRadiusTiles(domain));
+				if (domain.getSettlement() != null) GuideProgressionSystem.onUndergroundThreat(domain.getSettlement());
 			}
 
 			if (activeLink == null) {

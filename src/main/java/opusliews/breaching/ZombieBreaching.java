@@ -7,6 +7,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+import necesse.engine.world.worldData.SettlementsWorldData;
 import necesse.entity.mobs.BasicPathDoorOption;
 import necesse.entity.mobs.Mob;
 import necesse.entity.mobs.PathDoorOption;
@@ -15,10 +16,12 @@ import necesse.level.gameObject.DoorObject;
 import necesse.level.gameObject.GameObject;
 import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
+import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import necesse.level.maps.regionSystem.RegionType;
 import necesse.level.maps.regionSystem.SubRegion;
 import opusliews.damage.MaterialWeatheringClassifier;
 import opusliews.damage.WeatheringMaterialTier;
+import opusliews.progression.GuideProgressionSystem;
 
 public final class ZombieBreaching {
 	public static final String passiveTargetKey = "dynamicSettlementsZombiePassiveTarget";
@@ -178,6 +181,7 @@ public final class ZombieBreaching {
 
 	public static int getBreakDamageAndConfigureCooldown(Mob zombie, LevelObject lo) {
 		trackActiveBreach(zombie, lo);
+		notifyBarrierAttack(zombie, lo);
 
 		WeatheringMaterialTier tier = getTier(lo.object);
 		if (tier == null || tier.getTier() >= 4) {
@@ -192,6 +196,7 @@ public final class ZombieBreaching {
 
 	public static int getProjectileBreakDamage(Mob zombie, LevelObject lo) {
 		trackActiveBreach(zombie, lo);
+		notifyBarrierAttack(zombie, lo);
 
 		WeatheringMaterialTier tier = getTier(lo.object);
 		if (tier == null || tier.getTier() >= 4) {
@@ -201,6 +206,13 @@ public final class ZombieBreaching {
 		int health = Math.max(1, lo.object.objectHealth);
 		int desiredHits = 30 * (tier.getTier() + 1);
 		return Math.max(1, (int)Math.ceil(health / (double)desiredHits));
+	}
+
+	private static void notifyBarrierAttack(Mob zombie, LevelObject lo) {
+		if (zombie == null || lo == null || zombie.getLevel() == null || !zombie.getLevel().isServer()) return;
+		ServerSettlementData settlement = SettlementsWorldData.getSettlementsData(zombie.getLevel())
+				.getServerDataAtTile(zombie.getLevel().getIdentifier(), lo.tileX, lo.tileY);
+		if (settlement != null) GuideProgressionSystem.onSettlementBarrierAttacked(settlement);
 	}
 
 	private static void trackActiveBreach(Mob zombie, LevelObject lo) {

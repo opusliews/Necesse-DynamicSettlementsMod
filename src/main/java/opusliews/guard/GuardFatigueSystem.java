@@ -14,6 +14,7 @@ import opusliews.multilevelsettlement.SettlementLevelType;
 import opusliews.multilevelsettlement.SettlementMultiLevelSystem;
 import opusliews.logging.Logging;
 import opusliews.network.PacketGuardFatigueUpdate;
+import opusliews.progression.GuideProgressionSystem;
 
 public final class GuardFatigueSystem {
 	public static final int maxFatigue = 10;
@@ -294,7 +295,12 @@ public final class GuardFatigueSystem {
 			return;
 		}
 
+		int previous = state.fatigue;
 		state.fatigue = value;
+		if (value > previous && guard.isServer()) {
+			ServerSettlementData settlement = guard.getSettlerSettlementServerData();
+			if (settlement != null) GuideProgressionSystem.onGuardFatigueGained(settlement);
+		}
 		if (guard.isServer() && guard.getLevel() != null && guard.getLevel().getServer() != null) {
 			guard.getLevel().getServer().network.sendToClientsWithEntity(
 					new PacketGuardFatigueUpdate(guard.getUniqueID(), value),

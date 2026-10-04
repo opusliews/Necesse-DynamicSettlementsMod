@@ -30,6 +30,7 @@ import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
 import necesse.level.maps.levelData.settlementData.settler.romancePersonalities.PlayerRomanceManager;
 import opusliews.object.DynamicCraftingStationObjectEntity;
+import opusliews.progression.GuideProgressionSystem;
 import opusliews.worldgengating.WorldgenStationProgressionSystem;
 import opusliews.object.AnvilObjectEntity;
 import opusliews.crafting.CraftingTime;
@@ -111,13 +112,22 @@ public class DynamicCraftingStationContainer extends CraftingStationContainer {
 			@Override
 			protected void run(boolean value) {
 				selectingStorage = value;
+				if (client.isServer() && value) {
+					GuideProgressionSystem.onWorkstationLinksOpened(
+							client.getServerClient(),
+							!stationEntity.getInputStorages().isEmpty() && !stationEntity.getOutputStorages().isEmpty()
+					);
+				}
 			}
 		});
 
 		setAutoStockMissingIngredients = registerAction(new BooleanCustomAction() {
 			@Override
 			protected void run(boolean value) {
-				if (client.isServer()) stationEntity.setAutoStockMissingIngredients(value);
+				if (client.isServer()) {
+					stationEntity.setAutoStockMissingIngredients(value);
+					if (value) GuideProgressionSystem.onCraftingAutoStockEnabled(client.getServerClient());
+				}
 			}
 		});
 	}
@@ -260,6 +270,7 @@ public class DynamicCraftingStationContainer extends CraftingStationContainer {
 		stationEntity.setOutput(resultItem);
 		stationEntity.onPlayerCraftCompleted(client.playerMob, recipe, resultItem);
 		WorldgenStationProgressionSystem.recordCraftedRecipe(client.playerMob, recipe);
+		GuideProgressionSystem.recordCraftedRecipe(client.playerMob, recipe);
 
 		ServerClient serverClient = client.getServerClient();
 		serverClient.newStats.crafted_items.increment(1);
@@ -289,11 +300,15 @@ public class DynamicCraftingStationContainer extends CraftingStationContainer {
 
 		if (input && stationEntity.hasInputStorage(target)) {
 			stationEntity.removeInputStorage(target);
+			GuideProgressionSystem.onWorkstationLinksChanged(client.getServerClient(),
+					!stationEntity.getInputStorages().isEmpty(), !stationEntity.getOutputStorages().isEmpty());
 			return;
 		}
 
 		if (!input && stationEntity.hasOutputStorage(target)) {
 			stationEntity.removeOutputStorage(target);
+			GuideProgressionSystem.onWorkstationLinksChanged(client.getServerClient(),
+					!stationEntity.getInputStorages().isEmpty(), !stationEntity.getOutputStorages().isEmpty());
 			return;
 		}
 
@@ -309,6 +324,11 @@ public class DynamicCraftingStationContainer extends CraftingStationContainer {
 		} else {
 			stationEntity.addOutputStorage(target);
 		}
+		GuideProgressionSystem.onWorkstationLinksChanged(
+				client.getServerClient(),
+				!stationEntity.getInputStorages().isEmpty(),
+				!stationEntity.getOutputStorages().isEmpty()
+		);
 	}
 
 	private void applyTaskBoardLink(int x, int y) {

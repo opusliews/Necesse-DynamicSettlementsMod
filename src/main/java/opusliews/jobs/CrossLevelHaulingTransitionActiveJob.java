@@ -8,6 +8,7 @@ import necesse.entity.mobs.job.activeJob.TileActiveJob;
 import necesse.level.maps.levelData.jobs.JobMoveToTile;
 import necesse.level.maps.levelData.settlementData.SettlementInventory;
 import opusliews.logging.Logging;
+import opusliews.progression.GuideProgressionSystem;
 import opusliews.multilevelsettlement.SettlementCrossLevelRoute;
 import opusliews.multilevelsettlement.SettlementLadderLink;
 import opusliews.multilevelsettlement.SettlementLadderSystem;
@@ -70,6 +71,10 @@ public class CrossLevelHaulingTransitionActiveJob extends TileActiveJob {
 		if (!(worker.getMobWorker() instanceof HumanMob)) return ActiveJobResult.FAILED;
 		HumanMob human = (HumanMob)worker.getMobWorker();
 		boolean transitioned = SettlementLadderSystem.transitionMob(human, route.ladder, destinationType);
+		if (transitioned) {
+			necesse.level.maps.levelData.settlementData.ServerSettlementData settlement = human.getSettlerSettlementServerData();
+			if (settlement != null) GuideProgressionSystem.onCrossLevelLogistics(settlement);
+		}
 		if (Logging.logEnabled) Logging.logMessage("[CrossLevelHauling] Ladder transition " + (transitioned ? "completed" : "FAILED")
 				+ " settler=" + human.getUniqueID() + " from=" + sourceType + " to=" + destinationType + " destination="
 				+ destination.level.getIdentifier() + "@" + destination.tileX + "," + destination.tileY);

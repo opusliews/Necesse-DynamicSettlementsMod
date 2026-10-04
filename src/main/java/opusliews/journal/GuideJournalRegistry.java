@@ -123,6 +123,62 @@ public class GuideJournalRegistry {
 		registerSectionInternal(categoryStringID, sectionStringID, title, body, buttonText, reward, storyObjectiveToComplete, revealAfterObjectiveStringID, requirements);
 	}
 
+
+	public static void registerButtonSectionAfterChallenge(
+			String categoryStringID,
+			String sectionStringID,
+			GameMessage title,
+			GameMessage body,
+			GameMessage buttonText,
+			String revealAfterChallengeStringID
+	) {
+		registerButtonSectionAfterChallenge(categoryStringID, sectionStringID, title, new GameMessage[]{body}, buttonText, revealAfterChallengeStringID);
+	}
+
+	public static void registerButtonSectionAfterChallenge(
+			String categoryStringID,
+			String sectionStringID,
+			GameMessage title,
+			GameMessage[] body,
+			GameMessage buttonText,
+			String revealAfterChallengeStringID
+	) {
+		if (buttonText == null) throw new IllegalArgumentException("Journal section button text cannot be null: " + sectionStringID);
+		validateRevealChallenge(sectionStringID, revealAfterChallengeStringID);
+		registerSectionInternal(categoryStringID, sectionStringID, title, body, buttonText, null, null,
+				"challenge:" + revealAfterChallengeStringID, new String[0]);
+	}
+
+	public static void registerAutoSectionAfterChallenge(
+			String categoryStringID,
+			String sectionStringID,
+			GameMessage title,
+			GameMessage body,
+			String revealAfterChallengeStringID
+	) {
+		registerAutoSectionAfterChallenge(categoryStringID, sectionStringID, title, new GameMessage[]{body}, revealAfterChallengeStringID);
+	}
+
+	public static void registerAutoSectionAfterChallenge(
+			String categoryStringID,
+			String sectionStringID,
+			GameMessage title,
+			GameMessage[] body,
+			String revealAfterChallengeStringID
+	) {
+		validateRevealChallenge(sectionStringID, revealAfterChallengeStringID);
+		registerSectionInternal(categoryStringID, sectionStringID, title, body, null, null, null,
+				"challenge:" + revealAfterChallengeStringID, new String[0], new GuideJournalProgressObjective[0], true);
+	}
+
+	private static void validateRevealChallenge(String sectionStringID, String revealAfterChallengeStringID) {
+		if (revealAfterChallengeStringID == null
+				|| revealAfterChallengeStringID.isEmpty()
+				|| !JournalChallengeRegistry.doesChallengeExists(revealAfterChallengeStringID)) {
+			throw new IllegalArgumentException("Unknown journal section reveal challenge " + revealAfterChallengeStringID + " for section " + sectionStringID);
+		}
+	}
+
 	private static void registerSectionInternal(String categoryStringID, String sectionStringID, GameMessage title, GameMessage[] body, GameMessage buttonText, LootTable reward, String storyObjectiveToComplete) {
 		registerSectionInternal(categoryStringID, sectionStringID, title, body, buttonText, reward, storyObjectiveToComplete, null, new String[0]);
 	}
@@ -189,7 +245,8 @@ public class GuideJournalRegistry {
 				new String[0],
 				requirements,
 				anyRequiredItemsText,
-				new GuideJournalProgressObjective[0]
+				new GuideJournalProgressObjective[0],
+				false
 		);
 	}
 
@@ -238,20 +295,27 @@ public class GuideJournalRegistry {
 			String[] requiredItemStringIDs,
 			GuideJournalProgressObjective[] progressObjectives
 	) {
-		registerSectionInternal(
-				categoryStringID,
-				sectionStringID,
-				title,
-				body,
-				buttonText,
-				reward,
-				storyObjectiveToComplete,
-				revealAfterObjectiveStringID,
-				requiredItemStringIDs,
-				new String[0],
-				null,
-				progressObjectives
-		);
+		registerSectionInternal(categoryStringID, sectionStringID, title, body, buttonText, reward,
+				storyObjectiveToComplete, revealAfterObjectiveStringID, requiredItemStringIDs,
+				new String[0], null, progressObjectives, false);
+	}
+
+	private static void registerSectionInternal(
+			String categoryStringID,
+			String sectionStringID,
+			GameMessage title,
+			GameMessage[] body,
+			GameMessage buttonText,
+			LootTable reward,
+			String storyObjectiveToComplete,
+			String revealAfterObjectiveStringID,
+			String[] requiredItemStringIDs,
+			GuideJournalProgressObjective[] progressObjectives,
+			boolean forceChallenge
+	) {
+		registerSectionInternal(categoryStringID, sectionStringID, title, body, buttonText, reward,
+				storyObjectiveToComplete, revealAfterObjectiveStringID, requiredItemStringIDs,
+				new String[0], null, progressObjectives, forceChallenge);
 	}
 
 	private static void registerSectionInternal(
@@ -266,7 +330,8 @@ public class GuideJournalRegistry {
 			String[] requiredItemStringIDs,
 			String[] anyRequiredItemStringIDs,
 			GameMessage anyRequiredItemsText,
-			GuideJournalProgressObjective[] progressObjectives
+			GuideJournalProgressObjective[] progressObjectives,
+			boolean forceChallenge
 	) {
 		CategoryEntry category = categories.get(categoryStringID);
 		if (category == null) throw new IllegalArgumentException("Unknown journal category: " + categoryStringID);
@@ -314,7 +379,7 @@ public class GuideJournalRegistry {
 
 		GuideJournalSectionChallenge challenge = null;
 
-		if (buttonText != null) {
+		if (buttonText != null || forceChallenge) {
 			challenge = new GuideJournalSectionChallenge(reward);
 			challenge.setCustomName(title);
 			JournalChallengeRegistry.registerChallenge(challengeStringID, challenge);
@@ -340,6 +405,31 @@ public class GuideJournalRegistry {
 
 		category.sections.add(section);
 		sections.put(challengeStringID, section);
+	}
+
+	public static boolean completeSection(ServerClient client, String sectionStringID) {
+		if (client == null || sectionStringID == null) return false;
+		SectionEntry target = null;
+		for (SectionEntry section : sections.values()) {
+			if (section.sectionStringID.equals(sectionStringID)) {
+				target = section;
+				break;
+			}
+		}
+		if (target == null || target.challenge == null || !target.isVisible(client)) return false;
+		if (target.challenge.isCompleted(client)) return true;
+		target.challenge.markCompleted(client);
+		return true;
+	}
+
+
+	public static boolean isSectionCompleted(ServerClient client, String sectionStringID) {
+		if (client == null || sectionStringID == null) return false;
+		for (SectionEntry section : sections.values()) {
+			if (!section.sectionStringID.equals(sectionStringID)) continue;
+			return section.challenge != null && section.challenge.isCompleted(client);
+		}
+		return false;
 	}
 
 	public static boolean isGuideEntry(JournalEntry entry) {

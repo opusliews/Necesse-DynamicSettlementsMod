@@ -11,6 +11,7 @@ import necesse.engine.registries.ContainerRegistry;
 import necesse.level.maps.Level;
 import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import opusliews.logging.Logging;
+import opusliews.progression.GuideProgressionSystem;
 import opusliews.multilevelsettlement.SettlementLevelDomain;
 import opusliews.multilevelsettlement.SettlementMultiLevelSystem;
 
@@ -49,6 +50,7 @@ public class PacketOpenMultiLevelSettlement extends Packet {
 
 		PacketOpenContainer openPacket = PacketOpenContainer.Settlement(ContainerRegistry.SETTLEMENT_CONTAINER, settlement);
 		ContainerRegistry.openAndSendContainer(client, openPacket);
+		GuideProgressionSystem.onCaveSettlementManagementOpened(client);
 		if (Logging.logEnabled) Logging.logMessage("[MultiLevelStorage] Opened settlement config through custom linked-level packet settlement=" + settlement.uniqueID + " level=" + level.getIdentifier());
 	}
 }

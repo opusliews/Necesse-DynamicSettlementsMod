@@ -8,6 +8,7 @@ import necesse.gfx.fairType.TypeParsers;
 import necesse.inventory.InventoryItem;
 import necesse.level.maps.Level;
 import opusliews.story.GuideStoryObjectiveRegistry;
+import opusliews.progression.GuideProgressionSystem;
 
 import java.util.Arrays;
 import java.util.List;
@@ -254,6 +255,70 @@ public class DSStoryObjectiveRegistry {
 				new LocalMessage("storyguide", "guide26title"),
 				new LocalMessage("storyguide", "guide26objective"),
 				objective -> hasItem(objective.getPlayer(), "ironanvil")
+		);
+
+		GuideStoryObjectiveRegistry.registerAfter(
+				"guide27",
+				"guide26",
+				new LocalMessage("storyguide", "guide27title"),
+				new LocalMessage("storyguide", "guide27objective"),
+				objective -> GuideProgressionSystem.hasEverCrafted(objective.getPlayer(), "workstationduo")
+		);
+
+		GuideStoryObjectiveRegistry.registerAfter(
+				"guide28",
+				"guide27",
+				new LocalMessage("storyguide", "guide28title"),
+				new LocalMessage("storyguide", "guide28objective"),
+				objective -> GuideProgressionSystem.hasSettlement(objective.getPlayer())
+		);
+
+		GuideStoryObjectiveRegistry.registerAfter(
+				"guide29",
+				"defeatevilsprotector",
+				new LocalMessage("storyguide", "guide29title"),
+				new LocalMessage("storyguide", "guide29objective"),
+				objective -> GuideProgressionSystem.hasEverCrafted(objective.getPlayer(), "carpentersbench")
+		);
+
+		GuideStoryObjectiveRegistry.registerAfter(
+				"guide30",
+				"guide29",
+				new LocalMessage("storyguide", "guide30title"),
+				new LocalMessage("storyguide", "guide30objective"),
+				objective -> GuideProgressionSystem.hasEverCrafted(objective.getPlayer(), "landscapingstation")
+		);
+
+		GuideStoryObjectiveRegistry.registerAfter(
+				"guide31",
+				"guide30",
+				new LocalMessage("storyguide", "guide31title"),
+				new LocalMessage("storyguide", "guide31objective"),
+				objective -> GuideProgressionSystem.hasEverCrafted(objective.getPlayer(), "jobrequestbulletin")
+		);
+
+		GuideStoryObjectiveRegistry.registerAfter(
+				"guide32",
+				"guide31",
+				new LocalMessage("storyguide", "guide32title"),
+				new LocalMessage("storyguide", "guide32objective"),
+				objective -> GuideProgressionSystem.hasPlacedJobRequestBulletin(objective.getPlayer())
+		);
+
+		GuideStoryObjectiveRegistry.registerAfter(
+				"guide33",
+				"guide32",
+				new LocalMessage("storyguide", "guide33title"),
+				new LocalMessage("storyguide", "guide33objective"),
+				objective -> GuideProgressionSystem.hasEverCrafted(objective.getPlayer(), "craftingtaskboard")
+		);
+
+		GuideStoryObjectiveRegistry.registerAfter(
+				"guide34",
+				"guide33",
+				new LocalMessage("storyguide", "guide34title"),
+				new LocalMessage("storyguide", "guide34objective"),
+				objective -> GuideProgressionSystem.hasEverCrafted(objective.getPlayer(), "malignancegoggles")
 		);
 	}
 

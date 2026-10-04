@@ -3,6 +3,8 @@ package opusliews.story;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import necesse.engine.localization.message.GameMessage;
@@ -152,6 +154,32 @@ public class GuideStoryObjectiveRegistry {
 			}
 		} catch (ReflectiveOperationException e) {
 			throw new RuntimeException("Failed to apply guide story objective ordering", e);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public static void removeObjectivesFromOrdering(String... stringIDs) {
+		if (stringIDs == null || stringIDs.length == 0) return;
+		try {
+			Field sortedElementsField = StoryObjectiveRegistry.class.getDeclaredField("sortedElements");
+			sortedElementsField.setAccessible(true);
+			ArrayList elements = (ArrayList)sortedElementsField.get(null);
+			if (elements == null) {
+				Logging.logMessage("[StoryObjectives] Cannot remove vanilla objectives because sortedElements is null");
+				return;
+			}
+			HashSet<String> remove = new HashSet<>();
+			Collections.addAll(remove, stringIDs);
+			int before = elements.size();
+			elements.removeIf(object -> remove.contains(((StoryObjectiveRegistry.StoryObjectiveRegistryElement)object).getStringID()));
+			Field sortedIndexField = StoryObjectiveRegistry.StoryObjectiveRegistryElement.class.getDeclaredField("sortedIndex");
+			sortedIndexField.setAccessible(true);
+			for (int i = 0; i < elements.size(); i++) sortedIndexField.setInt(elements.get(i), i);
+			if (Logging.logEnabled) Logging.logMessage("[StoryObjectives] Removed " + (before - elements.size()) + " vanilla objectives from progression ordering");
+		}
+		catch (ReflectiveOperationException e) {
+			Logging.logMessage("[StoryObjectives] Failed to remove vanilla objectives from progression ordering: " + e.getMessage());
+			throw new RuntimeException("Failed to remove vanilla story objectives from ordering", e);
 		}
 	}
 

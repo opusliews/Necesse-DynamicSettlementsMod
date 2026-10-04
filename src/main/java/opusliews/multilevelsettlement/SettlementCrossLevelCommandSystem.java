@@ -9,6 +9,7 @@ import java.util.WeakHashMap;
 import necesse.engine.network.server.ServerClient;
 import necesse.engine.util.LevelIdentifier;
 import necesse.entity.mobs.Mob;
+import necesse.entity.mobs.PlayerMob;
 import necesse.entity.mobs.ai.behaviourTree.AINode;
 import necesse.entity.mobs.ai.behaviourTree.AINodeResult;
 import necesse.entity.mobs.ai.behaviourTree.Blackboard;
@@ -19,6 +20,7 @@ import necesse.entity.mobs.friendly.human.HumanMob;
 import necesse.entity.mobs.networkField.BooleanNetworkField;
 import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import opusliews.logging.Logging;
+import opusliews.progression.GuideProgressionSystem;
 
 public final class SettlementCrossLevelCommandSystem {
 	private static final Field clientHasCommandOrdersField = getClientHasCommandOrdersField();
@@ -76,6 +78,9 @@ public final class SettlementCrossLevelCommandSystem {
 		FollowState state = new FollowState(target);
 		followStates.put(human, state);
 		if (Logging.logEnabled) Logging.logMessage("[CrossLevelCommands] Follow target is on another settlement level settler=" + human.getUniqueID() + " target=" + target.getStringID() + "#" + target.getUniqueID() + " targetLevel=" + target.getLevel().getIdentifier());
+		if (target instanceof PlayerMob && ((PlayerMob)target).isServerClient()) {
+			GuideProgressionSystem.onCrossLevelCommand(((PlayerMob)target).getServerClient());
+		}
 
 		// Do not wait for vanilla's follow AI to start. When the order is issued from another
 		// level, vanilla may store commandFollowMob without ever ticking its follow node.
@@ -109,6 +114,7 @@ public final class SettlementCrossLevelCommandSystem {
 		attackStates.remove(human);
 		guardStates.put(human, new GuardState(commander.playerMob.getLevel().getIdentifier()));
 		if (Logging.logEnabled) Logging.logMessage("[CrossLevelCommands] Guard command will travel through settlement ladder settler=" + human.getUniqueID() + " from=" + sourceType + " to=" + targetType + " target=" + x + "," + y);
+		GuideProgressionSystem.onCrossLevelCommand(commander);
 		return true;
 	}
 
@@ -146,6 +152,7 @@ public final class SettlementCrossLevelCommandSystem {
 		AttackState state = new AttackState(target);
 		attackStates.put(human, state);
 		if (Logging.logEnabled) Logging.logMessage("[CrossLevelCommands] Attack command will travel through settlement ladder settler=" + human.getUniqueID() + " target=" + target.getStringID() + "#" + target.getUniqueID() + " targetLevel=" + target.getLevel().getIdentifier());
+		GuideProgressionSystem.onCrossLevelCommand(commander);
 		tickAttackTravel(human, state);
 		return true;
 	}

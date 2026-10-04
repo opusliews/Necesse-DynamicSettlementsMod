@@ -16,6 +16,7 @@ import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import opusliews.blueprint.BlueprintArea;
 import opusliews.blueprint.BlueprintAreaManager;
 import opusliews.item.ProjectEraserItem;
+import opusliews.progression.GuideProgressionSystem;
 import opusliews.jobs.ConstructionLevelJob;
 
 import java.awt.*;
@@ -109,6 +110,8 @@ public class PacketEraseBlueprintProject extends Packet {
 
 		String uniqueID = area.getUniqueID();
 		manager.removeArea(uniqueID);
+
+		GuideProgressionSystem.onBlueprintProjectFinished(settlement);
 
 		server.network.sendToClientsAtEntireLevel(
 				new PacketRemoveBlueprintArea(uniqueID),

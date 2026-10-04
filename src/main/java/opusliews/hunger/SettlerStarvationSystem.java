@@ -21,6 +21,7 @@ import opusliews.multilevelsettlement.SettlementCrossLevelRouting;
 import opusliews.multilevelsettlement.SettlementLevelDomain;
 import opusliews.multilevelsettlement.SettlementLevelType;
 import opusliews.multilevelsettlement.SettlementMultiLevelSystem;
+import opusliews.progression.GuideProgressionSystem;
 
 import java.util.Collections;
 import java.util.Map;
@@ -287,6 +288,7 @@ public final class SettlerStarvationSystem {
 			if (Logging.logEnabled) Logging.logMessage("[Starvation] Instantly downing stranded starving settler settler=" + human.getStringID() + "#" + human.getUniqueID()
 					+ " level=" + human.getLevel().getIdentifier() + " health=" + human.getHealth());
 			starvationStates.remove(human);
+			revealStarvationJournal(human);
 			forceDownedByStarvation(human);
 			return;
 		}
@@ -296,6 +298,7 @@ public final class SettlerStarvationSystem {
 			if (Logging.logEnabled) Logging.logMessage("[Starvation] Starvation downing settler settler=" + human.getStringID() + "#" + human.getUniqueID()
 					+ " elapsedDamageTicks=" + state.damageTicks + " startHealth=" + state.startHealth);
 			starvationStates.remove(human);
+			revealStarvationJournal(human);
 			forceDownedByStarvation(human);
 			return;
 		}
@@ -304,11 +307,28 @@ public final class SettlerStarvationSystem {
 		int targetHealth = (int)Math.ceil((double)state.startHealth * (double)remainingTicks / (double)starvationDamageTicksToDeath);
 		int newHealth = Math.min(human.getHealth(), Math.max(1, targetHealth));
 		if (newHealth < human.getHealth()) {
-			int damage = human.getHealth() - newHealth;
+			int beforeHealth = human.getHealth();
 			human.setHealth(newHealth);
-			if (Logging.logEnabled) Logging.logMessage("[Starvation] Applied starvation damage settler=" + human.getStringID() + "#" + human.getUniqueID()
-					+ " damage=" + damage + " health=" + human.getHealth() + " tick=" + state.damageTicks + "/" + starvationDamageTicksToDeath);
+			int actualDamage = beforeHealth - human.getHealth();
+			if (actualDamage > 0) {
+				revealStarvationJournal(human);
+				if (Logging.logEnabled) Logging.logMessage("[Starvation] Applied starvation damage settler=" + human.getStringID() + "#" + human.getUniqueID()
+						+ " damage=" + actualDamage + " health=" + human.getHealth() + " tick=" + state.damageTicks + "/" + starvationDamageTicksToDeath);
+			}
 		}
+	}
+
+	private static void revealStarvationJournal(HumanMob human) {
+		if (human == null) return;
+		if (human.getSettlerSettlementServerData() == null) {
+			if (Logging.logEnabled) {
+				Logging.logMessage("[Starvation] Could not reveal starvation Journal because settler has no settlement data settler="
+						+ human.getStringID() + "#" + human.getUniqueID());
+			}
+			return;
+		}
+
+		GuideProgressionSystem.revealForSettlement(human.getSettlerSettlementServerData(), "starvation");
 	}
 
 	private static void forceDownedByStarvation(HumanMob human) {

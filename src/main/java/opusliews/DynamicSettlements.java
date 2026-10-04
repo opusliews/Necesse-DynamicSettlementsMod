@@ -407,6 +407,7 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketCrudeAnvilOutput.class);
 		PacketRegistry.registerPacket(PacketCompleteGuideObjective.class);
 		PacketRegistry.registerPacket(PacketCompleteJournalSection.class);
+		PacketRegistry.registerPacket(PacketGuideJournalEvent.class);
 		PacketRegistry.registerPacket(PacketEarlyProgressionSync.class);
 		PacketRegistry.registerPacket(PacketSettlementStockRequest.class);
 		PacketRegistry.registerPacket(PacketSettlementStockUpdate.class);
@@ -448,6 +449,14 @@ public class DynamicSettlements {
 		}
 
 		GuideStoryObjectiveRegistry.applyOrdering();
+		GuideStoryObjectiveRegistry.removeObjectivesFromOrdering(
+				"gettingstarted",
+				"equippingtrinket",
+				"craftpickaxe",
+				"gomining",
+				"startsettlement",
+				"exploringnecesse"
+		);
 		DSRecipeRegistry.registerRecipes();
 		loadSounds();
 

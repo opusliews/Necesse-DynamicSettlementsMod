@@ -5,6 +5,7 @@ import necesse.engine.registries.ItemRegistry;
 import necesse.engine.save.LoadData;
 import necesse.engine.save.SaveData;
 import necesse.engine.util.GameRandom;
+import necesse.engine.world.worldData.SettlementsWorldData;
 import necesse.entity.mobs.friendly.human.HumanMob;
 import necesse.entity.mobs.job.*;
 import necesse.entity.mobs.job.activeJob.ActiveJobResult;
@@ -12,6 +13,7 @@ import necesse.entity.mobs.job.activeJob.TileActiveJob;
 import necesse.inventory.recipe.Recipe;
 import necesse.level.maps.levelData.jobs.JobMoveToTile;
 import necesse.level.maps.levelData.jobs.TileLevelJob;
+import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import opusliews.crafting.CraftingTaskLogic;
 import opusliews.crafting.CraftingTask;
 import opusliews.crafting.CraftingTaskRecipe;
@@ -20,6 +22,8 @@ import opusliews.forge.ForgeTaskSystem;
 import opusliews.forge.ForgeRequirementSystem;
 import opusliews.logging.Logging;
 import opusliews.object.CraftingTaskBoardObjectEntity;
+import opusliews.object.AnvilObjectEntity;
+import opusliews.progression.GuideProgressionSystem;
 import opusliews.object.DynamicCraftingStationObjectEntity;
 
 public class CraftingStationLevelJob extends TileLevelJob {
@@ -360,7 +364,14 @@ public class CraftingStationLevelJob extends TileLevelJob {
 				}
 
 				CraftingTaskLogic.CraftResult result = CraftingTaskLogic.craftOne(currentBoard, recipe);
-				if (result.success) station.onSettlerCraftCompleted(human, recipe, result.resultItem == null ? null : result.resultItem.copy());
+				if (result.success) {
+					station.onSettlerCraftCompleted(human, recipe, result.resultItem == null ? null : result.resultItem.copy());
+					if (station instanceof AnvilObjectEntity) {
+						ServerSettlementData settlement = SettlementsWorldData.getSettlementsData(getLevel())
+								.getServerDataAtTile(getLevel().getIdentifier(), currentBoard.tileX, currentBoard.tileY);
+						if (settlement != null) GuideProgressionSystem.onAutomatedMetalworkingTaskFinished(settlement);
+					}
+				}
 				Logging.logMessage("[CraftingJob] Worker " + uniqueID + " craftOne item=" + task.itemID
 						+ " success=" + result.success + " produced=" + result.producedAmount);
 				if (result.success && task.conditionType == CraftingTask.CONDITION_CRAFT_UNITS) {

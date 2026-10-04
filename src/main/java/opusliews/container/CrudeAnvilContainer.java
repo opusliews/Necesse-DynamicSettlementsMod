@@ -27,6 +27,7 @@ import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
 import necesse.level.maps.levelData.settlementData.settler.romancePersonalities.PlayerRomanceManager;
 import opusliews.crafting.CraftingTime;
+import opusliews.progression.GuideProgressionSystem;
 import opusliews.forge.ForgeRequirementSystem;
 import opusliews.network.PacketCrudeAnvilOutput;
 import opusliews.object.CrudeAnvilObject;
@@ -178,6 +179,7 @@ public class CrudeAnvilContainer extends CraftingStationContainer {
 
 		ServerClient serverClient = client.getServerClient();
 		serverClient.sendPacket(new PacketCrudeAnvilOutput(resultItem));
+		GuideProgressionSystem.recordCraftedRecipe(client.playerMob, recipe);
 		serverClient.newStats.crafted_items.increment(1);
 		JournalChallengeRegistry.handleListeners(
 				serverClient,

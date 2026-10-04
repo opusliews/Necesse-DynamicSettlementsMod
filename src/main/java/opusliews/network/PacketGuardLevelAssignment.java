@@ -17,6 +17,7 @@ import opusliews.guard.GuardDutyDialogueRefresh;
 import opusliews.guard.GuardLevelAssignment;
 import opusliews.guard.GuardLevelAssignmentSystem;
 import opusliews.logging.Logging;
+import opusliews.progression.GuideProgressionSystem;
 
 public class PacketGuardLevelAssignment extends Packet {
 	private final int guardUniqueID;
@@ -63,6 +64,7 @@ public class PacketGuardLevelAssignment extends Packet {
 		}
 
 		GuardLevelAssignmentSystem.setAssignment(guard, assignment);
+		if (assignment == GuardLevelAssignment.CAVE) GuideProgressionSystem.onGuardAssignedCave(client);
 		server.network.sendToClientsWithEntity(new PacketGuardLevelAssignment(guardUniqueID, assignment), guard);
 	}
 

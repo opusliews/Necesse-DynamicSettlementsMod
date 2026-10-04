@@ -68,6 +68,7 @@ import opusliews.guard.GuardLevelAssignmentSystem;
 import opusliews.clay.ClayPackageSystem;
 import opusliews.fishing.FishingAreaSystem;
 import opusliews.logging.Logging;
+import opusliews.progression.GuideProgressionSystem;
 
 public final class SettlementCrossLevelJobSystem {
 	private static final double COST_BAND_PERCENT = 0.50;
@@ -1344,6 +1345,7 @@ public final class SettlementCrossLevelJobSystem {
 			if (human.getTileX() != ladderX || human.getTileY() != ladderY) return ActiveJobResult.MOVE_TO;
 
 			boolean transitioned = SettlementLadderSystem.transitionMob(human, route.ladder, targetType);
+			if (transitioned && settlement != null) GuideProgressionSystem.onCrossLevelLogistics(settlement);
 			if (!transitioned) {
 				if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Relocation transition FAILED settler=" + human.getUniqueID() + " targetLevel=" + targetType + " ladder=" + ladderX + "," + ladderY + " selectedJob=" + (selectedJob == null ? "null" : selectedJob.getStringID() + "@" + selectedJob.getTileX() + "," + selectedJob.getTileY()));
 				return ActiveJobResult.FAILED;

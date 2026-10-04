@@ -17,6 +17,7 @@ import necesse.level.gameObject.GameObject;
 import necesse.level.maps.Level;
 import necesse.level.maps.light.GameLight;
 import opusliews.logging.Logging;
+import opusliews.progression.GuideProgressionSystem;
 import opusliews.tile.ShallowHoleTile;
 import opusliews.trapdoor.TrapdoorSystem;
 
@@ -137,6 +138,8 @@ public class TrapdoorObject extends GameObject {
 			if (Logging.logEnabled) Logging.logMessage("[TrapdoorObject] interact client-side call ignored; waiting for server interaction");
 			return;
 		}
+
+		GuideProgressionSystem.onTrapdoorUsed(player);
 
 		if (closed) {
 			if (TrapdoorSystem.isHidden(player)) {

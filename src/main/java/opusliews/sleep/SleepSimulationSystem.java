@@ -7,6 +7,7 @@ import necesse.engine.network.server.Server;
 import necesse.engine.world.WorldEntity;
 import necesse.inventory.container.BedContainer;
 import necesse.inventory.container.Container;
+import opusliews.progression.GuideProgressionSystem;
 
 public final class SleepSimulationSystem {
 	private static final int startSpeed = 2;
@@ -105,6 +106,10 @@ public final class SleepSimulationSystem {
 	public static void prepareBedTick(BedContainer container) {
 		if (container == null || container.getClient() == null || container.getClient().playerMob == null) {
 			return;
+		}
+
+		if (container.getClient().isServer()) {
+			GuideProgressionSystem.onBedUsed(container.getClient().getServerClient());
 		}
 
 		WorldEntity worldEntity = container.getClient().playerMob.getWorldEntity();

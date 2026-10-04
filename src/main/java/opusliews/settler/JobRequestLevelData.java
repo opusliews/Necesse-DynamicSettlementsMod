@@ -25,6 +25,7 @@ import necesse.level.maps.levelData.settlementData.settler.Settler;
 import necesse.level.maps.levelData.settlementData.settler.SettlerMob;
 import necesse.level.maps.regionSystem.Region;
 import opusliews.logging.Logging;
+import opusliews.progression.GuideProgressionSystem;
 import opusliews.object.JobRequestBulletinObject;
 import opusliews.object.JobRequestBulletinObjectEntity;
 
@@ -71,6 +72,15 @@ public class JobRequestLevelData extends LevelData implements
 	public void onObjectPlaced(GameObject object, int objectLayerID, int tileX, int tileY, ServerClient client) {
 		if (!isServer() || !isBulletinObject(object)) return;
 		bulletinTiles.add(GameMath.getUniqueLongKey(tileX, tileY));
+		if (client == null) {
+			Logging.logMessage("[GuideProgression] Job Request Bulletin placed without ServerClient at " + tileX + "," + tileY);
+			return;
+		}
+		ServerSettlementData settlement = SettlementsWorldData.getSettlementsData(level)
+				.getServerDataAtTile(level.getIdentifier(), tileX, tileY);
+		if (settlement != null && settlement.networkData.doesClientHaveAccess(client)) {
+			GuideProgressionSystem.recordJobRequestBulletinPlaced(client, settlement);
+		}
 	}
 
 	@Override

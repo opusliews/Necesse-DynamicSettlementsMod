@@ -13,14 +13,27 @@ import java.util.List;
 
 public final class EarlyGameStoneSystem {
 	static private final List<String> rockObjectIds = new ArrayList<>(Arrays.asList(
+			// Natural surface rocks: small rocks plus both tiles of every large rock.
 			"surfacerocksmall",
-			"caverocksmall",
+			"surfacerock",
+			"surfacerockr",
 			"charredrocksmall",
+			"charredrock",
+			"charredrockr",
 			"snowsurfacerocksmall",
-			"snowcaverocksmall",
+			"snowsurfacerock",
+			"snowsurfacerockr",
 			"sandsurfacerocksmall",
-			"sandcaverocksmall",
+			"sandsurfacerock",
+			"sandsurfacerockr",
 			"swampsurfacerocksmall",
+			"swampsurfacerock",
+			"swampsurfacerockr",
+
+			// Keep the previously-supported small cave rocks as valid knapping targets.
+			"caverocksmall",
+			"snowcaverocksmall",
+			"sandcaverocksmall",
 			"swampcaverocksmall",
 			"granitecaverocksmall",
 			"deepcaverocksmall",

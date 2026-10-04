@@ -19,6 +19,7 @@ import necesse.inventory.recipe.ContainerRecipeCraftedEvent;
 import necesse.inventory.recipe.Recipe;
 import necesse.level.maps.Level;
 import opusliews.worldgengating.WorldgenStationProgressionSystem;
+import opusliews.progression.GuideProgressionSystem;
 import necesse.level.maps.levelData.settlementData.settler.romancePersonalities.PlayerRomanceManager;
 
 public final class InventoryCraftingTime {
@@ -133,6 +134,7 @@ public final class InventoryCraftingTime {
 
 		if (container.client.isServer()) {
 			WorldgenStationProgressionSystem.recordCraftedRecipe(container.client.playerMob, recipe);
+			GuideProgressionSystem.recordCraftedRecipe(container.client.playerMob, recipe);
 			ServerClient serverClient = container.client.getServerClient();
 			serverClient.newStats.crafted_items.increment(1);
 			JournalChallengeRegistry.handleListeners(

@@ -16,6 +16,7 @@ import necesse.level.maps.levelData.settlementData.CachedSettlementData;
 import opusliews.guard.GuardDuty;
 import opusliews.guard.GuardDutyDialogueRefresh;
 import opusliews.guard.GuardDutySystem;
+import opusliews.progression.GuideProgressionSystem;
 
 public class PacketGuardDutyToggle extends Packet {
 	private final int guardUniqueID;
@@ -62,6 +63,7 @@ public class PacketGuardDutyToggle extends Packet {
 		}
 
 		GuardDutySystem.setDuty(guard, nightDuty ? GuardDuty.NIGHT : GuardDuty.DAY);
+		GuideProgressionSystem.onGuardDutyChanged(client);
 		server.network.sendToClientsWithEntity(new PacketGuardDutyToggle(guardUniqueID, nightDuty), guard);
 	}
 

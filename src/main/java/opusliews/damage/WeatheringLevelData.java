@@ -16,9 +16,12 @@ import necesse.level.gameObject.GameObject;
 import necesse.level.gameTile.GameTile;
 import necesse.level.maps.Level;
 import necesse.level.maps.levelData.LevelData;
+import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import necesse.level.maps.levelData.RegionLevelDataComponent;
 import necesse.level.maps.regionSystem.Region;
 import opusliews.logging.Logging;
+import opusliews.progression.GuideProgressionSystem;
+import opusliews.object.TrapdoorObject;
 
 import java.awt.*;
 import java.util.HashMap;
@@ -97,6 +100,7 @@ public class WeatheringLevelData extends LevelData implements
 		GameObject masterObject = level.getObject(objectLayerID, masterTile.x, masterTile.y);
 		boolean markWildernessDamage = client != null && !isSettlementAt(masterTile.x, masterTile.y);
 		registerObject(masterObject, objectLayerID, masterTile.x, masterTile.y, true, markWildernessDamage);
+		if (client != null && masterObject instanceof TrapdoorObject) GuideProgressionSystem.onTrapdoorUsed(client.playerMob);
 	}
 
 	@Override
@@ -201,6 +205,9 @@ public class WeatheringLevelData extends LevelData implements
 				continue;
 			}
 
+			ServerSettlementData weatherSettlement = SettlementsWorldData.getSettlementsData(level)
+					.getServerDataAtTile(level.getIdentifier(), entry.tileX, entry.tileY);
+			if (weatherSettlement != null) GuideProgressionSystem.onWeatherDamage(weatherSettlement);
 			Logging.logMessage("Rain weathering damaged " + entry.materialID + " at " + entry.tileX + ", " + entry.tileY + " for " + damage);
 			entry.accumulatedRainExposure = 0L;
 			entry.requiredRainExposure = rollExposureThreshold(entry);

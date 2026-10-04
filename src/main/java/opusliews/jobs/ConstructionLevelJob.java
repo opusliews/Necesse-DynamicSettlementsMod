@@ -36,6 +36,7 @@ import opusliews.blueprint.BlueprintInfrastructureSupport.BlueprintLogicGateTarg
 import opusliews.blueprint.BlueprintInfrastructureSupport.BlueprintWireTarget;
 import opusliews.clay.ClayPackageSystem;
 import opusliews.logging.Logging;
+import opusliews.progression.GuideProgressionSystem;
 import opusliews.mobs.BuilderHumanMob;
 import opusliews.network.PacketBlueprintBlockedState;
 import opusliews.network.PacketBuilderObjectPlaceSound;
@@ -838,6 +839,9 @@ public class ConstructionLevelJob extends TileLevelJob {
 		}
 
 		area.setConstructionComplete(true);
+		ServerSettlementData settlement = SettlementsWorldData.getSettlementsData(level.getServer())
+				.getServerData(area.getSettlementUniqueID());
+		if (settlement != null) GuideProgressionSystem.onBlueprintProjectFinished(settlement);
 		if (area.clearConstructionBlockedReason()) {
 			syncConstructionBlockedReason(level, area);
 		}

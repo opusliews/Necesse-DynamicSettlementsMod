@@ -5,6 +5,7 @@ import necesse.inventory.container.Container;
 import necesse.inventory.recipe.Recipe;
 import net.bytebuddy.asm.Advice;
 import opusliews.crafting.InventoryCraftingTime;
+import opusliews.progression.GuideProgressionSystem;
 import opusliews.worldgengating.WorldgenStationProgressionSystem;
 
 @ModMethodPatch(
@@ -47,5 +48,6 @@ public class InventoryCraftingActionPatch {
 		if (result <= 0 || container == null || container.client == null || !container.client.isServer()) return;
 		Recipe recipe = container.getRecipe(recipeID);
 		if (recipe != null) WorldgenStationProgressionSystem.recordCraftedRecipe(container.client.playerMob, recipe);
+			GuideProgressionSystem.recordCraftedRecipe(container.client.playerMob, recipe);
 	}
 }

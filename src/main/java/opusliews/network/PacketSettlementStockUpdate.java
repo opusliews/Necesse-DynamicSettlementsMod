@@ -13,6 +13,7 @@ import necesse.inventory.item.Item;
 import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import necesse.level.maps.levelData.settlementData.SettlementInventory;
 import opusliews.stock.SettlementStockSystem;
+import opusliews.progression.GuideProgressionSystem;
 import opusliews.multilevelsettlement.SettlementLevelStorageManager;
 
 public class PacketSettlementStockUpdate extends Packet {
@@ -53,6 +54,7 @@ public class PacketSettlementStockUpdate extends Packet {
 		if (storage == null || item == null) return;
 
 		SettlementStockSystem.setStockTarget(storage, itemID, stock);
+		if (stock > 0) GuideProgressionSystem.onStockTargetCreated(client);
 		if (stock > 0 && !storage.filter.isItemAllowed(item)) {
 			storage.filter.setItemAllowed(item, true);
 			new SettlementStorageChangeAllowedEvent(

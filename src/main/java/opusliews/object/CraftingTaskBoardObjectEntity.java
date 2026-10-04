@@ -26,6 +26,7 @@ import opusliews.forge.ForgeRequirementSystem;
 import opusliews.crafting.CraftingTask;
 import opusliews.jobs.CraftingStationLevelJob;
 import opusliews.logging.Logging;
+import opusliews.progression.GuideProgressionSystem;
 
 public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 	public static final String TYPE = "craftingtaskboard";
@@ -286,6 +287,9 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 	}
 
 	private void onForgeAssignmentCompleted(int itemID, int producedAmount) {
+		ServerSettlementData settlement = SettlementsWorldData.getSettlementsData(getLevel())
+				.getServerDataAtTile(getLevel().getIdentifier(), tileX, tileY);
+		if (settlement != null) GuideProgressionSystem.onAutomatedMetalworkingTaskFinished(settlement);
 		for (int i = 0; i < tasks.size(); i++) {
 			CraftingTask task = tasks.get(i);
 			if (task.itemID != itemID || task.sourceType != CraftingTask.SOURCE_FORGE || task.paused || task.amount <= 0) continue;

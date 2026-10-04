@@ -11,6 +11,7 @@ import necesse.level.maps.Level;
 import opusliews.blueprint.BlueprintObjectMaterialResolver;
 import opusliews.item.BlueprintItem;
 import opusliews.object.BlueprintWorkstationObjectEntity;
+import opusliews.progression.GuideProgressionSystem;
 import opusliews.tools.BlueprintData;
 import opusliews.tools.BlueprintElement;
 import opusliews.tools.BlueprintLayerObject;
@@ -205,6 +206,7 @@ public class BlueprintWorkstationContainer extends OEInventoryContainer {
 			int tileX,
 			int tileY
 	) {
+		GuideProgressionSystem.onBlueprintWorkstationOpened(client);
 		OEInventoryContainer.openAndSendContainer(containerID, client, level, tileX, tileY);
 	}
 }

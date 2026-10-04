@@ -16,6 +16,7 @@ import necesse.gfx.forms.presets.containerComponent.settlement.SettlementAssignW
 import necesse.gfx.ui.ButtonColor;
 import necesse.level.maps.levelData.settlementData.zones.SettlementWorkZone;
 import necesse.level.maps.levelData.settlementData.zones.SettlementWorkZoneRegistry;
+import opusliews.network.PacketGuideJournalEvent;
 import opusliews.charcoal.CharcoalProductionUI;
 import opusliews.forms.ClayFiringSettingsForm;
 
@@ -60,6 +61,7 @@ public final class ClayFiringUI {
 	}
 
 	public static void startAssignTool(SettlementAssignWorkForm form) {
+		form.client.network.sendPacket(new PacketGuideJournalEvent(PacketGuideJournalEvent.CLAY_ZONE_TOOL_OPENED));
 		GameToolManager.clearGameTools(form);
 		GameToolManager.setGameTool(new CreateOrExpandWorkZoneGameTool(form.client.getLevel()) {
 			@Override

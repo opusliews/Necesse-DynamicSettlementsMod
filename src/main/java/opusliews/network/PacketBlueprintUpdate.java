@@ -16,6 +16,7 @@ import opusliews.DynamicSettlements;
 import opusliews.blueprint.BlueprintObjectMaterialResolver;
 import opusliews.item.BlueprintItem;
 import opusliews.logging.Logging;
+import opusliews.progression.GuideProgressionSystem;
 import opusliews.tools.BlueprintData;
 import opusliews.tools.BlueprintElement;
 import opusliews.tools.BlueprintLayerObject;
@@ -164,6 +165,7 @@ public class PacketBlueprintUpdate extends Packet {
 				blueprintName,
 				blueprintData
 			);
+			GuideProgressionSystem.onBlueprintCreated(client);
 		}
 
 		playerSlot.setItem(
