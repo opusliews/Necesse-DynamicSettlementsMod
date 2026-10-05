@@ -275,6 +275,8 @@ settlementassignfishingareas=Assign Fishing Areas
 settlementmanagefishingareas=Manage Fishing Areas
 settlementfishanywhere=Fish Anywhere
 settlementfishingareanew=Create new area
+settlementfishingareadefname=Fishing Area <number>
+settlementfishingareadefault=Fishing Area
 settlementnofishinganglers=No anglers found
 settlementfishingareaotherlevel=This fishing area belongs to another level. Travel to that level to edit it.
 settlementfishingareadeleteconfirm=Delete fishing area <area>?
@@ -282,6 +284,8 @@ settlementassigncaveaccessladder=Assign Cave Access Ladder
 settlementcaveaccessladdertip=Select a cave access ladder to toggle whether settlers may use it for cross-level travel.
 protectsettlementchests=Protect settlement chests
 protectsettlementcheststip=Protect settlement chests from accidental breaking by tools. If checked, you can hold ctrl and use the tool to break them instead.
+zoomlevel=Zoom: <percent>%
+interfacesizelevel=Interface size: <percent>%
 setplayersettlementbed=Set Player Settlement Bed
 clearplayersettlementbed=Clear Player Settlement Bed
 settlementnotcaveaccessladder=This is not a cave access ladder.
@@ -442,6 +446,17 @@ moldunbreakingtip=Unbreaking: This mold no longer loses durability when used in 
 
 
 [misc]
+settlementladdernosettlement=This ladder is not inside a settlement.
+settlementladdernoaccess=You do not have access to this settlement.
+settlementladderunsupportedlevel=This ladder is not on a supported settlement level.
+settlementladdersurfaceunavailable=Could not access the settlement surface level.
+settlementladderupdatefailed=Could not update the settlement ladder.
+settlementladderremovefailed=Could not remove the settlement ladder designation.
+settlementladderdisabled=Settlement ladder disabled.
+settlementladderinvalidcounterpart=This ladder does not have a valid surface/cave counterpart.
+settlementladderconflict=This ladder conflicts with an existing settlement ladder designation.
+settlementladderenabled=Settlement ladder enabled.
+settlementrestrictionotherlevel=This restriction area belongs to another level. Travel to that level to edit it.
 playersettlementbedset=Player settlement bed assigned.
 playersettlementbedcleared=Player settlement bed cleared.
 playersettlementbedoccupied=This bed is already assigned to another player.

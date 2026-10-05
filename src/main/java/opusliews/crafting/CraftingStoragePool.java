@@ -1,5 +1,6 @@
 package opusliews.crafting;
 
+import necesse.engine.localization.Localization;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -138,7 +139,7 @@ public final class CraftingStoragePool {
 	public List<String> getMissingIngredients(Recipe recipe) {
 		ArrayList<String> missing = new ArrayList<>();
 		if (inputs.isEmpty()) {
-			missing.add("Input storage is not linked");
+			missing.add(Localization.translate("ui", "craftinginputnotlinked"));
 			return missing;
 		}
 

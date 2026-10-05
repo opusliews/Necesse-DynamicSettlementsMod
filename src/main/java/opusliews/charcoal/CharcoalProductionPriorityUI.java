@@ -2,6 +2,7 @@ package opusliews.charcoal;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import necesse.engine.localization.Localization;
 import necesse.engine.window.WindowManager;
 import necesse.gfx.forms.components.FormComponentList;
 import necesse.gfx.forms.components.FormLabel;
@@ -21,7 +22,7 @@ public final class CharcoalProductionPriorityUI {
 		}
 
 		FormLabel charcoalLabel = (FormLabel)labels.get(labels.size() - 1);
-		charcoalLabel.setText("Firing");
+		charcoalLabel.setText(Localization.translate("jobs", "firingname"));
 
 		int extraWidth = 48;
 		int maxWidth = Math.max(200, WindowManager.getWindow().getHudWidth() - 200);

@@ -1,5 +1,6 @@
 package opusliews.fishing;
 
+import necesse.engine.localization.Localization;
 import necesse.engine.save.LoadData;
 import necesse.engine.save.SaveData;
 import necesse.engine.util.LevelIdentifier;
@@ -52,7 +53,7 @@ public class FishingAreaLevelData extends LevelData {
 		int uniqueID = state.nextAreaID++;
 		while (uniqueID == 0 || state.areas.containsKey(uniqueID)) uniqueID = state.nextAreaID++;
 		int index = state.areas.values().stream().mapToInt(area -> area.index).max().orElse(-1) + 1;
-		FishingArea area = new FishingArea(uniqueID, index, (index * 67) % 360, "Fishing Area " + (index + 1), levelIdentifier, new Zoning());
+		FishingArea area = new FishingArea(uniqueID, index, (index * 67) % 360, Localization.translate("ui", "settlementfishingareadefname", "number", index + 1), levelIdentifier, new Zoning());
 		state.areas.put(uniqueID, area);
 		return area.copy();
 	}
@@ -170,7 +171,7 @@ public class FishingAreaLevelData extends LevelData {
 					if (uniqueID == 0) continue;
 					int index = areaSave.getInt("index", state.areas.size(), false);
 					int colorHue = Math.floorMod(areaSave.getInt("colorHue", 0, false), 360);
-					String name = areaSave.getSafeString("name", "Fishing Area", false);
+					String name = areaSave.getSafeString("name", Localization.translate("ui", "settlementfishingareadefault"), false);
 					String level = areaSave.getSafeString("level", null, false);
 					if (level == null) continue;
 					Zoning zoning = new Zoning();

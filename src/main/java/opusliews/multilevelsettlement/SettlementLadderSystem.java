@@ -1,6 +1,7 @@
 package opusliews.multilevelsettlement;
 
-import necesse.engine.localization.message.StaticMessage;
+import necesse.engine.localization.message.GameMessage;
+import necesse.engine.localization.message.LocalMessage;
 import necesse.engine.network.server.Server;
 import necesse.engine.network.server.ServerClient;
 import necesse.engine.util.LevelIdentifier;
@@ -257,34 +258,34 @@ public final class SettlementLadderSystem {
 		SettlementLevelDomain domain = SettlementMultiLevelSystem.findDomain(level.getServer(), level.getIdentifier(), tileX, tileY);
 		if (domain == null) {
 			if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] Toggle rejected: no settlement domain level=" + level.getIdentifier() + " tile=" + tileX + "," + tileY);
-			sendMessage(client, "This ladder is not inside a settlement.");
+			sendMessage(client, new LocalMessage("misc", "settlementladdernosettlement"));
 			return;
 		}
 
 		CachedSettlementData cached = SettlementsWorldData.getSettlementsData(level.getServer()).getCachedData(domain.getSettlementUniqueID());
 		if (cached == null || !cached.hasAccess(client)) {
 			if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] Toggle rejected: player has no settlement access settlement=" + domain.getSettlementUniqueID() + " player=" + client.authentication + " tile=" + tileX + "," + tileY);
-			sendMessage(client, "You do not have access to this settlement.");
+			sendMessage(client, new LocalMessage("misc", "settlementladdernoaccess"));
 			return;
 		}
 
 		SettlementLevelType levelType = domain.getLevelType(level.getIdentifier());
 		if (levelType == null) {
 			if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] Toggle rejected: source level is not in domain settlement=" + domain.getSettlementUniqueID() + " level=" + level.getIdentifier());
-			sendMessage(client, "This ladder is not on a supported settlement level.");
+			sendMessage(client, new LocalMessage("misc", "settlementladderunsupportedlevel"));
 			return;
 		}
 
 		Level surface = getSurfaceLevel(domain, true);
 		if (surface == null) {
 			if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] Toggle rejected: could not resolve surface level settlement=" + domain.getSettlementUniqueID());
-			sendMessage(client, "Could not access the settlement surface level.");
+			sendMessage(client, new LocalMessage("misc", "settlementladdersurfaceunavailable"));
 			return;
 		}
 		SettlementLadderLevelData data = SettlementLadderLevelData.get(surface, true);
 		if (data == null) {
 			if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] Toggle rejected: could not create ladder level data settlement=" + domain.getSettlementUniqueID());
-			sendMessage(client, "Could not update the settlement ladder.");
+			sendMessage(client, new LocalMessage("misc", "settlementladderupdatefailed"));
 			return;
 		}
 
@@ -292,25 +293,25 @@ public final class SettlementLadderSystem {
 		if (existing != null) {
 			if (!data.removeLink(existing)) {
 				if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] Failed to remove existing designation settlement=" + domain.getSettlementUniqueID() + " link=" + existing);
-				sendMessage(client, "Could not remove the settlement ladder designation.");
+				sendMessage(client, new LocalMessage("misc", "settlementladderremovefailed"));
 				return;
 			}
 			if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] Disabled " + existing + " by player=" + client.authentication);
 			SettlementResidentSystem.onLadderAvailabilityChanged(domain);
 			sendSyncToPlayer(client, domain);
-			sendMessage(client, "Settlement ladder disabled.");
+			sendMessage(client, new LocalMessage("misc", "settlementladderdisabled"));
 			return;
 		}
 
 		SettlementLadderLink link = buildValidatedLink(domain, level, levelType, tileX, tileY);
 		if (link == null) {
 			if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] Toggle rejected: ladder pair validation failed settlement=" + domain.getSettlementUniqueID() + " levelType=" + levelType + " tile=" + tileX + "," + tileY);
-			sendMessage(client, "This ladder does not have a valid surface/cave counterpart.");
+			sendMessage(client, new LocalMessage("misc", "settlementladderinvalidcounterpart"));
 			return;
 		}
 		if (!data.addLink(link)) {
 			if (Logging.logEnabled) Logging.logMessage("[SettlementLadder] Failed to add designation due to duplicate endpoint settlement=" + domain.getSettlementUniqueID() + " link=" + link);
-			sendMessage(client, "This ladder conflicts with an existing settlement ladder designation.");
+			sendMessage(client, new LocalMessage("misc", "settlementladderconflict"));
 			return;
 		}
 
@@ -323,7 +324,7 @@ public final class SettlementLadderSystem {
 		}
 		SettlementResidentSystem.onLadderAvailabilityChanged(domain);
 		sendSyncToPlayer(client, domain);
-		sendMessage(client, "Settlement ladder enabled.");
+		sendMessage(client, new LocalMessage("misc", "settlementladderenabled"));
 	}
 
 	private static SettlementLadderLink buildValidatedLink(SettlementLevelDomain domain, Level sourceLevel, SettlementLevelType sourceType, int tileX, int tileY) {
@@ -430,8 +431,8 @@ public final class SettlementLadderSystem {
 		if (level != null && domain.getLevelType(level.getIdentifier()) != null) client.sendPacket(getSyncPacket(domain, level));
 	}
 
-	private static void sendMessage(ServerClient client, String message) {
-		if (client != null) client.sendChatMessage(new StaticMessage(message));
+	private static void sendMessage(ServerClient client, GameMessage message) {
+		if (client != null && message != null) client.sendChatMessage(message);
 	}
 
 	private static final class PhysicalLinkCache {

@@ -3,6 +3,7 @@ package opusliews.patches;
 import necesse.engine.Settings;
 import necesse.engine.input.Input;
 import necesse.engine.input.InputEvent;
+import necesse.engine.localization.Localization;
 import necesse.engine.modLoader.annotations.ModMethodPatch;
 import necesse.engine.state.MainGame;
 import necesse.engine.util.GameMath;
@@ -79,7 +80,7 @@ public class InGameScaleControlsPatch {
 						window.updateSceneSize();
 						game.getClient().chat.addOrModifyMessage(
 								"dynamicSettlementsZoomLevel",
-								"Zoom: " + Math.round(Settings.sceneSize * 100.0F) + "%"
+								Localization.translate("ui", "zoomlevel", "percent", Math.round(Settings.sceneSize * 100.0F))
 						);
 						changed = true;
 					}
@@ -105,7 +106,7 @@ public class InGameScaleControlsPatch {
 					window.updateHudSize();
 					game.getClient().chat.addOrModifyMessage(
 							"dynamicSettlementsInterfaceSize",
-							"Interface size: " + Math.round(Settings.interfaceSize * 100.0F) + "%"
+							Localization.translate("ui", "interfacesizelevel", "percent", Math.round(Settings.interfaceSize * 100.0F))
 					);
 					changed = true;
 				}

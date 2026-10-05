@@ -1,6 +1,6 @@
 package opusliews.zones;
 
-import necesse.engine.localization.message.StaticMessage;
+import necesse.engine.localization.message.LocalMessage;
 import necesse.engine.network.PacketReader;
 import necesse.engine.network.server.ServerClient;
 import necesse.engine.util.LevelIdentifier;
@@ -99,7 +99,7 @@ public final class SettlementIndependentZoneActionSupport {
 		if (currentLevel != null && owner.equals(currentLevel) && SettlementIndependentZoneSystem.isSurfaceLevel(data, owner)) return false;
 		ZoningChange change = ZoningChange.fromPacket(reader);
 		if (currentLevel == null || !owner.equals(currentLevel)) {
-			if (client != null) client.sendChatMessage(new StaticMessage("This restriction area belongs to another level. Travel to that level to edit it."));
+			if (client != null) client.sendChatMessage(new LocalMessage("misc", "settlementrestrictionotherlevel"));
 			broadcastRestrict(data);
 			return true;
 		}
