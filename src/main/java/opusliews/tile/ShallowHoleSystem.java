@@ -11,6 +11,7 @@ import necesse.level.maps.hudManager.floatText.ChatBubbleText;
 import opusliews.item.DirtPileItem;
 import opusliews.item.TreasureShovelItem;
 import opusliews.network.PacketDigShallowHole;
+import opusliews.logging.Logging;
 
 public final class ShallowHoleSystem {
 	public static final int[][] surroundingOffsets = {
@@ -63,10 +64,23 @@ public final class ShallowHoleSystem {
 		if (level.isBasicCaveLevel() && !TreasureShovelItem.stringID.equals(item.item.getStringID())) return false;
 		if (!canDig(level, tileX, tileY, player, item)) return false;
 
-		level.setTile(tileX, tileY, TileRegistry.getTileID(ShallowHoleTile.stringID));
+		int density = DirtDensityLevelData.getDensity(level, tileX, tileY);
+		if (density >= 2) {
+			level.setTile(tileX, tileY, TileRegistry.getTileID(ThinDirtTile.stringID));
+			DirtDensityLevelData.markThin(level, tileX, tileY);
+			if (Logging.logEnabled) Logging.logMessage("[DirtDensity] Player dug dense dirt to density 1 player=" + player.getDisplayName()
+					+ " level=" + level.getIdentifier() + " tile=" + tileX + "," + tileY);
+		} else {
+			DirtDensityLevelData.clear(level, tileX, tileY);
+			level.setTile(tileX, tileY, TileRegistry.getTileID(ShallowHoleTile.stringID));
+			if (Logging.logEnabled) Logging.logMessage("[DirtDensity] Player dug density 1 dirt into shallow hole player=" + player.getDisplayName()
+					+ " level=" + level.getIdentifier() + " tile=" + tileX + "," + tileY);
+		}
 		level.sendTileUpdatePacket(tileX, tileY);
+		level.getLevelTile(tileX, tileY).checkAround();
+		level.getLevelObject(tileX, tileY).checkAround();
 
-		InventoryItem dirtPile = new InventoryItem(DirtPileItem.stringID, 2);
+		InventoryItem dirtPile = new InventoryItem(DirtPileItem.stringID, 1);
 		level.entityManager.pickups.add(dirtPile.getPickupEntity(level, tileX * 32.0F + 16.0F, tileY * 32.0F + 16.0F));
 		return true;
 	}
@@ -77,12 +91,18 @@ public final class ShallowHoleSystem {
 	}
 
 	public static int getFillTileID(Level level, int tileX, int tileY) {
-		return TileRegistry.dirtID;
+		return TileRegistry.getTileID(ThinDirtTile.stringID);
+	}
+
+	public static void fillHoleWithThinDirt(Level level, int tileX, int tileY) {
+		if (level == null) return;
+		level.setTile(tileX, tileY, getFillTileID(level, tileX, tileY));
+		if (level.isServer()) DirtDensityLevelData.markThin(level, tileX, tileY);
 	}
 
 	private static boolean isHoleInteraction(Level level, int tileX, int tileY, PlayerMob player, InventoryItem item) {
 		if (!level.isTileWithinBounds(tileX, tileY) || level.isProtected(tileX, tileY)) return false;
-		if (level.getTileID(tileX, tileY) != getDigTileID(level, tileX, tileY)) return false;
+		if (!isDiggableDirt(level, tileX, tileY)) return false;
 		if (!"air".equals(level.getObject(tileX, tileY).getStringID())) return false;
 
 		ShovelToolItem shovel = (ShovelToolItem)item.item;
@@ -94,8 +114,9 @@ public final class ShallowHoleSystem {
 		return !hasAdjacentPit(level, tileX, tileY);
 	}
 
-	private static int getDigTileID(Level level, int tileX, int tileY) {
-		return TileRegistry.dirtID;
+	private static boolean isDiggableDirt(Level level, int tileX, int tileY) {
+		int tileID = level.getTileID(tileX, tileY);
+		return tileID == TileRegistry.dirtID || tileID == TileRegistry.getTileID(ThinDirtTile.stringID);
 	}
 
 	public static boolean hasAdjacentPit(Level level, int tileX, int tileY) {

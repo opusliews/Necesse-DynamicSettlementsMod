@@ -70,7 +70,7 @@ public class DirtPileItem extends MatItem implements ItemInteractAction {
 
 		int tileX = GameMath.getTileCoordinate(x);
 		int tileY = GameMath.getTileCoordinate(y);
-		level.setTile(tileX, tileY, ShallowHoleSystem.getFillTileID(level, tileX, tileY));
+		ShallowHoleSystem.fillHoleWithThinDirt(level, tileX, tileY);
 
 		if (level.isServer()) {
 			level.sendTileUpdatePacket(tileX, tileY);

@@ -153,7 +153,7 @@ public final class DeepHoleSystem {
 
 		removeLowerShaftObject(surfaceLevel, tileX, tileY);
 
-		surfaceLevel.setTile(tileX, tileY, ShallowHoleSystem.getFillTileID(surfaceLevel, tileX, tileY));
+		ShallowHoleSystem.fillHoleWithThinDirt(surfaceLevel, tileX, tileY);
 		surfaceLevel.sendTileUpdatePacket(tileX, tileY);
 		surfaceLevel.getLevelTile(tileX, tileY).checkAround();
 		surfaceLevel.getLevelObject(tileX, tileY).checkAround();

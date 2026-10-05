@@ -226,6 +226,7 @@ public class DynamicSettlements {
 		TileRegistry.registerTile(CharcoalPitTile.stringID, new CharcoalPitTile(), 0.0F, false);
 		TileRegistry.registerTile(CoveredCharcoalPitTile.stringID, new CoveredCharcoalPitTile(), 0.0F, false);
 		TileRegistry.registerTile(BurningCharcoalPitTile.stringID, new BurningCharcoalPitTile(), 0.0F, false);
+		TileRegistry.registerTile(ThinDirtTile.stringID, new ThinDirtTile(), 0.0F, false);
 
 		ObjectRegistry.registerObject("blueprintworkstation",
 				new BlueprintWorkstationObject(), 100.0F, true);
@@ -301,6 +302,7 @@ public class DynamicSettlements {
 		LevelDataRegistry.registerLevelData(SettlementLevelManagerLevelData.managerKey, SettlementLevelManagerLevelData.class);
 		LevelDataRegistry.registerLevelData(FishingAreaLevelData.managerKey, FishingAreaLevelData.class);
 		LevelDataRegistry.registerLevelData(SettlementIndependentZonesLevelData.managerKey, SettlementIndependentZonesLevelData.class);
+		LevelDataRegistry.registerLevelData(DirtDensityLevelData.managerKey, DirtDensityLevelData.class);
 
 		JobTypeRegistry.registerType(
 				"construction",

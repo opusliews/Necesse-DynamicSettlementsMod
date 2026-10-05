@@ -33,6 +33,7 @@ import opusliews.clay.ClayPackageSystem;
 import opusliews.logging.Logging;
 import opusliews.network.PacketBuilderTilePlaceSound;
 import opusliews.tile.ShallowHoleTile;
+import opusliews.tile.ShallowHoleSystem;
 
 public class CharcoalCleanupLevelJob extends TileLevelJob {
 	private static final long holeFillTime = 2000L;
@@ -447,7 +448,7 @@ public class CharcoalCleanupLevelJob extends TileLevelJob {
 				return ActiveJobResult.FAILED;
 			}
 
-			getLevel().setTile(tileX, tileY, TileRegistry.dirtID);
+			ShallowHoleSystem.fillHoleWithThinDirt(getLevel(), tileX, tileY);
 			getLevel().sendTileUpdatePacket(tileX, tileY);
 			getLevel().getLevelTile(tileX, tileY).checkAround();
 			getLevel().getLevelObject(tileX, tileY).checkAround();

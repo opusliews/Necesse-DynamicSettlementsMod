@@ -122,7 +122,7 @@ public class ClayFiringCleanupLevelJob extends TileLevelJob {
 					getLevel().jobsLayer.addJob(new ClayFiringProductionLevelJob(tileX, tileY, zone, true));
 				} else if (getLevel().getTileID(tileX, tileY) == TileRegistry.getTileID(ShallowHoleTile.stringID)
 						&& getLevel().getObjectID(tileX, tileY) == 0) {
-					getLevel().setTile(tileX, tileY, ShallowHoleSystem.getFillTileID(getLevel(), tileX, tileY));
+					ShallowHoleSystem.fillHoleWithThinDirt(getLevel(), tileX, tileY);
 					getLevel().sendTileUpdatePacket(tileX, tileY);
 					getLevel().getLevelTile(tileX, tileY).checkAround();
 					getLevel().getLevelObject(tileX, tileY).checkAround();

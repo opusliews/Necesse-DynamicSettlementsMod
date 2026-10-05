@@ -267,7 +267,10 @@ public final class CharcoalPitSystem {
 
 	private static void fillHoleWithDirt(Level level, PlayerMob player, InventoryItem selected, int tileX, int tileY) {
 		consumeSelectedItem(player, selected);
-		setTile(level, tileX, tileY, ShallowHoleSystem.getFillTileID(level, tileX, tileY));
+		ShallowHoleSystem.fillHoleWithThinDirt(level, tileX, tileY);
+		level.sendTileUpdatePacket(tileX, tileY);
+		level.getLevelTile(tileX, tileY).checkAround();
+		level.getLevelObject(tileX, tileY).checkAround();
 		CharcoalPitLevelData data = CharcoalPitLevelData.get(level, false);
 		if (data != null) {
 			data.removeLogs(tileX, tileY);
