@@ -5,6 +5,7 @@ import necesse.engine.network.client.Client;
 import net.bytebuddy.asm.Advice;
 import opusliews.sleep.SleepSimulationSystem;
 import opusliews.settlement.SettlementChestProtectionSystem;
+import opusliews.settlement.SettlementPlayerBedSystem;
 
 @ModMethodPatch(target = Client.class, name = "disconnect", arguments = {String.class})
 public class SleepSimulationClientDisconnectPatch {
@@ -12,5 +13,6 @@ public class SleepSimulationClientDisconnectPatch {
 	public static void onEnter() {
 		SleepSimulationSystem.stopClient();
 		SettlementChestProtectionSystem.clearClientState();
+		SettlementPlayerBedSystem.clearClientState();
 	}
 }

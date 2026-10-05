@@ -8,6 +8,7 @@ import necesse.entity.mobs.PlayerMob;
 import necesse.gfx.forms.presets.containerComponent.SleepContainerForm;
 import net.bytebuddy.asm.Advice;
 import opusliews.sleep.DaytimeSleepLabelSystem;
+import opusliews.sleep.PlayerSettlementBedUI;
 
 @ModMethodPatch(
 		target = SleepContainerForm.class,
@@ -20,6 +21,7 @@ public class DaytimeSleepLabelPatch {
 			@Advice.This SleepContainerForm form,
 			@Advice.Argument(1) PlayerMob perspective
 	) {
+		PlayerSettlementBedUI.onFormDraw(form);
 		DaytimeSleepLabelSystem.beginDraw(form, perspective);
 	}
 

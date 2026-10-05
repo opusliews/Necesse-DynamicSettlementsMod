@@ -12,6 +12,7 @@ import opusliews.multilevelsettlement.SettlementCaveBedSystem;
 import opusliews.multilevelsettlement.SettlementLevelDomain;
 import opusliews.multilevelsettlement.SettlementLevelType;
 import opusliews.multilevelsettlement.SettlementMultiLevelSystem;
+import opusliews.settlement.SettlementPlayerBedSystem;
 
 @ModMethodPatch(target = ServerSettlementData.class, name = "moveSettler", arguments = {int.class, int.class, int.class, ServerClient.class})
 public class ServerSettlementMoveToCaveBedCoordinatesPatch {
@@ -53,7 +54,11 @@ public class ServerSettlementMoveToCaveBedCoordinatesPatch {
 			Logging.logMessage("[CaveBeds] Routing coordinate bed assignment to cave bed settler="
 					+ settlerUniqueID + " bed=" + tileX + "," + tileY + " level=" + clientLevel.getIdentifier());
 		}
+
+		SettlementPlayerBedSystem.PlayerBedAssignment releasedPlayerBed =
+				SettlementPlayerBedSystem.beginManualSettlerBedAssignment(settlement, bed, client);
 		handledResult = settlement.moveSettler(settlerUniqueID, bed, client);
+		SettlementPlayerBedSystem.finishManualSettlerBedAssignment(settlement, client, releasedPlayerBed, handledResult);
 		if (handledResult) {
 			new SettlementSettlerBasicsEvent(settlement).applyAndSendToClient(client);
 			if (Logging.logEnabled) Logging.logMessage("[CaveBeds] Sent immediate settler basics update after cave bed assignment settler=" + settlerUniqueID);

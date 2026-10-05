@@ -390,6 +390,9 @@ public class DynamicSettlements {
 		PacketRegistry.registerPacket(PacketSettlementChestProtectionRequest.class);
 		PacketRegistry.registerPacket(PacketSettlementChestProtectionSync.class);
 		PacketRegistry.registerPacket(PacketSettlementChestProtectionUpdate.class);
+		PacketRegistry.registerPacket(PacketPlayerSettlementBedAction.class);
+		PacketRegistry.registerPacket(PacketPlayerSettlementBedRequest.class);
+		PacketRegistry.registerPacket(PacketPlayerSettlementBedSync.class);
 		PacketRegistry.registerPacket(PacketDigShallowHole.class);
 		PacketRegistry.registerPacket(PacketDeepHoleInteract.class);
 		PacketRegistry.registerPacket(PacketHoleCaveLadderInteract.class);

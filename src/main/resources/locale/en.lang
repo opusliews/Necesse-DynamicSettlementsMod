@@ -21,6 +21,7 @@ charcoalinvalidsite=Charcoal production blocked: the selected pit location is no
 clayfiringmissingitems=Clay firing blocked: no required unfired clay items are available in settlement storage.
 clayfiringmissinglogs=Clay firing blocked: settlement storage does not contain 16 logs.
 clayfiringinvalidsite=Clay firing blocked: the selected firing pit location is no longer valid.
+switchinglevels=Moving between levels
 
 [activities]
 construction=Constructing
@@ -281,6 +282,8 @@ settlementassigncaveaccessladder=Assign Cave Access Ladder
 settlementcaveaccessladdertip=Select a cave access ladder to toggle whether settlers may use it for cross-level travel.
 protectsettlementchests=Protect settlement chests
 protectsettlementcheststip=Protect settlement chests from accidental breaking by tools. If checked, you can hold ctrl and use the tool to break them instead.
+setplayersettlementbed=Set Player Settlement Bed
+clearplayersettlementbed=Clear Player Settlement Bed
 settlementnotcaveaccessladder=This is not a cave access ladder.
 storageadvanced=Advanced
 storagerestock=Restock
@@ -439,6 +442,15 @@ moldunbreakingtip=Unbreaking: This mold no longer loses durability when used in 
 
 
 [misc]
+playersettlementbedset=Player settlement bed assigned.
+playersettlementbedcleared=Player settlement bed cleared.
+playersettlementbedoccupied=This bed is already assigned to another player.
+playersettlementbedreserved=This bed is reserved for a player.
+playersettlementbednosettlement=This bed is not inside a settlement.
+playersettlementbednoaccess=You do not have access to this settlement.
+playersettlementbedinvalid=This is not a valid settlement bed.
+playersettlementbednotinbed=You must be lying in the bed to change its player settlement bed assignment.
+playersettlementbedfailed=Could not change the player settlement bed assignment.
 crudetorchrequiresignitionsource=You need a Firestarter or a lit Torch in your inventory to light a fresh Crude Torch.
 blueprintcreatedempty=Can't create an empty blueprint
 blueprintcreatedempty2=Can't create a blueprint with no tiles or objects

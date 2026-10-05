@@ -11,6 +11,7 @@ import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import necesse.level.maps.levelData.settlementData.SettlementBed;
 import necesse.level.maps.levelData.settlementData.notifications.SettlementNotificationSeverity;
 import necesse.level.maps.levelData.settlementData.settler.SettlerMob;
+import opusliews.settlement.SettlementPlayerBedSystem;
 import opusliews.logging.Logging;
 
 import java.awt.Point;
@@ -131,6 +132,10 @@ public final class SettlementCaveBedSystem {
 	public static boolean assignCaveBed(LevelSettler settler, SettlementCaveBed bed, boolean persist) {
 		if (settler == null || bed == null || settler.data != bed.data) return false;
 		if (!bed.isValidBed()) return false;
+		if (SettlementPlayerBedSystem.isPlayerReserved(bed)) {
+			if (Logging.logEnabled) Logging.logMessage("[CaveBeds] Assignment rejected because bed is reserved for a player settler=" + settler.mobUniqueID + " bed=" + bed.tileX + "," + bed.tileY + " settlement=" + settler.data.uniqueID);
+			return false;
+		}
 		LevelSettler occupied = bed.getSettler();
 		if (occupied != null && occupied != settler) {
 			if (Logging.logEnabled) Logging.logMessage("[CaveBeds] Assignment rejected because bed is occupied settler=" + settler.mobUniqueID + " occupant=" + occupied.mobUniqueID + " bed=" + bed.tileX + "," + bed.tileY);

@@ -7,6 +7,7 @@ import necesse.level.gameObject.GameObject;
 import necesse.level.maps.Level;
 import net.bytebuddy.asm.Advice;
 import opusliews.multilevelsettlement.SettlementLadderSystem;
+import opusliews.settlement.SettlementPlayerBedSystem;
 
 import java.util.ArrayList;
 
@@ -20,5 +21,6 @@ public class SettlementLadderDestroyedPatch {
 			@Advice.Argument(3) int tileY
 	) {
 		SettlementLadderSystem.onSupportedLadderDestroyed(level, tileX, tileY, object);
+		SettlementPlayerBedSystem.onBedDestroyed(level, tileX, tileY, object);
 	}
 }

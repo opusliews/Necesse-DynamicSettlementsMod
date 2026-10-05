@@ -14,6 +14,7 @@ import java.util.WeakHashMap;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import necesse.engine.localization.Localization;
 import necesse.engine.localization.message.StaticMessage;
 import necesse.engine.util.GameLinkedList;
 import necesse.engine.registries.JobTypeRegistry;
@@ -68,6 +69,7 @@ import opusliews.guard.GuardLevelAssignmentSystem;
 import opusliews.clay.ClayPackageSystem;
 import opusliews.fishing.FishingAreaSystem;
 import opusliews.logging.Logging;
+import opusliews.jobs.CraftingStationLevelJob;
 import opusliews.progression.GuideProgressionSystem;
 
 public final class SettlementCrossLevelJobSystem {
@@ -200,6 +202,8 @@ public final class SettlementCrossLevelJobSystem {
 				+ " job=" + job.getStringID() + "@" + job.getTileX() + "," + job.getTileY()
 				+ " targetLevel=" + targetType + " identifier=" + pending.targetLevel);
 	}
+
+
 
 	private static void clearPendingExactJob(HumanMob human, PendingCrossLevelJob expected, String reason) {
 		boolean removed = false;
@@ -361,6 +365,16 @@ public final class SettlementCrossLevelJobSystem {
 		else if (found.job instanceof StorePickupItemLevelJob) {
 			valid = canStorePickupWithoutMutating(worker, (StorePickupItemLevelJob)found.job);
 			reason = "pickup cannot currently be carried to settlement storage";
+		}
+		else if (found.job instanceof CraftingStationLevelJob) {
+			// CraftingStationLevelJob has important non-path validity checks (board still has
+			// actionable tasks, claim state, worker/station compatibility) inside
+			// estimateCanMoveTo(). Remote discovery used to skip those checks entirely, so a
+			// stale crafting job could send a settler through the ladder even after its board
+			// had become non-actionable. This method is non-mutating and RemoteWorker provides
+			// cross-level movement estimation, so it is safe and accurate to use here.
+			valid = found.job.estimateCanMoveTo(worker);
+			reason = "crafting station job is no longer actionable or reachable";
 		}
 		else if (found.job instanceof ShearHusbandryMobLevelJob) {
 			valid = ((HusbandryMob)((ShearHusbandryMobLevelJob)found.job).target).canShear(new InventoryItem("shears"));
@@ -970,7 +984,6 @@ public final class SettlementCrossLevelJobSystem {
 		final AbstractLevelJob job;
 		final LevelIdentifier targetLevel;
 		final SettlementLevelType targetType;
-
 		PendingCrossLevelJob(AbstractLevelJob job, LevelIdentifier targetLevel, SettlementLevelType targetType) {
 			this.job = job;
 			this.targetLevel = targetLevel;
@@ -1253,7 +1266,9 @@ public final class SettlementCrossLevelJobSystem {
 
 		@Override
 		protected JobSequence getNewSequence() {
-			LinkedListJobSequence sequence = new LinkedListJobSequence(new StaticMessage("Travelling to work"), false);
+			LinkedListJobSequence sequence = new LinkedListJobSequence(new StaticMessage(
+					Localization.translate("jobs", "switchinglevels")
+			), false);
 			sequence.add(new RelocationActiveJob(human, selected.found.priority, selected.route, selected.levelType, selected.found.job));
 			return sequence;
 		}
