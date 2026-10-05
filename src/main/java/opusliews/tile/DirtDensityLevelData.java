@@ -33,8 +33,7 @@ public class DirtDensityLevelData extends LevelData {
 
 	public static long getRecoveryDuration(Level level) {
 		if (level == null || level.getWorldEntity() == null) return 0L;
-//		return (long)level.getWorldEntity().getDayTimeMax() * millisPerDayTimeUnit * recoveryCycles;
-		return 5000;
+		return (long)level.getWorldEntity().getDayTimeMax() * millisPerDayTimeUnit * recoveryCycles;
 	}
 
 	public static void markThin(Level level, int tileX, int tileY) {
