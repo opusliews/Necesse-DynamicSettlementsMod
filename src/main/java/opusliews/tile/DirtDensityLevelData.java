@@ -95,7 +95,18 @@ public class DirtDensityLevelData extends LevelData {
 
 	public static int getDensity(Level level, int tileX, int tileY) {
 		if (level == null || !level.isTileWithinBounds(tileX, tileY)) return 2;
-		return level.getTileID(tileX, tileY) == TileRegistry.getTileID(ThinDirtTile.stringID) ? 1 : 2;
+		if (level.getTileID(tileX, tileY) == TileRegistry.getTileID(ThinDirtTile.stringID)) return 1;
+
+		if (level.isServer()) {
+			DirtDensityLevelData data = get(level, false);
+			if (data != null) {
+				Long recoverAt = data.recoverAtWorldTime.get(getKey(tileX, tileY));
+				long now = level.getWorldEntity() == null ? 0L : level.getWorldEntity().getWorldTime();
+				if (recoverAt != null && now < recoverAt) return 1;
+			}
+		}
+
+		return 2;
 	}
 
 	@Override

@@ -1,6 +1,5 @@
 package opusliews.jobs;
 
-import necesse.engine.localization.Localization;
 import necesse.engine.localization.message.LocalMessage;
 import necesse.engine.registries.GlobalIngredientRegistry;
 import necesse.engine.registries.ItemRegistry;
@@ -12,15 +11,12 @@ import necesse.entity.mobs.job.activeJob.ActiveJob;
 import necesse.entity.mobs.job.activeJob.ActiveJobResult;
 import necesse.entity.mobs.job.activeJob.PickupSettlementStorageActiveJob;
 import necesse.entity.mobs.job.activeJob.TileActiveJob;
-import necesse.gfx.GameColor;
 import necesse.inventory.InventoryItem;
 import necesse.inventory.item.Item;
 import necesse.level.maps.levelData.jobs.HasStorageLevelJob;
 import necesse.level.maps.levelData.jobs.JobMoveToTile;
 import necesse.level.maps.levelData.jobs.TileLevelJob;
-import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import necesse.level.maps.levelData.settlementData.SettlementStoragePickupSlot;
-import necesse.level.maps.levelData.settlementData.settler.SettlerMob;
 import necesse.level.maps.levelData.settlementData.storage.SettlementStorageGlobalIngredientIDIndex;
 import necesse.level.maps.levelData.settlementData.storage.SettlementStorageItemIDIndex;
 import necesse.level.maps.levelData.settlementData.storage.SettlementStorageRecords;
@@ -28,6 +24,7 @@ import necesse.level.maps.levelData.settlementData.storage.SettlementStorageReco
 import opusliews.charcoal.CharcoalProductionZone;
 import opusliews.clay.ClayPackageSystem;
 import opusliews.clayfiring.ClayFiringAutomationLevelData;
+import opusliews.clayfiring.ClayFiringBlockedNotification;
 import opusliews.clayfiring.ClayFiringCatalog;
 import opusliews.clayfiring.ClayFiringZone;
 import opusliews.item.FirestarterItem;
@@ -239,7 +236,7 @@ public class ClayFiringProductionLevelJob extends TileLevelJob {
 				if (!clayPlaced && getLevel().getTileID(tileX, tileY) != shallowHoleID) {
 					if (now < digDone) return ActiveJobResult.PERFORMING;
 					if (!ClayFiringZone.isValidCandidate(getLevel(), tileX, tileY, ClayFiringProductionLevelJob.this)) return ActiveJobResult.FAILED;
-					getLevel().setTile(tileX, tileY, shallowHoleID);
+					ShallowHoleSystem.digAutomationHole(getLevel(), tileX, tileY);
 					getLevel().sendTileUpdatePacket(tileX, tileY);
 					getLevel().getLevelTile(tileX, tileY).checkAround();
 					getLevel().getLevelObject(tileX, tileY).checkAround();
@@ -337,7 +334,7 @@ public class ClayFiringProductionLevelJob extends TileLevelJob {
 		if (tileID == TileRegistry.getTileID(ShallowHoleTile.stringID)
 				|| tileID == TileRegistry.getTileID(FiringPitLogTile.stringID)
 				|| isFiringPitTile(tileID)) {
-			getLevel().setTile(tileX, tileY, TileRegistry.dirtID);
+			ShallowHoleSystem.fillHoleWithThinDirt(getLevel(), tileX, tileY);
 			getLevel().sendTileUpdatePacket(tileX, tileY);
 		}
 	}
@@ -563,13 +560,10 @@ public class ClayFiringProductionLevelJob extends TileLevelJob {
 	}
 
 	private static void sendBlockedMessage(EntityJobWorker worker, String translationKey) {
-		if (!(worker.getMobWorker() instanceof SettlerMob)) return;
-		SettlerMob settlerMob = (SettlerMob)worker.getMobWorker();
-		ServerSettlementData settlement = settlerMob.getSettlerSettlementServerData();
-		if (settlement == null) return;
-		String message = GameColor.RED.getColorCode() + Localization.translate("jobs", translationKey);
-		settlement.networkData.streamTeamMembers().forEach(client -> client.sendChatMessage(message));
-		Logging.logMessage(Localization.translate("jobs", translationKey));
+		if (worker == null || worker.getMobWorker() == null) return;
+		if (!(worker.getMobWorker() instanceof necesse.level.maps.levelData.settlementData.settler.SettlerMob)) return;
+		necesse.level.maps.levelData.settlementData.settler.SettlerMob settlerMob = (necesse.level.maps.levelData.settlementData.settler.SettlerMob)worker.getMobWorker();
+		ClayFiringBlockedNotification.submit(settlerMob.getSettlerSettlementServerData(), translationKey);
 	}
 
 	public static JobTypeHandler.SubHandler handler(EntityJobWorker worker, JobTypeHandler handler) {

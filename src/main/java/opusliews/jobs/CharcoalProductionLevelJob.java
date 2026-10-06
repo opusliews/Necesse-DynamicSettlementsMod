@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import necesse.engine.localization.Localization;
 import necesse.engine.localization.message.LocalMessage;
 import necesse.engine.registries.GlobalIngredientRegistry;
 import necesse.engine.registries.ItemRegistry;
@@ -36,8 +35,8 @@ import necesse.level.maps.levelData.settlementData.settler.SettlerMob;
 import necesse.level.maps.levelData.settlementData.storage.SettlementStorageGlobalIngredientIDIndex;
 import necesse.level.maps.levelData.settlementData.storage.SettlementStorageItemIDIndex;
 import necesse.level.maps.levelData.settlementData.storage.SettlementStorageRecords;
-import necesse.gfx.GameColor;
 import necesse.level.maps.levelData.settlementData.storage.SettlementStorageRecordsRegionData;
+import opusliews.charcoal.CharcoalProductionBlockedNotification;
 import opusliews.charcoal.CharcoalProductionZone;
 import opusliews.clay.ClayPackageSystem;
 import opusliews.item.FirestarterItem;
@@ -51,6 +50,7 @@ import opusliews.tile.BurningCharcoalPitTile;
 import opusliews.tile.CoveredCharcoalPitTile;
 import opusliews.tile.FireHazardPathing;
 import opusliews.tile.FiringGroundSystem;
+import opusliews.tile.ShallowHoleSystem;
 import opusliews.tile.ShallowHoleTile;
 
 public class CharcoalProductionLevelJob extends TileLevelJob {
@@ -221,7 +221,7 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 				int coveredCharcoalPitID = TileRegistry.getTileID(CoveredCharcoalPitTile.stringID);
 				if ((currentTileID == shallowHoleID || currentTileID == charcoalPitID || currentTileID == coveredCharcoalPitID)
 						&& getLevel().getObjectID(tileX, tileY) == 0) {
-					getLevel().setTile(tileX, tileY, TileRegistry.dirtID);
+					ShallowHoleSystem.fillHoleWithThinDirt(getLevel(), tileX, tileY);
 					getLevel().sendTileUpdatePacket(tileX, tileY);
 					getLevel().getLevelTile(tileX, tileY).checkAround();
 					getLevel().getLevelObject(tileX, tileY).checkAround();
@@ -366,7 +366,7 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 						return ActiveJobResult.FAILED;
 					}
 
-					getLevel().setTile(tileX, tileY, shallowHoleID);
+					ShallowHoleSystem.digAutomationHole(getLevel(), tileX, tileY);
 					getLevel().sendTileUpdatePacket(tileX, tileY);
 					getLevel().getLevelTile(tileX, tileY).checkAround();
 					getLevel().getLevelObject(tileX, tileY).checkAround();
@@ -610,6 +610,9 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 			return null;
 		}
 
+		ServerSettlementData settlement = getWorkerSettlement(worker);
+		if (settlement != null) CharcoalProductionBlockedNotification.clear(settlement);
+
 		LinkedListJobSequence sequence = new LinkedListJobSequence(
 				new LocalMessage("activities", "charcoalproduction"),
 				false
@@ -746,6 +749,7 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 			);
 
 			ActiveJobResult result = super.perform();
+			if (result == ActiveJobResult.FAILED) sendBlockedMessage(worker, "charcoalpickupfailed");
 
 			Logging.logMessage(
 					"[CharcoalPickup] perform() after: worker=" + worker.getMobWorker().getUniqueID()
@@ -789,24 +793,13 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 	}
 
 	private static void sendBlockedMessage(EntityJobWorker worker, String translationKey) {
-		if (!(worker.getMobWorker() instanceof SettlerMob)) {
-			return;
-		}
+		ServerSettlementData settlement = getWorkerSettlement(worker);
+		if (settlement != null) CharcoalProductionBlockedNotification.submit(settlement, translationKey);
+	}
 
-		SettlerMob settlerMob = (SettlerMob)worker.getMobWorker();
-		ServerSettlementData settlement = settlerMob.getSettlerSettlementServerData();
-		if (settlement == null) {
-			return;
-		}
-
-		CharcoalPitLevelData data = CharcoalPitLevelData.get(worker.getMobWorker().getLevel(), true);
-		if (!data.shouldSendProductionBlockedReason(translationKey, worker.getMobWorker().getLevel().getTime())) {
-			return;
-		}
-
-		String message = GameColor.RED.getColorCode() + Localization.translate("jobs", translationKey);
-		settlement.networkData.streamTeamMembers().forEach(client -> client.sendChatMessage(message));
-		Logging.logMessage(Localization.translate("jobs", translationKey));
+	private static ServerSettlementData getWorkerSettlement(EntityJobWorker worker) {
+		if (worker == null || !(worker.getMobWorker() instanceof SettlerMob)) return null;
+		return ((SettlerMob)worker.getMobWorker()).getSettlerSettlementServerData();
 	}
 
 	private static List<SettlementStoragePickupSlot> reserveLogs(EntityJobWorker worker) {

@@ -89,6 +89,22 @@ public final class ShallowHoleSystem {
 		Level level = player.getLevel();
 		return level != null && level.getTileID(player.getTileX(), player.getTileY()) == TileRegistry.getTileID(ShallowHoleTile.stringID);
 	}
+	public static int digAutomationHole(Level level, int tileX, int tileY) {
+
+		if (level == null || !level.isServer() || !level.isTileWithinBounds(tileX, tileY)) return 0;
+
+		int density = DirtDensityLevelData.getDensity(level, tileX, tileY);
+		int dirtAmount = density <= 1 ? 1 : 2;
+		DirtDensityLevelData.clear(level, tileX, tileY);
+		level.setTile(tileX, tileY, TileRegistry.getTileID(ShallowHoleTile.stringID));
+
+		InventoryItem dirtPile = new InventoryItem(DirtPileItem.stringID, dirtAmount);
+		level.entityManager.pickups.add(dirtPile.getPickupEntity(level, tileX * 32.0F + 16.0F, tileY * 32.0F + 16.0F));
+		if (Logging.logEnabled) Logging.logMessage("[DirtDensity] Settler dug shallow hole from density " + density
+				+ " dirt and dropped " + dirtAmount + " dirt pile(s) level=" + level.getIdentifier()
+				+ " tile=" + tileX + "," + tileY);
+		return dirtAmount;
+	}
 
 	public static int getFillTileID(Level level, int tileX, int tileY) {
 		return TileRegistry.getTileID(ThinDirtTile.stringID);

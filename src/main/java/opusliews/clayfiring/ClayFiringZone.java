@@ -40,12 +40,22 @@ public class ClayFiringZone extends SettlementTileTickZone {
 	protected void handleTile(Point tile) {
 		Level level = manager.data.getLevel();
 		boolean canProduce = canProduce();
-		boolean hasMaterials = canProduce && hasEnoughMaterials();
+		String blockedReason = canProduce ? getMaterialBlockedReason() : null;
+		boolean hasMaterials = canProduce && blockedReason == null;
 		boolean validCandidate = hasMaterials && isValidCandidate(level, tile.x, tile.y, null);
 
 		logDiagnosticIfDue(level, canProduce, hasMaterials, tile, validCandidate);
-		if (!canProduce || !hasMaterials || !validCandidate) return;
+		if (!canProduce) {
+			ClayFiringBlockedNotification.clear(manager.data);
+			return;
+		}
+		if (blockedReason != null) {
+			ClayFiringBlockedNotification.submit(manager.data, blockedReason);
+			return;
+		}
 
+		ClayFiringBlockedNotification.clear(manager.data);
+		if (!validCandidate) return;
 		if (hasAnyProductionJob()) return;
 
 		level.jobsLayer.addJob(new ClayFiringProductionLevelJob(tile.x, tile.y, this));
@@ -192,17 +202,21 @@ public class ClayFiringZone extends SettlementTileTickZone {
 	}
 
 	public boolean hasEnoughMaterials() {
-		if (manager == null || manager.data == null) return false;
+		return getMaterialBlockedReason() == null;
+	}
+
+	private String getMaterialBlockedReason() {
+		if (manager == null || manager.data == null) return "clayfiringmissingitems";
 		int anyLogID = GlobalIngredientRegistry.getGlobalIngredientID("anylog");
 		SettlementStorageGlobalIngredientIDIndex logIndex = manager.data.storageRecords.getIndex(SettlementStorageGlobalIngredientIDIndex.class);
 		SettlementStorageRecordsRegionData logs = logIndex.getGlobalIngredient(anyLogID);
-		if (logs == null || logs.getTotalItems() < ClayFiringProductionLevelJob.requiredLogs) return false;
+		if (logs == null || logs.getTotalItems() < ClayFiringProductionLevelJob.requiredLogs) return "clayfiringmissinglogs";
 
 		SettlementStorageItemIDIndex itemIndex = manager.data.storageRecords.getIndex(SettlementStorageItemIDIndex.class);
 		for (ClayFiringCatalog.Entry entry : getNeededEntries()) {
-			if (itemIndex.getTotalItems(entry.unfiredItemStringID) > 0) return true;
+			if (itemIndex.getTotalItems(entry.unfiredItemStringID) > 0) return null;
 		}
-		return false;
+		return "clayfiringmissingitems";
 	}
 
 	public static boolean isValidCandidate(Level level, int tileX, int tileY, ClayFiringProductionLevelJob currentJob) {

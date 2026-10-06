@@ -17,6 +17,7 @@ public final class FiringGroundSystem {
 		String tileStringID = level.getTile(tileX, tileY).getStringID();
 		switch (tileStringID) {
 			case "dirttile":
+			case ThinDirtTile.stringID:
 			case "graniterocktile":
 			case "grasstile":
 			case "overgrowngrasstile":
@@ -35,6 +36,8 @@ public final class FiringGroundSystem {
 	}
 
 	public static boolean shouldDigToDirt(Level level, int tileX, int tileY) {
-		return isSupportedGround(level, tileX, tileY) && level.getTileID(tileX, tileY) != TileRegistry.dirtID;
+		if (!isSupportedGround(level, tileX, tileY)) return false;
+		int tileID = level.getTileID(tileX, tileY);
+		return tileID != TileRegistry.dirtID && tileID != TileRegistry.getTileID(ThinDirtTile.stringID);
 	}
 }

@@ -23,12 +23,15 @@ import necesse.inventory.item.Item;
 import necesse.inventory.item.matItem.MatItem;
 import necesse.inventory.item.toolItem.ToolType;
 import necesse.level.gameObject.GameObject;
+import necesse.level.maps.levelData.settlementData.notifications.SettlementNotificationRegistry;
 import necesse.level.maps.levelData.settlementData.zones.SettlementWorkZoneRegistry;
 import opusliews.blueprint.BlueprintAreaLevelData;
 import opusliews.buff.*;
+import opusliews.charcoal.CharcoalProductionBlockedNotification;
 import opusliews.charcoal.CharcoalProductionZone;
 import opusliews.clayfiring.ClayFiringSettingsLevelData;
 import opusliews.clayfiring.ClayFiringAutomationLevelData;
+import opusliews.clayfiring.ClayFiringBlockedNotification;
 import opusliews.clayfiring.ClayFiringZone;
 import opusliews.container.BlueprintWorkstationContainer;
 import opusliews.container.CrudeWorkbenchContainer;
@@ -199,6 +202,8 @@ public class DynamicSettlements {
 		SettlerRegistry.registerSettler("carpenter", new CarpenterSettler());
 		SettlementCaveBedSystem.registerThought();
 		SettlementLevelPreferenceSystem.registerThought();
+		SettlementNotificationRegistry.registerNotification(CharcoalProductionBlockedNotification.stringID, new CharcoalProductionBlockedNotification());
+		SettlementNotificationRegistry.registerNotification(ClayFiringBlockedNotification.stringID, new ClayFiringBlockedNotification());
 		MobRegistry.registerMob("builderhuman",
 				BuilderHumanMob.class, true);
 		MobRegistry.registerMob("carpenterhuman",

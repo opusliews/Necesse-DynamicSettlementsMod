@@ -38,9 +38,18 @@ public class CharcoalProductionZone extends SettlementTileTickZone {
 	@Override
 	protected void handleTile(Point tile) {
 		Level level = manager.data.getLevel();
-		if (!canProduce() || !hasEnoughLogs() || !isValidCandidate(level, tile.x, tile.y, null)) {
+		if (!canProduce()) {
+			CharcoalProductionBlockedNotification.clear(manager.data);
 			return;
 		}
+
+		if (!hasEnoughLogs()) {
+			CharcoalProductionBlockedNotification.submit(manager.data, "charcoalmissinglogs");
+			return;
+		}
+
+		CharcoalProductionBlockedNotification.clearIfReason(manager.data, "charcoalmissinglogs");
+		if (!isValidCandidate(level, tile.x, tile.y, null)) return;
 
 		level.jobsLayer.addJob(new CharcoalProductionLevelJob(tile.x, tile.y, this));
 	}
