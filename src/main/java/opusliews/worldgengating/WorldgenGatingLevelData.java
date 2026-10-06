@@ -128,6 +128,21 @@ public class WorldgenGatingLevelData extends LevelData implements
 		}
 	}
 
+	public void markCarriedStation(int objectLayerID, int tileX, int tileY, String objectStringID, WorldgenLootTier tier, boolean sync) {
+		Entry entry = new Entry(objectLayerID, tileX, tileY, objectStringID, WorldgenGatingData.NaturalType.CRAFTING_STATION, tier, true, true);
+		entries.put(key(objectLayerID, tileX, tileY), entry);
+		Logging.logMessage("[WorldgenGatingDebug] CARRIED STATION side=" + side(level) + " level=" + level.getIdentifier()
+				+ " object=" + objectStringID + " layer=" + objectLayerID + " pos=" + tileX + "," + tileY + " tier=" + tier);
+		if (sync && level.isServer()) {
+			level.getServer().network.sendToClientsWithTile(
+					new PacketWorldgenGatingState(level, entry),
+					level,
+					tileX,
+					tileY
+			);
+		}
+	}
+
 	public void applySyncedEntry(int objectLayerID, int tileX, int tileY, String objectStringID, WorldgenGatingData.NaturalType type, WorldgenLootTier tier, boolean active, boolean allowPlayerPlaced) {
 		entries.put(key(objectLayerID, tileX, tileY), new Entry(objectLayerID, tileX, tileY, objectStringID, type, tier, active, allowPlayerPlaced));
 	}

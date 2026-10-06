@@ -7,6 +7,7 @@ import necesse.inventory.item.placeableItem.objectItem.ObjectItem;
 import necesse.level.gameObject.GameObject;
 import necesse.level.maps.Level;
 import net.bytebuddy.asm.Advice;
+import opusliews.worldgengating.WorldgenCarriedStationSystem;
 import opusliews.worldgengating.WorldgenLockedContainerSystem;
 
 @ModMethodPatch(
@@ -27,5 +28,6 @@ public class WorldgenLockedContainerPlacementPatch {
 	) {
 		if (!success) return;
 		WorldgenLockedContainerSystem.restorePlacedLockedContainer(level, objectLayerID, tileX, tileY, object, item);
+		WorldgenCarriedStationSystem.restorePlacedNaturalStation(level, objectLayerID, tileX, tileY, object, item);
 	}
 }

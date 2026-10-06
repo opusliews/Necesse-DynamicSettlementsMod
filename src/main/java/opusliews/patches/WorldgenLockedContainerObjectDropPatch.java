@@ -5,6 +5,7 @@ import necesse.inventory.InventoryItem;
 import necesse.level.gameObject.GameObject;
 import necesse.level.maps.Level;
 import net.bytebuddy.asm.Advice;
+import opusliews.worldgengating.WorldgenCarriedStationSystem;
 import opusliews.worldgengating.WorldgenLockedContainerSystem;
 
 import java.util.ArrayList;
@@ -26,5 +27,6 @@ public class WorldgenLockedContainerObjectDropPatch {
 			@Advice.Return(readOnly = false) ArrayList<InventoryItem> result
 	) {
 		result = WorldgenLockedContainerSystem.packageLockedContainerDrop(object, level, objectLayerID, tileX, tileY, purpose, result);
+		result = WorldgenCarriedStationSystem.tagNaturalStationDrop(object, level, objectLayerID, tileX, tileY, purpose, result);
 	}
 }
