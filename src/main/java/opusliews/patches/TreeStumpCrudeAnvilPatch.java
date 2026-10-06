@@ -10,6 +10,7 @@ import necesse.level.maps.Level;
 import net.bytebuddy.asm.Advice;
 import opusliews.DSItemRegistry;
 import opusliews.earlygame.CrudeAnvilFeature;
+import opusliews.forge.MeltablePartSystem;
 
 @ModMethodPatch(
 		target = ChairObject.class,
@@ -27,7 +28,7 @@ public class TreeStumpCrudeAnvilPatch {
 		if (!(level.getObject(tileX, tileY) instanceof TreeStumpObject)) return false;
 
 		InventoryItem selected = player.getSelectedItem();
-		if (selected == null || !DSItemRegistry.thickIronPlateStringID.equals(selected.item.getStringID())) return false;
+		if (selected == null || !DSItemRegistry.thickIronPlateStringID.equals(selected.item.getStringID()) || !MeltablePartSystem.canUseAsComponent(selected)) return false;
 		if (!level.isServer()) return true;
 		if (!player.isServerClient()) return true;
 

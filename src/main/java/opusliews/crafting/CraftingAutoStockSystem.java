@@ -14,6 +14,7 @@ import necesse.level.maps.levelData.settlementData.LevelStorage;
 import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import necesse.level.maps.levelData.settlementData.SettlementInventory;
 import necesse.level.maps.levelData.settlementData.SettlementStockInventoryAccess;
+import opusliews.forge.MeltablePartSystem;
 import opusliews.clay.ClayPackageSystem;
 import opusliews.forge.ForgeCookingInput;
 import opusliews.logging.Logging;
@@ -597,7 +598,7 @@ public final class CraftingAutoStockSystem {
 			HashMap<Integer, Integer> counts = new HashMap<>();
 			for (int slot = range.startSlot; slot <= range.endSlot; slot++) {
 				InventoryItem stack = range.inventory.getItem(slot);
-				if (stack != null && demand.matches(stack.item)) counts.merge(stack.item.getID(), stack.getAmount(), Integer::sum);
+				if (stack != null && demand.matches(stack)) counts.merge(stack.item.getID(), stack.getAmount(), Integer::sum);
 			}
 			for (Map.Entry<Integer, Integer> entry : counts.entrySet()) {
 				Item item = ItemRegistry.getItem(entry.getKey());
@@ -908,9 +909,13 @@ public final class CraftingAutoStockSystem {
 			return new Demand(key, null, itemStringID, amount, taskIDs);
 		}
 
-		private boolean matches(Item item) {
-			if (item == null) return false;
-			return ingredient != null ? ingredient.matchesItem(item) : exactItemStringID.equals(item.getStringID());
+		private boolean matches(InventoryItem item) {
+			if (item == null || item.item == null) return false;
+			if (ingredient != null) {
+				if (MeltablePartSystem.isPartiallyMelted(item)) return false;
+				return ingredient.matchesItem(item.item);
+			}
+			return exactItemStringID.equals(item.item.getStringID());
 		}
 	}
 

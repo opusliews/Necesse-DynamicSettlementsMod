@@ -46,7 +46,9 @@ public class ForgeCookingInput {
 	}
 
 	public boolean matches(InventoryItem item) {
-		return item != null && item.item.getStringID().equals(itemStringID) && item.getAmount() >= amount;
+		if (item == null || !item.item.getStringID().equals(itemStringID) || item.getAmount() < amount) return false;
+		if (MeltablePartSystem.isPartiallyMelted(item) && resultBehavior != ResultBehavior.DURABILITY_USE) return false;
+		return true;
 	}
 
 	public InventoryItem apply(InventoryItem item, DurabilityContext context) {

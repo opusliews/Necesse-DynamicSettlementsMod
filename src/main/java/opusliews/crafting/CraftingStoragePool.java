@@ -18,6 +18,7 @@ import necesse.inventory.recipe.Ingredient;
 import necesse.inventory.recipe.Recipe;
 import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
+import opusliews.forge.MeltablePartSystem;
 
 public final class CraftingStoragePool {
 	private final Level level;
@@ -112,7 +113,7 @@ public final class CraftingStoragePool {
 		for (InventoryRange range : inputs) {
 			for (int slot = range.startSlot; slot <= range.endSlot && needed > 0; slot++) {
 				InventoryItem source = range.inventory.getItem(slot);
-				if (source == null || !ingredient.matchesItem(source.item)) continue;
+				if (source == null || MeltablePartSystem.isPartiallyMelted(source) || !ingredient.matchesItem(source.item)) continue;
 				int take = Math.min(needed, source.getAmount());
 				if (result == null) result = source.copy(0);
 				result.setAmount(result.getAmount() + take);

@@ -136,6 +136,8 @@ public final class ForgeCookingRecipeRegistry {
 				1,
 				DEFAULT_PROCESS_TIME
 		));
+
+		registerPartMeltingRecipe(DSItemRegistry.sawBladeStringID, "ironbar", 2);
 	}
 
 	private static void registerToolSet(String material, String inputItem, int inputAmount, String oreItem, int oreAmount) {
@@ -164,6 +166,8 @@ public final class ForgeCookingRecipeRegistry {
 					DEFAULT_PROCESS_TIME
 			));
 		}
+
+		registerPartMeltingRecipe(outputItem, inputItem, inputAmount);
 	}
 
 	private static void registerThickPlateRecipes() {
@@ -208,6 +212,24 @@ public final class ForgeCookingRecipeRegistry {
 				ForgeCookingInput.consume("tungstenore", 16),
 				ForgeCookingInput.durabilityUse("thickplatemold"),
 				"thicktungstenplate",
+				1,
+				DEFAULT_PROCESS_TIME
+		));
+
+		registerPartMeltingRecipe("thickironplate", "ironbar", 4);
+		registerPartMeltingRecipe("thickdemonicplate", "demonicbar", 4);
+		registerPartMeltingRecipe("thicktungstenplate", "tungstenbar", 4);
+	}
+
+	private static void registerPartMeltingRecipe(String partItem, String barItem, int barAmount) {
+		if (!MeltablePartSystem.isRecoverableBar(barItem) || barAmount < 1) return;
+
+		MeltablePartSystem.registerPart(partItem, barItem, barAmount);
+		register(new ForgeCookingRecipe(
+				partItem + "_melt_to_" + barItem,
+				ForgeCookingInput.durabilityUse(partItem),
+				ForgeCookingInput.durabilityUse(DSItemRegistry.ingotMoldStringID),
+				barItem,
 				1,
 				DEFAULT_PROCESS_TIME
 		));

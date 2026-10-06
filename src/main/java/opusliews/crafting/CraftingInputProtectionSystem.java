@@ -4,6 +4,7 @@ import necesse.engine.registries.ItemRegistry;
 import necesse.inventory.InventoryItem;
 import necesse.inventory.recipe.Ingredient;
 import necesse.level.maps.levelData.settlementData.SettlementInventory;
+import opusliews.forge.MeltablePartSystem;
 import opusliews.forge.ForgeCookingInput;
 import opusliews.object.CraftingTaskBoardObjectEntity;
 import opusliews.object.DynamicCraftingStationObjectEntity;
@@ -85,6 +86,7 @@ public final class CraftingInputProtectionSystem {
 		}
 
 		if (cache.exactItemIDs.contains(item.item.getID())) return true;
+		if (MeltablePartSystem.isPartiallyMelted(item)) return false;
 		for (Ingredient ingredient : cache.globalIngredients) {
 			if (ingredient.matchesItem(item.item)) return true;
 		}
