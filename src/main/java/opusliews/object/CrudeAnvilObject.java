@@ -5,6 +5,9 @@ import necesse.engine.gameLoop.tickManager.TickManager;
 import necesse.engine.localization.message.GameMessage;
 import necesse.engine.localization.message.LocalMessage;
 import necesse.engine.util.GameRandom;
+import necesse.engine.network.server.ServerClient;
+import necesse.engine.registries.ObjectRegistry;
+import necesse.entity.mobs.Attacker;
 import necesse.entity.mobs.PlayerMob;
 import necesse.gfx.camera.GameCamera;
 import necesse.gfx.drawOptions.DrawOptionsList;
@@ -26,6 +29,7 @@ import opusliews.logging.Logging;
 import opusliews.story.GuideStoryObjectiveRegistry;
 
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 
 public class CrudeAnvilObject extends IronAnvilObject {
@@ -42,6 +46,7 @@ public class CrudeAnvilObject extends IronAnvilObject {
 		this.logStringID = logStringID;
 		this.mapColor = mapColor;
 		this.hoverHitbox = new Rectangle(0, -16, 32, 48);
+		this.objectHealth = 25;
 	}
 
 	@Override
@@ -169,7 +174,24 @@ public class CrudeAnvilObject extends IronAnvilObject {
 	public LootTable getLootTable(Level level, int layerID, int tileX, int tileY) {
 		LootTable lootTable = new LootTable();
 		lootTable.items.add(new LootItem(DSItemRegistry.thickIronPlateStringID));
-		if (logStringID != null) lootTable.items.add(LootItem.between(logStringID, 4, 5).splitItems(5));
 		return lootTable;
+	}
+
+	@Override
+	public void onDestroyed(Level level, int layerID, int tileX, int tileY, Attacker attacker, ServerClient client, ArrayList itemsDropped) {
+		int rotation = level.getObjectRotation(layerID, tileX, tileY);
+		super.onDestroyed(level, layerID, tileX, tileY, attacker, client, itemsDropped);
+
+		if (layerID != 0) return;
+		int stumpID = ObjectRegistry.getObjectID(stumpTextureName);
+		if (stumpID < 0) {
+			if (Logging.logEnabled) Logging.logMessage("[CrudeAnvil] Could not restore stump after plate removal at "
+					+ tileX + "," + tileY + " stump=" + stumpTextureName);
+			return;
+		}
+
+		level.setObject(tileX, tileY, stumpID, rotation);
+		if (Logging.logEnabled) Logging.logMessage("[CrudeAnvil] Removed thick iron plate and restored stump at "
+				+ tileX + "," + tileY + " stump=" + stumpTextureName);
 	}
 }

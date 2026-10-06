@@ -625,7 +625,7 @@ guide19objective=Inside a cave you can find some [item=clayrock] clay walls. Dig
 guide20title=Make some bricks and molds
 guide20objective=Use the [item=clay] clay you found to make 8 [item=unfiredbrick] Unfired Bricks. Also make a [item=unfiredsawblademold] Saw Blade Mold, a [item=unfiredthickplatemold] Thick Plate Mold, and other molds you may want later on.
 guide21title=Let's cook some food
-guide21objective=Craft a [item=campfire] campfire and a [item=roastingstation] roasting station.
+guide21objective=Craft a [item=campfire] campfire and a [item=roastingstation] roasting station.\n\nRemember that, unlike forges, cooking stations require logs for fuel.
 guide22title=Let's cook some clay
 guide22objective=You have a new Journal entry for Dynamic Settlements. These will help guide you through some mechanics.\n\nTo complete this objective, complete the new Journal entry.
 guide23title=Let's cook some metal
@@ -636,8 +636,10 @@ guide25title=Let's cook together
 guide25objective=Complete the new Journal Entry to proceed.
 guide26title=Make a proper anvil
 guide26objective=Craft an [item=ironanvil] Iron Anvil.
-guide27title=Make a proper workstation
-guide27objective=Craft a [item=workstationduo] Workstation in your new [item=ironanvil] Iron Anvil.
+guide27title=Make a saw
+guide27objective=Craft a [item=saw] Saw in your new [item=ironanvil] Iron Anvil.
+guide27atitle=Make a proper workstation
+guide27aobjective=Craft a [item=workstationduo] Workstation from your Crude Workstation.\n\nMake sure to use your [item=craftingguide] Crafting Guide to find out how to make components you don't know.\n\nYou can click them in the guide and the book will automatically navigate to them.
 guide28title=Start a settlement
 guide28objective=Craft a [item=settlementflag] Settlement Flag and start a new settlement, or join an existing settlement.
 guide29title=Craft a Carpenter's Bench

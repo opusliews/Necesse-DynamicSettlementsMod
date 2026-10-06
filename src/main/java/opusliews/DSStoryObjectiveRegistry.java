@@ -262,12 +262,20 @@ public class DSStoryObjectiveRegistry {
 				"guide26",
 				new LocalMessage("storyguide", "guide27title"),
 				new LocalMessage("storyguide", "guide27objective"),
+				objective -> GuideProgressionSystem.hasEverCrafted(objective.getPlayer(), "saw")
+		);
+
+		GuideStoryObjectiveRegistry.registerAfter(
+				"guide27a",
+				"guide27",
+				new LocalMessage("storyguide", "guide27atitle"),
+				new LocalMessage("storyguide", "guide27aobjective"),
 				objective -> GuideProgressionSystem.hasEverCrafted(objective.getPlayer(), "workstationduo")
 		);
 
 		GuideStoryObjectiveRegistry.registerAfter(
 				"guide28",
-				"guide27",
+				"guide27a",
 				new LocalMessage("storyguide", "guide28title"),
 				new LocalMessage("storyguide", "guide28objective"),
 				objective -> GuideProgressionSystem.hasSettlement(objective.getPlayer())
