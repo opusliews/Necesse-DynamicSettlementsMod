@@ -56,6 +56,6 @@ public class PacketEarlyProgressionSync extends Packet {
 
 	@Override
 	public void processClient(NetworkPacket packet, Client client) {
-		EarlyHealthProgressionSystem.applyClientSync(hostileKills, oreMined, uniqueFoods, caveTime, caveTarget, hostileKillsRewarded, oreMinedRewarded, uniqueFoodsRewarded, caveTimeRewarded);
+		EarlyHealthProgressionSystem.applyClientSync(client, hostileKills, oreMined, uniqueFoods, caveTime, caveTarget, hostileKillsRewarded, oreMinedRewarded, uniqueFoodsRewarded, caveTimeRewarded);
 	}
 }

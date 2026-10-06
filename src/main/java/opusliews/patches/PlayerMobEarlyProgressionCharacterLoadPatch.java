@@ -12,7 +12,7 @@ import opusliews.worldgengating.WorldgenStationProgressionSystem;
 public class PlayerMobEarlyProgressionCharacterLoadPatch {
 	@Advice.OnMethodExit
 	public static void onExit(@Advice.This PlayerMob player, @Advice.Argument(0) LoadData save) {
-		EarlyHealthProgressionSystem.applyLoadData(player, save);
+		EarlyHealthProgressionSystem.applyCharacterLoadData(player, save);
 		WorldgenStationProgressionSystem.applyLoadData(player, save);
 		GuideProgressionSystem.applyLoadData(player, save);
 		opusliews.logging.InventoryPersistenceDebug.logPlayer("CHARACTER_LOAD", player);

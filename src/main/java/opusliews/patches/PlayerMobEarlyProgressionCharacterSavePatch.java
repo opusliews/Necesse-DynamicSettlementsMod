@@ -12,7 +12,7 @@ import opusliews.worldgengating.WorldgenStationProgressionSystem;
 public class PlayerMobEarlyProgressionCharacterSavePatch {
 	@Advice.OnMethodExit
 	public static void onExit(@Advice.This PlayerMob player, @Advice.Argument(0) SaveData save) {
-		EarlyHealthProgressionSystem.addSaveData(player, save);
+		EarlyHealthProgressionSystem.addCharacterSaveData(player, save);
 		WorldgenStationProgressionSystem.addSaveData(player, save);
 		GuideProgressionSystem.addSaveData(player, save);
 		opusliews.logging.InventoryPersistenceDebug.logPlayer("CHARACTER_SAVE", player);

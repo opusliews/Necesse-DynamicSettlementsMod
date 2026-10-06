@@ -21,6 +21,7 @@ import necesse.entity.mobs.PlayerMob;
 import necesse.inventory.item.Item;
 import necesse.inventory.item.placeableItem.consumableItem.food.FoodConsumableItem;
 import opusliews.network.PacketEarlyProgressionSync;
+import opusliews.logging.Logging;
 
 public class EarlyHealthProgressionSystem {
 	public static final int startingMaxHealth = 20;
@@ -54,6 +55,15 @@ public class EarlyHealthProgressionSystem {
 		public boolean oreMinedRewarded;
 		public boolean uniqueFoodsRewarded;
 		public boolean caveTimeRewarded;
+		public boolean hasPersistentCharacterData;
+		public boolean hasWorldFallbackData;
+		public int fallbackHostileKills;
+		public int fallbackOreMined;
+		public long fallbackCaveTime;
+		public boolean fallbackHostileKillsRewarded;
+		public boolean fallbackOreMinedRewarded;
+		public boolean fallbackUniqueFoodsRewarded;
+		public boolean fallbackCaveTimeRewarded;
 	}
 
 	public static class ClientProgress {
@@ -81,8 +91,92 @@ public class EarlyHealthProgressionSystem {
 		player.hungerLevel = 1.0F;
 	}
 
-	public static void addSaveData(PlayerMob player, SaveData save) {
+	public static void addCharacterSaveData(PlayerMob player, SaveData save) {
 		ProgressData data = getData(player);
+		writeProgressData(data, save);
+		data.hasPersistentCharacterData = true;
+		if (Logging.logEnabled) {
+			Logging.logMessage("[EarlyProgressionPersistence] CHARACTER_SAVE player=" + getPlayerLabel(player)
+					+ " kills=" + data.hostileKills
+					+ " ore=" + data.oreMined
+					+ " cave=" + data.caveTime
+					+ " rewarded=" + rewardSummary(data));
+		}
+	}
+
+	public static void applyCharacterLoadData(PlayerMob player, LoadData save) {
+		ProgressData data = getData(player);
+		LoadData in = save.getFirstLoadDataByName(saveKey);
+		if (in == null) {
+			data.hasPersistentCharacterData = false;
+			if (data.hasWorldFallbackData) applyWorldFallback(data);
+			if (Logging.logEnabled) {
+				Logging.logMessage("[EarlyProgressionPersistence] CHARACTER_LOAD player=" + getPlayerLabel(player)
+						+ " present=false fallback=" + data.hasWorldFallbackData
+						+ " kills=" + data.hostileKills
+						+ " ore=" + data.oreMined
+						+ " cave=" + data.caveTime);
+			}
+			return;
+		}
+
+		readProgressData(data, in);
+		data.hasPersistentCharacterData = true;
+		data.lastWorldTime = -1L;
+		if (Logging.logEnabled) {
+			Logging.logMessage("[EarlyProgressionPersistence] CHARACTER_LOAD player=" + getPlayerLabel(player)
+					+ " present=true kills=" + data.hostileKills
+					+ " ore=" + data.oreMined
+					+ " cave=" + data.caveTime
+					+ " rewarded=" + rewardSummary(data));
+		}
+	}
+
+	public static void addWorldFallbackSaveData(PlayerMob player, SaveData save) {
+		ProgressData data = getData(player);
+		writeProgressData(data, save);
+		if (Logging.logEnabled) {
+			Logging.logMessage("[EarlyProgressionPersistence] WORLD_SAVE_FALLBACK player=" + getPlayerLabel(player)
+					+ " kills=" + data.hostileKills
+					+ " ore=" + data.oreMined
+					+ " cave=" + data.caveTime);
+		}
+	}
+
+	public static void applyWorldFallbackLoadData(PlayerMob player, LoadData save) {
+		ProgressData data = getData(player);
+		LoadData in = save.getFirstLoadDataByName(saveKey);
+		if (in == null) {
+			data.hasWorldFallbackData = false;
+			if (Logging.logEnabled) {
+				Logging.logMessage("[EarlyProgressionPersistence] WORLD_LOAD_FALLBACK player=" + getPlayerLabel(player) + " present=false");
+			}
+			return;
+		}
+
+		data.fallbackHostileKills = in.getInt("hostileKills", 0, false);
+		data.fallbackOreMined = in.getInt("oreMined", 0, false);
+		data.fallbackCaveTime = in.getLong("caveTime", 0L, false);
+		data.fallbackHostileKillsRewarded = in.getBoolean("hostileKillsRewarded", false, false);
+		data.fallbackOreMinedRewarded = in.getBoolean("oreMinedRewarded", false, false);
+		data.fallbackUniqueFoodsRewarded = in.getBoolean("uniqueFoodsRewarded", false, false);
+		data.fallbackCaveTimeRewarded = in.getBoolean("caveTimeRewarded", false, false);
+		data.hasWorldFallbackData = true;
+
+		if (!data.hasPersistentCharacterData) {
+			applyWorldFallback(data);
+		}
+		data.lastWorldTime = -1L;
+		if (Logging.logEnabled) {
+			Logging.logMessage("[EarlyProgressionPersistence] WORLD_LOAD_FALLBACK player=" + getPlayerLabel(player)
+					+ " present=true kills=" + data.fallbackHostileKills
+					+ " ore=" + data.fallbackOreMined
+					+ " cave=" + data.fallbackCaveTime
+					+ " applied=" + !data.hasPersistentCharacterData);
+		}
+	}
+
+	private static void writeProgressData(ProgressData data, SaveData save) {
 		SaveData out = new SaveData(saveKey);
 		out.addInt("hostileKills", data.hostileKills);
 		out.addInt("oreMined", data.oreMined);
@@ -94,10 +188,7 @@ public class EarlyHealthProgressionSystem {
 		save.addSaveData(out);
 	}
 
-	public static void applyLoadData(PlayerMob player, LoadData save) {
-		ProgressData data = getData(player);
-		LoadData in = save.getFirstLoadDataByName(saveKey);
-		if (in == null) return;
+	private static void readProgressData(ProgressData data, LoadData in) {
 		data.hostileKills = in.getInt("hostileKills", 0, false);
 		data.oreMined = in.getInt("oreMined", 0, false);
 		data.caveTime = in.getLong("caveTime", 0L, false);
@@ -105,7 +196,28 @@ public class EarlyHealthProgressionSystem {
 		data.oreMinedRewarded = in.getBoolean("oreMinedRewarded", false, false);
 		data.uniqueFoodsRewarded = in.getBoolean("uniqueFoodsRewarded", false, false);
 		data.caveTimeRewarded = in.getBoolean("caveTimeRewarded", false, false);
-		data.lastWorldTime = -1L;
+	}
+
+	private static void applyWorldFallback(ProgressData data) {
+		data.hostileKills = data.fallbackHostileKills;
+		data.oreMined = data.fallbackOreMined;
+		data.caveTime = data.fallbackCaveTime;
+		data.hostileKillsRewarded = data.fallbackHostileKillsRewarded;
+		data.oreMinedRewarded = data.fallbackOreMinedRewarded;
+		data.uniqueFoodsRewarded = data.fallbackUniqueFoodsRewarded;
+		data.caveTimeRewarded = data.fallbackCaveTimeRewarded;
+	}
+
+	private static String rewardSummary(ProgressData data) {
+		return "kills=" + data.hostileKillsRewarded
+				+ ",ore=" + data.oreMinedRewarded
+				+ ",food=" + data.uniqueFoodsRewarded
+				+ ",cave=" + data.caveTimeRewarded;
+	}
+
+	private static String getPlayerLabel(PlayerMob player) {
+		if (player == null) return "null";
+		return player.getDisplayName() + "#" + player.getUniqueID();
 	}
 
 	public static void serverTick(PlayerMob player) {
@@ -247,6 +359,7 @@ public class EarlyHealthProgressionSystem {
 
 	public static void writeCharacterPacket(PlayerMob player, PacketWriter writer) {
 		ProgressData data = getData(player);
+		writer.putNextBoolean(data.hasPersistentCharacterData);
 		writer.putNextInt(data.hostileKills);
 		writer.putNextInt(data.oreMined);
 		writer.putNextLong(data.caveTime);
@@ -254,22 +367,55 @@ public class EarlyHealthProgressionSystem {
 		writer.putNextBoolean(data.oreMinedRewarded);
 		writer.putNextBoolean(data.uniqueFoodsRewarded);
 		writer.putNextBoolean(data.caveTimeRewarded);
+		if (Logging.logEnabled) {
+			Logging.logMessage("[EarlyProgressionPersistence] CHARACTER_PACKET_WRITE player=" + getPlayerLabel(player)
+					+ " authoritative=" + data.hasPersistentCharacterData
+					+ " kills=" + data.hostileKills
+					+ " ore=" + data.oreMined
+					+ " cave=" + data.caveTime);
+		}
 	}
 
 	public static void applyCharacterPacket(PlayerMob player, PacketReader reader) {
 		ProgressData data = getData(player);
-		data.hostileKills = reader.getNextInt();
-		data.oreMined = reader.getNextInt();
-		data.caveTime = reader.getNextLong();
-		data.hostileKillsRewarded = reader.getNextBoolean();
-		data.oreMinedRewarded = reader.getNextBoolean();
-		data.uniqueFoodsRewarded = reader.getNextBoolean();
-		data.caveTimeRewarded = reader.getNextBoolean();
+		boolean hasPersistentCharacterData = reader.getNextBoolean();
+		int hostileKills = reader.getNextInt();
+		int oreMined = reader.getNextInt();
+		long caveTime = reader.getNextLong();
+		boolean hostileKillsRewarded = reader.getNextBoolean();
+		boolean oreMinedRewarded = reader.getNextBoolean();
+		boolean uniqueFoodsRewarded = reader.getNextBoolean();
+		boolean caveTimeRewarded = reader.getNextBoolean();
+
+		if (hasPersistentCharacterData || !data.hasWorldFallbackData) {
+			data.hostileKills = hostileKills;
+			data.oreMined = oreMined;
+			data.caveTime = caveTime;
+			data.hostileKillsRewarded = hostileKillsRewarded;
+			data.oreMinedRewarded = oreMinedRewarded;
+			data.uniqueFoodsRewarded = uniqueFoodsRewarded;
+			data.caveTimeRewarded = caveTimeRewarded;
+			data.hasPersistentCharacterData = hasPersistentCharacterData;
+		} else {
+			applyWorldFallback(data);
+			data.hasPersistentCharacterData = true;
+			if (Logging.logEnabled) {
+				Logging.logMessage("[EarlyProgressionPersistence] Migrated world fallback into character progression for player=" + getPlayerLabel(player));
+			}
+		}
 		data.lastWorldTime = -1L;
 		data.lastSyncTime = 0L;
+		if (Logging.logEnabled) {
+			Logging.logMessage("[EarlyProgressionPersistence] CHARACTER_PACKET_READ player=" + getPlayerLabel(player)
+					+ " authoritative=" + hasPersistentCharacterData
+					+ " worldFallback=" + data.hasWorldFallbackData
+					+ " kills=" + data.hostileKills
+					+ " ore=" + data.oreMined
+					+ " cave=" + data.caveTime);
+		}
 	}
 
-	public static void applyClientSync(int hostileKills, int oreMined, int uniqueFoods, long caveTime, long caveTarget, boolean hostileKillsRewarded, boolean oreMinedRewarded, boolean uniqueFoodsRewarded, boolean caveTimeRewarded) {
+	public static void applyClientSync(Client client, int hostileKills, int oreMined, int uniqueFoods, long caveTime, long caveTarget, boolean hostileKillsRewarded, boolean oreMinedRewarded, boolean uniqueFoodsRewarded, boolean caveTimeRewarded) {
 		ClientProgress data = new ClientProgress();
 		data.hostileKills = hostileKills;
 		data.oreMined = oreMined;
@@ -281,6 +427,25 @@ public class EarlyHealthProgressionSystem {
 		data.uniqueFoodsRewarded = uniqueFoodsRewarded;
 		data.caveTimeRewarded = caveTimeRewarded;
 		clientProgress = data;
+
+		if (client != null && client.getClient() != null && client.getClient().playerMob != null) {
+			ProgressData playerData = getData(client.getClient().playerMob);
+			playerData.hostileKills = hostileKills;
+			playerData.oreMined = oreMined;
+			playerData.caveTime = caveTime;
+			playerData.hostileKillsRewarded = hostileKillsRewarded;
+			playerData.oreMinedRewarded = oreMinedRewarded;
+			playerData.uniqueFoodsRewarded = uniqueFoodsRewarded;
+			playerData.caveTimeRewarded = caveTimeRewarded;
+			playerData.hasPersistentCharacterData = true;
+			playerData.lastWorldTime = -1L;
+			if (Logging.logEnabled) {
+				Logging.logMessage("[EarlyProgressionPersistence] CLIENT_SYNC player=" + getPlayerLabel(client.getClient().playerMob)
+						+ " kills=" + hostileKills
+						+ " ore=" + oreMined
+						+ " cave=" + caveTime);
+			}
+		}
 	}
 
 	public static ClientProgress getClientProgress() {
