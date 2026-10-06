@@ -55,6 +55,7 @@ import opusliews.jobs.ClayFiringProductionLevelJob;
 import opusliews.jobs.ClayFiringCleanupLevelJob;
 import opusliews.jobs.ConstructionLevelJob;
 import opusliews.jobs.RepairLevelJob;
+import opusliews.logging.Logging;
 import opusliews.mobs.BuilderHumanMob;
 import opusliews.mobs.CarpenterHumanMob;
 import opusliews.multilevelsettlement.SettlementLadderLevelData;
@@ -471,9 +472,32 @@ public class DynamicSettlements {
 				"exploringnecesse"
 		);
 		DSRecipeRegistry.registerRecipes();
+		makeGrassObjectsCompostable();
 		loadSounds();
 
 		outlinedArrowTexture = GameTexture.fromFile("ui/outlinedarrow");
+	}
+
+	private static void makeGrassObjectsCompostable() {
+		String[] grassObjectItemIDs = {
+				"grass",
+				"plainsgrass",
+				"swampgrass",
+				"deepswampgrass",
+				"deepswamptallgrass",
+				"witheredgrass",
+				"cryptgrass"
+		};
+
+		for (String itemID : grassObjectItemIDs) {
+			Item item = ItemRegistry.getItem(itemID);
+			if (item == null) {
+				Logging.logMessage("[Compost] Could not add grass object to compostables because item was not registered: " + itemID);
+				continue;
+			}
+			item.addGlobalIngredient("anycompostable");
+			Logging.logMessage("[Compost] Added grass object item to anycompostable: " + itemID);
+		}
 	}
 
 	public static void loadSounds() {

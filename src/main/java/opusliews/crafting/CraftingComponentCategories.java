@@ -82,6 +82,7 @@ public class CraftingComponentCategories {
 		materialManager.createCategory("040", new LocalMessage("material", "willow"), "willow");
 		materialManager.createCategory("041", new LocalMessage("material", "wooden"), "wooden");
 		materialManager.createCategory("042", new LocalMessage("material", "frost"), "frost");
+		materialManager.createCategory("043", new LocalMessage("material", "dust"), "dust");
 		registered = true;
 	}
 

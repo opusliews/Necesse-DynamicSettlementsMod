@@ -309,7 +309,7 @@ fallenaltar	tungstenworkstation	gatewaytablet:0,tungstenbar:10,glacialbar:10,myc
 fallenanvil	fallenanvil	thicktungstenplate:2,anytier1essence:10,upgradeshard:10
 fallencarpentersbench	fallencarpenter	carpentersbench:1,bone:2,upgradeshard:1
 fallenworkstation	fallen	workstationduo:1,upgradeshard:15,alchemyshard:15
-farmland	workstation	anylog:5
+farmland	workstation	dirtpile:1,woodash:1,fertilizer:1
 feedingtrough	workstation	anylog:20,ironbar:5
 fins	demonic	sharkscales:8
 firearrow	ironanvil	stonearrow:10,torch:1

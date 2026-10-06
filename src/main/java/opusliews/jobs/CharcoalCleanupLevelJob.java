@@ -1,6 +1,7 @@
 package opusliews.jobs;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import necesse.engine.localization.message.LocalMessage;
@@ -37,33 +38,45 @@ import opusliews.tile.ShallowHoleSystem;
 
 public class CharcoalCleanupLevelJob extends TileLevelJob {
 	private static final long holeFillTime = 2000L;
-	private ItemPickupEntity charcoalPickup;
-	private int charcoalPickupUniqueID;
-	private boolean hasCharcoalPickupUniqueID;
+	private final ArrayList<Integer> trackedPickupUniqueIDs = new ArrayList<>();
+	private final ArrayList<ItemPickupEntity> trackedPickups = new ArrayList<>();
 
 	public CharcoalCleanupLevelJob(int tileX, int tileY, ItemPickupEntity charcoalPickup) {
-		this(tileX, tileY, charcoalPickup, charcoalPickup == null ? 0 : charcoalPickup.getUniqueID());
-		this.hasCharcoalPickupUniqueID = charcoalPickup != null;
+		this(tileX, tileY, charcoalPickup == null ? null : java.util.Arrays.asList(charcoalPickup));
 	}
 
-	public CharcoalCleanupLevelJob(int tileX, int tileY, ItemPickupEntity charcoalPickup, int charcoalPickupUniqueID) {
+	public CharcoalCleanupLevelJob(int tileX, int tileY, List<ItemPickupEntity> pickups) {
+		this(tileX, tileY, pickups, getPickupUniqueIDs(pickups));
+	}
+
+	public CharcoalCleanupLevelJob(int tileX, int tileY, List<ItemPickupEntity> pickups, List<Integer> pickupUniqueIDs) {
 		super(tileX, tileY);
-		this.charcoalPickup = charcoalPickup;
-		this.charcoalPickupUniqueID = charcoalPickupUniqueID;
-		this.hasCharcoalPickupUniqueID = true;
+		if (pickupUniqueIDs != null) this.trackedPickupUniqueIDs.addAll(pickupUniqueIDs);
+		setTrackedPickups(pickups);
 	}
 
 	public CharcoalCleanupLevelJob(LoadData save) {
 		super(save);
-		this.charcoalPickupUniqueID = save.getInt("charcoalPickupUniqueID", 0, false);
-		this.hasCharcoalPickupUniqueID = save.getBoolean("hasCharcoalPickupUniqueID", charcoalPickupUniqueID != 0, false);
+		for (LoadData pickupSave : save.getLoadDataByName("PICKUP")) {
+			int pickupUniqueID = pickupSave.getInt("pickupUniqueID", 0, false);
+			if (pickupUniqueID != 0) trackedPickupUniqueIDs.add(pickupUniqueID);
+		}
+		if (trackedPickupUniqueIDs.isEmpty()) {
+			int legacyPickupUniqueID = save.getInt("charcoalPickupUniqueID", 0, false);
+			boolean hasLegacyPickupUniqueID = save.getBoolean("hasCharcoalPickupUniqueID", legacyPickupUniqueID != 0, false);
+			if (hasLegacyPickupUniqueID && legacyPickupUniqueID != 0) trackedPickupUniqueIDs.add(legacyPickupUniqueID);
+		}
 	}
 
 	@Override
 	public void addSaveData(SaveData save) {
 		super.addSaveData(save);
-		save.addInt("charcoalPickupUniqueID", charcoalPickupUniqueID);
-		save.addBoolean("hasCharcoalPickupUniqueID", hasCharcoalPickupUniqueID);
+		for (Integer pickupUniqueID : trackedPickupUniqueIDs) {
+			if (pickupUniqueID == null) continue;
+			SaveData pickupSave = new SaveData("PICKUP");
+			pickupSave.addInt("pickupUniqueID", pickupUniqueID);
+			save.addSaveData(pickupSave);
+		}
 	}
 
 	@Override
@@ -79,13 +92,13 @@ public class CharcoalCleanupLevelJob extends TileLevelJob {
 	}
 
 	private JobSequence getJobSequence(EntityJobWorker worker, JobTypeHandler.TypePriority priority) {
-		resolveCharcoalPickup();
+		resolveTrackedPickups();
 		Logging.logMessage(
 				"[CharcoalCleanup] getJobSequence: worker=" + worker.getMobWorker().getUniqueID()
 						+ ", pit=" + tileX + "," + tileY
 						+ ", jobValid=" + isValid()
 						+ ", tileID=" + getLevel().getTileID(tileX, tileY)
-						+ ", pickup=" + describePickup()
+						+ ", pickup=" + describePickups()
 		);
 
 		if (!isValid()) {
@@ -106,16 +119,22 @@ public class CharcoalCleanupLevelJob extends TileLevelJob {
 		}
 		sequence.addAll(inventoryDropOffJobs);
 
-		if (hasCharcoalPickup()) {
-			Logging.logMessage("[CharcoalCleanup] Valid charcoal pickup found; building pickup/dropoff actions for " + tileX + "," + tileY);
-			if (!addCharcoalHaulingJobs(worker, priority, sequence, !inventoryDropOffJobs.isEmpty())) {
-				Logging.logMessage("[CharcoalCleanup] Could not build charcoal hauling actions for " + tileX + "," + tileY);
+		resolveTrackedPickups();
+		boolean hasAnyOutputs = false;
+		boolean inventoryWillBeEmptied = !inventoryDropOffJobs.isEmpty();
+		for (ItemPickupEntity pickup : new ArrayList<>(trackedPickups)) {
+			if (pickup == null || pickup.removed() || pickup.item == null || pickup.item.getAmount() <= 0) continue;
+			hasAnyOutputs = true;
+			Logging.logMessage("[CharcoalCleanup] Valid output pickup found; building pickup/dropoff actions for " + tileX + "," + tileY + " item=" + pickup.item.item.getStringID());
+			if (!addOutputHaulingJobs(worker, priority, sequence, inventoryWillBeEmptied, pickup)) {
+				Logging.logMessage("[CharcoalCleanup] Could not build hauling actions for output item at " + tileX + "," + tileY + " item=" + pickup.item.item.getStringID());
 				cancelPlannedJobs(inventoryDropOffJobs);
 				return null;
 			}
+			inventoryWillBeEmptied = false;
 		}
-		else {
-			Logging.logMessage("[CharcoalCleanup] No valid tracked charcoal pickup at sequence creation for " + tileX + "," + tileY + ": " + describePickup());
+		if (!hasAnyOutputs) {
+			Logging.logMessage("[CharcoalCleanup] No valid tracked output pickups at sequence creation for " + tileX + "," + tileY + ": " + describePickups());
 		}
 
 		Logging.logMessage("[CharcoalCleanup] Appending finish/reuse/fill action for " + tileX + "," + tileY);
@@ -123,16 +142,17 @@ public class CharcoalCleanupLevelJob extends TileLevelJob {
 		return sequence;
 	}
 
-	private boolean addCharcoalHaulingJobs(
+	private boolean addOutputHaulingJobs(
 			EntityJobWorker worker,
 			JobTypeHandler.TypePriority priority,
 			LinkedListJobSequence sequence,
-			boolean inventoryWillBeEmptied
+			boolean inventoryWillBeEmptied,
+			ItemPickupEntity outputPickup
 	) {
-		int pickupAvailable = charcoalPickup.getAvailableAmount();
+		int pickupAvailable = outputPickup.getAvailableAmount();
 		int inventoryCapacity = inventoryWillBeEmptied
-				? charcoalPickup.item.itemStackSize()
-				: worker.getWorkInventory().getCanAddAmount(charcoalPickup.item);
+				? outputPickup.item.itemStackSize()
+				: worker.getWorkInventory().getCanAddAmount(outputPickup.item);
 		int availableAmount = Math.min(pickupAvailable, inventoryCapacity);
 		Logging.logMessage(
 				"[CharcoalCleanup] Haul check: worker=" + worker.getMobWorker().getUniqueID()
@@ -147,18 +167,18 @@ public class CharcoalCleanupLevelJob extends TileLevelJob {
 			return false;
 		}
 
-		InventoryItem requestedItem = charcoalPickup.item.copy(
-				Math.min(availableAmount, charcoalPickup.item.itemStackSize())
+		InventoryItem requestedItem = outputPickup.item.copy(
+				Math.min(availableAmount, outputPickup.item.itemStackSize())
 		);
 		ArrayList dropOffLocations = HasStorageLevelJob.findDropOffLocation(
 				worker,
 				requestedItem,
-				charcoalPickup.getPositionPoint()
+				outputPickup.getPositionPoint()
 		);
 		Logging.logMessage(
 				"[CharcoalCleanup] Storage search: requested=" + requestedItem.getAmount()
-						+ " charcoal, locations=" + dropOffLocations.size()
-						+ ", pickupPos=" + charcoalPickup.getPositionPoint()
+						+ " " + requestedItem.item.getStringID() + ", locations=" + dropOffLocations.size()
+						+ ", pickupPos=" + outputPickup.getPositionPoint()
 		);
 
 		int dropOffAmount = 0;
@@ -176,16 +196,16 @@ public class CharcoalCleanupLevelJob extends TileLevelJob {
 
 		Logging.logMessage("[CharcoalCleanup] Storage search total accepted amount=" + dropOffAmount + ", jobs=" + dropOffJobs.size());
 		if (dropOffAmount <= 0) {
-			Logging.logMessage("[CharcoalCleanup] Haul rejected because storage search accepted zero charcoal at " + tileX + "," + tileY);
+			Logging.logMessage("[CharcoalCleanup] Haul rejected because storage search accepted zero output items at " + tileX + "," + tileY);
 			return false;
 		}
 
-		ItemPickupReservedAmount pickupReservation = charcoalPickup.reservePickupAmount(dropOffAmount);
+		ItemPickupReservedAmount pickupReservation = outputPickup.reservePickupAmount(dropOffAmount);
 		if (pickupReservation == null) {
-			Logging.logMessage("[CharcoalCleanup] Failed to reserve " + dropOffAmount + " charcoal from tracked pickup at " + tileX + "," + tileY);
+			Logging.logMessage("[CharcoalCleanup] Failed to reserve " + dropOffAmount + " output items from tracked pickup at " + tileX + "," + tileY);
 			return false;
 		}
-		Logging.logMessage("[CharcoalCleanup] Reserved " + dropOffAmount + " charcoal pickup amount at " + tileX + "," + tileY);
+		Logging.logMessage("[CharcoalCleanup] Reserved " + dropOffAmount + " output pickup amount at " + tileX + "," + tileY);
 
 		sequence.add(new PickupItemEntityActiveJob(worker, priority, pickupReservation) {
 			private Boolean lastCurrent;
@@ -199,7 +219,7 @@ public class CharcoalCleanupLevelJob extends TileLevelJob {
 							"[CharcoalCleanup] Pickup action state: worker=" + worker.getMobWorker().getUniqueID()
 									+ ", current=" + isCurrent
 									+ ", moving=" + isMovingTo
-									+ ", pickup=" + describePickup()
+									+ ", pickup=" + describePickups()
 					);
 					lastCurrent = isCurrent;
 					lastMoving = isMovingTo;
@@ -209,9 +229,9 @@ public class CharcoalCleanupLevelJob extends TileLevelJob {
 
 			@Override
 			public ActiveJobResult perform() {
-				Logging.logMessage("[CharcoalCleanup] Pickup perform before: " + describePickup());
+				Logging.logMessage("[CharcoalCleanup] Pickup perform before: " + describePickups());
 				ActiveJobResult result = super.perform();
-				Logging.logMessage("[CharcoalCleanup] Pickup perform after: result=" + result + ", pickup=" + describePickup());
+				Logging.logMessage("[CharcoalCleanup] Pickup perform after: result=" + result + ", pickups=" + describePickups());
 				return result;
 			}
 
@@ -221,7 +241,7 @@ public class CharcoalCleanupLevelJob extends TileLevelJob {
 						"[CharcoalCleanup] Pickup action cancelled: invalid=" + becauseOfInvalid
 								+ ", current=" + isCurrent
 								+ ", moving=" + isMovingTo
-								+ ", pickup=" + describePickup()
+								+ ", pickup=" + describePickups()
 				);
 				super.onCancelled(becauseOfInvalid, isCurrent, isMovingTo);
 			}
@@ -279,44 +299,65 @@ public class CharcoalCleanupLevelJob extends TileLevelJob {
 		jobs.clear();
 	}
 
-	private void resolveCharcoalPickup() {
-		if (charcoalPickup != null && !charcoalPickup.removed()) {
-			return;
-		}
-		if (!hasCharcoalPickupUniqueID || getLevel() == null) {
-			charcoalPickup = null;
-			return;
-		}
-
-		Object pickup = getLevel().entityManager.pickups.get(charcoalPickupUniqueID, false);
-		if (pickup instanceof ItemPickupEntity) {
-			ItemPickupEntity itemPickup = (ItemPickupEntity)pickup;
-			if (itemPickup.item != null && "charcoal".equals(itemPickup.item.item.getStringID())) {
-				charcoalPickup = itemPickup;
-				return;
+	private static ArrayList<Integer> getPickupUniqueIDs(List<ItemPickupEntity> pickups) {
+		ArrayList<Integer> result = new ArrayList<>();
+		if (pickups != null) {
+			for (ItemPickupEntity pickup : pickups) {
+				if (pickup != null) result.add(pickup.getUniqueID());
 			}
 		}
-		charcoalPickup = null;
+		return result;
 	}
 
-	private String describePickup() {
-		if (charcoalPickup == null) return "null";
-		String itemID = charcoalPickup.item == null ? "null" : charcoalPickup.item.item.getStringID();
-		int amount = charcoalPickup.item == null ? 0 : charcoalPickup.item.getAmount();
-		return "removed=" + charcoalPickup.removed()
-				+ ", item=" + itemID
-				+ ", amount=" + amount
-				+ ", available=" + charcoalPickup.getAvailableAmount()
-				+ ", pos=" + charcoalPickup.getPositionPoint();
+	private void setTrackedPickups(List<ItemPickupEntity> pickups) {
+		trackedPickups.clear();
+		if (pickups != null) {
+			for (ItemPickupEntity pickup : pickups) {
+				if (pickup != null && !trackedPickups.contains(pickup)) trackedPickups.add(pickup);
+			}
+		}
 	}
 
-	private boolean hasCharcoalPickup() {
-		resolveCharcoalPickup();
-		return charcoalPickup != null
-				&& !charcoalPickup.removed()
-				&& charcoalPickup.item != null
-				&& "charcoal".equals(charcoalPickup.item.item.getStringID())
-				&& charcoalPickup.item.getAmount() > 0;
+	private void resolveTrackedPickups() {
+		trackedPickups.clear();
+		LinkedHashSet<Integer> uniqueIDs = new LinkedHashSet<>(trackedPickupUniqueIDs);
+		for (Integer pickupUniqueID : uniqueIDs) {
+			if (pickupUniqueID == null || pickupUniqueID == 0 || getLevel() == null) continue;
+			Object pickup = getLevel().entityManager.pickups.get(pickupUniqueID, false);
+			if (pickup instanceof ItemPickupEntity) {
+				ItemPickupEntity itemPickup = (ItemPickupEntity)pickup;
+				if (itemPickup.item != null && itemPickup.item.getAmount() > 0 && !itemPickup.removed()) {
+					trackedPickups.add(itemPickup);
+				}
+			}
+		}
+	}
+
+	private String describePickups() {
+		resolveTrackedPickups();
+		if (trackedPickups.isEmpty()) return "none";
+		ArrayList<String> descriptions = new ArrayList<>();
+		for (ItemPickupEntity pickup : trackedPickups) {
+			String itemID = pickup.item == null ? "null" : pickup.item.item.getStringID();
+			int amount = pickup.item == null ? 0 : pickup.item.getAmount();
+			descriptions.add(itemID + " amount=" + amount + " available=" + pickup.getAvailableAmount() + " removed=" + pickup.removed());
+		}
+		return String.join(", ", descriptions);
+	}
+
+	private boolean hasTrackedPickup(String stringID) {
+		resolveTrackedPickups();
+		for (ItemPickupEntity pickup : trackedPickups) {
+			if (pickup != null && pickup.item != null && stringID.equals(pickup.item.item.getStringID()) && pickup.item.getAmount() > 0 && !pickup.removed()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean hasAnyTrackedPickup() {
+		resolveTrackedPickups();
+		return !trackedPickups.isEmpty();
 	}
 
 	private CharcoalProductionZone findProductionZone(EntityJobWorker worker) {
@@ -385,7 +426,7 @@ public class CharcoalCleanupLevelJob extends TileLevelJob {
 								+ ", jobValid=" + jobValid
 								+ ", reservationAvailable=" + reservationValid
 								+ ", tileID=" + getLevel().getTileID(tileX, tileY)
-								+ ", pickup=" + describePickup()
+								+ ", pickup=" + describePickups()
 				);
 			}
 			return valid;
@@ -397,10 +438,10 @@ public class CharcoalCleanupLevelJob extends TileLevelJob {
 					"[CharcoalCleanup] Finish perform: worker=" + worker.getMobWorker().getUniqueID()
 							+ ", pit=" + tileX + "," + tileY
 							+ ", fillStarted=" + fillStarted
-							+ ", pickup=" + describePickup()
+							+ ", pickup=" + describePickups()
 			);
-			if (hasCharcoalPickup()) {
-				Logging.logMessage("[CharcoalCleanup] Finish action failed because tracked charcoal pickup still exists at " + tileX + "," + tileY);
+			if (hasAnyTrackedPickup()) {
+				Logging.logMessage("[CharcoalCleanup] Finish action failed because tracked output pickups still exist at " + tileX + "," + tileY);
 				return ActiveJobResult.FAILED;
 			}
 
@@ -472,7 +513,7 @@ public class CharcoalCleanupLevelJob extends TileLevelJob {
 							+ ", current=" + isCurrent
 							+ ", moving=" + isMovingTo
 							+ ", pit=" + tileX + "," + tileY
-							+ ", pickup=" + describePickup()
+							+ ", pickup=" + describePickups()
 			);
 			super.onCancelled(becauseOfInvalid, isCurrent, isMovingTo);
 		}

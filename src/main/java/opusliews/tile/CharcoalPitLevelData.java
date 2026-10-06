@@ -28,6 +28,7 @@ import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import necesse.level.maps.levelData.settlementData.zones.SettlementWorkZone;
 import opusliews.charcoal.CharcoalProductionZone;
 import opusliews.jobs.CharcoalProductionLevelJob;
+import static opusliews.DSItemRegistry.woodAshStringID;
 
 public class CharcoalPitLevelData extends LevelData implements RegionLevelDataComponent, RegionLoadedListenerEntityComponent {
 	public static final String managerKey = "opuscharcoalpitdata";
@@ -37,7 +38,7 @@ public class CharcoalPitLevelData extends LevelData implements RegionLevelDataCo
 	private final Map<Long, Long> burnEndWorldTimes = new HashMap<>();
 	private final Map<Long, Long> firingBurnEndWorldTimes = new HashMap<>();
 	private final Map<Long, ProductionRecoveryState> productionRecoveryStates = new HashMap<>();
-	private final Map<Long, Integer> pendingCleanupPickupIDs = new HashMap<>();
+	private final Map<Long, ArrayList<Integer>> pendingCleanupPickupIDs = new HashMap<>();
 	private int produceUntilUnitsStocked;
 	private boolean repeatForever;
 	private String lastProductionBlockedReason;
@@ -86,7 +87,19 @@ public class CharcoalPitLevelData extends LevelData implements RegionLevelDataCo
 	}
 
 	public void setPendingCleanup(int tileX, int tileY, ItemPickupEntity pickup) {
-		pendingCleanupPickupIDs.put(getKey(tileX, tileY), pickup == null ? 0 : pickup.getUniqueID());
+		ArrayList<Integer> ids = new ArrayList<>();
+		if (pickup != null) ids.add(pickup.getUniqueID());
+		pendingCleanupPickupIDs.put(getKey(tileX, tileY), ids);
+	}
+
+	public void setPendingCleanupPickups(int tileX, int tileY, List<ItemPickupEntity> pickups) {
+		ArrayList<Integer> ids = new ArrayList<>();
+		if (pickups != null) {
+			for (ItemPickupEntity pickup : pickups) {
+				if (pickup != null) ids.add(pickup.getUniqueID());
+			}
+		}
+		pendingCleanupPickupIDs.put(getKey(tileX, tileY), ids);
 	}
 
 	public void clearPendingCleanup(int tileX, int tileY) {
@@ -254,17 +267,24 @@ public class CharcoalPitLevelData extends LevelData implements RegionLevelDataCo
 			level.getLevelTile(tileX, tileY).checkAround();
 			level.getLevelObject(tileX, tileY).checkAround();
 
+			ArrayList<ItemPickupEntity> outputPickups = new ArrayList<>();
 			InventoryItem charcoal = new InventoryItem("charcoal", 32);
 			ItemPickupEntity pickup = charcoal.getPickupEntity(level, tileX * 32.0F + 16.0F, tileY * 32.0F + 16.0F);
 			level.entityManager.pickups.add(pickup);
-			setPendingCleanup(tileX, tileY, pickup);
+			outputPickups.add(pickup);
+			InventoryItem woodAsh = new InventoryItem(woodAshStringID, 4);
+			ItemPickupEntity ashPickup = woodAsh.getPickupEntity(level, tileX * 32.0F + 16.0F, tileY * 32.0F + 16.0F);
+			level.entityManager.pickups.add(ashPickup);
+			outputPickups.add(ashPickup);
+			setPendingCleanupPickups(tileX, tileY, outputPickups);
 			Logging.logMessage(
 					"[CharcoalCleanup] Burn completed at " + tileX + "," + tileY
 							+ "; spawned charcoal pickup amount=" + pickup.item.getAmount()
-							+ ", removed=" + pickup.removed()
-							+ ", available=" + pickup.getAvailableAmount()
+							+ " and wood ash amount=" + ashPickup.item.getAmount()
+							+ ", charcoalRemoved=" + pickup.removed()
+							+ ", ashRemoved=" + ashPickup.removed()
 			);
-			level.jobsLayer.addJob(new CharcoalCleanupLevelJob(tileX, tileY, pickup));
+			level.jobsLayer.addJob(new CharcoalCleanupLevelJob(tileX, tileY, outputPickups));
 			Logging.logMessage("[CharcoalCleanup] Added cleanup level job at " + tileX + "," + tileY);
 		}
 	}
@@ -322,7 +342,11 @@ public class CharcoalPitLevelData extends LevelData implements RegionLevelDataCo
 				level.entityManager.pickups.add(pickup);
 				firedPickups.add(pickup);
 			}
-			Logging.logMessage("[ItemFiring] Burn completed at " + tileX + "," + tileY + "; spawned " + firedCount + " fired items");
+			InventoryItem woodAsh = new InventoryItem(woodAshStringID, 4);
+			ItemPickupEntity ashPickup = woodAsh.getPickupEntity(level, tileX * 32.0F + 16.0F, tileY * 32.0F + 16.0F);
+			level.entityManager.pickups.add(ashPickup);
+			firedPickups.add(ashPickup);
+			Logging.logMessage("[ItemFiring] Burn completed at " + tileX + "," + tileY + "; spawned " + firedCount + " fired items and 4 wood ash");
 
 			ClayFiringAutomationLevelData automation = ClayFiringAutomationLevelData.get(level, false);
 			if (automation != null) automation.handleCompletedBurn(tileX, tileY, firedPickups);
@@ -344,11 +368,16 @@ public class CharcoalPitLevelData extends LevelData implements RegionLevelDataCo
 			save.addSaveData(stateSave);
 		}
 
-		for (Map.Entry<Long, Integer> entry : pendingCleanupPickupIDs.entrySet()) {
+		for (Map.Entry<Long, ArrayList<Integer>> entry : pendingCleanupPickupIDs.entrySet()) {
 			SaveData cleanupSave = new SaveData("CHARCOAL_CLEANUP_RECOVERY");
 			cleanupSave.addInt("tileX", (int)(entry.getKey() >> 32));
 			cleanupSave.addInt("tileY", (int)(long)entry.getKey());
-			cleanupSave.addInt("pickupUniqueID", entry.getValue());
+			for (Integer pickupUniqueID : entry.getValue()) {
+				if (pickupUniqueID == null) continue;
+				SaveData pickupSave = new SaveData("PICKUP");
+				pickupSave.addInt("pickupUniqueID", pickupUniqueID);
+				cleanupSave.addSaveData(pickupSave);
+			}
 			save.addSaveData(cleanupSave);
 		}
 	}
@@ -380,8 +409,16 @@ public class CharcoalPitLevelData extends LevelData implements RegionLevelDataCo
 		for (LoadData cleanupSave : save.getLoadDataByName("CHARCOAL_CLEANUP_RECOVERY")) {
 			int tileX = cleanupSave.getInt("tileX", 0, false);
 			int tileY = cleanupSave.getInt("tileY", 0, false);
-			int pickupUniqueID = cleanupSave.getInt("pickupUniqueID", 0, false);
-			pendingCleanupPickupIDs.put(getKey(tileX, tileY), pickupUniqueID);
+			ArrayList<Integer> pickupUniqueIDs = new ArrayList<>();
+			for (LoadData pickupSave : cleanupSave.getLoadDataByName("PICKUP")) {
+				int pickupUniqueID = pickupSave.getInt("pickupUniqueID", 0, false);
+				if (pickupUniqueID != 0) pickupUniqueIDs.add(pickupUniqueID);
+			}
+			if (pickupUniqueIDs.isEmpty()) {
+				int pickupUniqueID = cleanupSave.getInt("pickupUniqueID", 0, false);
+				if (pickupUniqueID != 0) pickupUniqueIDs.add(pickupUniqueID);
+			}
+			pendingCleanupPickupIDs.put(getKey(tileX, tileY), pickupUniqueIDs);
 		}
 	}
 
@@ -590,7 +627,7 @@ public class CharcoalPitLevelData extends LevelData implements RegionLevelDataCo
 	}
 
 	private void recoverCleanupJobs() {
-		for (Map.Entry<Long, Integer> entry : new ArrayList<>(pendingCleanupPickupIDs.entrySet())) {
+		for (Map.Entry<Long, ArrayList<Integer>> entry : new ArrayList<>(pendingCleanupPickupIDs.entrySet())) {
 			long key = entry.getKey();
 			int tileX = (int)(key >> 32);
 			int tileY = (int)key;
@@ -607,8 +644,12 @@ public class CharcoalPitLevelData extends LevelData implements RegionLevelDataCo
 				continue;
 			}
 
-			ItemPickupEntity pickup = resolvePickup(entry.getValue());
-			level.jobsLayer.addJob(new CharcoalCleanupLevelJob(tileX, tileY, pickup, entry.getValue()));
+			ArrayList<ItemPickupEntity> pickups = new ArrayList<>();
+			for (Integer pickupUniqueID : entry.getValue()) {
+				ItemPickupEntity pickup = resolvePickup(pickupUniqueID);
+				if (pickup != null) pickups.add(pickup);
+			}
+			level.jobsLayer.addJob(new CharcoalCleanupLevelJob(tileX, tileY, pickups, entry.getValue()));
 			Logging.logMessage("[CharcoalRecovery] Restored cleanup job at " + tileX + "," + tileY);
 		}
 	}

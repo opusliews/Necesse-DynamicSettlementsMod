@@ -21,6 +21,7 @@ public class DSItemRegistry {
     public static final String groundFiremoneStringID = "groundfiremone";
     public static final String honeycombFragmentStringID = "honeycombfragment";
     public static final String waxStringID = "wax";
+    public static final String woodAshStringID = "woodash";
     public static final String oakplankStringID = "oakplank";
     public static final String nailStringID = "nail";
     public static final String hingeStringID = "hinge";
@@ -192,6 +193,7 @@ public class DSItemRegistry {
        registerMaterial(groundFiremoneStringID, new MatItem(500, Item.Rarity.NORMAL), 0.6F, "ingredient", "organic", "firemone");
        registerMaterial(honeycombFragmentStringID, new MatItem(500, Item.Rarity.NORMAL), 5.0F, "ingredient", "organic", "honeycomb");
        registerMaterial(waxStringID, new MatItem(500, Item.Rarity.NORMAL), 5.0F, "ingredient", "organic", "honeycomb");
+       registerMaterial(woodAshStringID, new MatItem(500, Item.Rarity.NORMAL), 1.0F, "ingredient", "organic", "dust");
        registerMaterial(metalworkHammerStringID, new MatItem(500, Item.Rarity.NORMAL), 5.0F, "ingredient", "metal", "metal");
 
        registerMaterial(oakplankStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanyplank"), 0.5F, "plank", "wood", "oak");
