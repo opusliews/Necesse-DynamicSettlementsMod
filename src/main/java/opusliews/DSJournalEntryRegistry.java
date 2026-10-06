@@ -122,7 +122,7 @@ public class DSJournalEntryRegistry {
 		);
 
 		String[] triggeredSections = {
-				"hidingholes", "moldsanddurability", "moldenchanting", "foundstations", "treasureshovel", "farmchanges",
+				"hidingholes", "moldsanddurability", "moldenchanting", "foundstations", "treasureshovel", "farmchanges", "woodashfarmland",
 				"settlementintro", "happinesswork", "builders", "blueprintcreation", "blueprintconstruction",
 				"blueprinttools", "projectmanagement", "inspectionglass", "travellingbuilder", "stockmanagement",
 				"carpenters", "workstationlinks", "craftingtasks", "craftingautostock", "automatedmetalworking",
@@ -145,6 +145,13 @@ public class DSJournalEntryRegistry {
 		registerTriggeredAuto("foundstations");
 		registerTriggeredButton("treasureshovel");
 		registerTriggeredButton("farmchanges");
+		GuideJournalRegistry.registerAutoSectionAfterChallenge(
+				categoryStringID,
+				"woodashfarmland",
+				new LocalMessage("journalguide", "woodashfarmlandtitle"),
+				new LocalMessage("journalguide", "woodashfarmlandbody"),
+				GuideProgressionSystem.revealChallengeID("woodashfarmland")
+		);
 		registerTriggeredButton("settlementintro");
 		registerTriggeredButton("happinesswork");
 		registerTriggeredButton("builders");

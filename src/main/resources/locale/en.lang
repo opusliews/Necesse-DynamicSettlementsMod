@@ -689,6 +689,9 @@ treasureshoveltitle=Digging Deeper
 treasureshovelbody=Your early Shovels were good enough to dig holes on the surface, but cave floors are much harder to break through.\n\nThe [item=treasureshovel] Treasure Shovel is strong enough to dig new holes underground. I wonder how far you can dig...
 farmchangestitle=Life on the Farm
 farmchangesbody=Farming has a few extra considerations in Dynamic Settlements.\n\nHarvesting mature crops can provide useful [item=grass] Grass and [item=dirtpile] Dirt Piles in addition to the crop itself.\n\nBe careful what you allow to walk through your fields. Hostile creatures, raiders and most larger animals can trample farmland and destroy growing crops. Chickens and similarly small animals are light enough not to cause trouble.\n\nAdult Chickens can provide [item=feather] Feathers, and Apiaries can produce [item=honeycombfragment] Honeycomb Fragments that are useful for further crafting.
+
+woodashfarmlandtitle=Wood Ash and Farmland
+woodashfarmlandbody=Wood Ash [item=woodash] is a byproduct of charcoal and firing pits.\nIt can be combined with dirt and fertilizer to craft farmland soil.
 settlementintrotitle=Settlement Dynamics
 settlementintrobody=Settlements can do much more in Dynamic Settlements than they normally can.\n\nAs your settlement grows you can recruit specialist workers like Builders and Carpenters, manage stocked supplies, automate crafting and production, construct entire buildings from Blueprints, organize proper defences, and expand your settlement underground.\n\nYou don't need to learn everything at once. New Journal entries will appear as you encounter these systems.
 happinessworktitle=Happy Workers Work Better

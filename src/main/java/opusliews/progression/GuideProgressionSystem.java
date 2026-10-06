@@ -348,6 +348,8 @@ public final class GuideProgressionSystem {
 
 		if (hasObtained(client, firedMolds)) reveal(client, "moldsanddurability");
 		if (hasObtained(client, "treasureshovel")) reveal(client, "treasureshovel");
+		if (hasObtained(client, "woodash")) reveal(client, "woodashfarmland");
+		if (isRevealed(client, "woodashfarmland") && hasObtained(client, "farmland")) complete(client, "woodashfarmland");
 		if (hasObtained(client, "blueprintItem")) reveal(client, "blueprintcreation");
 		if (hasObtained(client, "projecteraser")) reveal(client, "projectmanagement");
 		if (hasObtained(client, "inspectionglass")) reveal(client, "inspectionglass");
