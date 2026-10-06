@@ -609,7 +609,7 @@ guide9objective=With some <logicon> logs in hand, place them [input=mouse2] on t
 guide10title=Craft some tools
 guide10objective=Craft a [item=woodsword] wooden sword to protect yourself.\n\nYou will also need to craft a [item=woodshovel] wooden shovel.
 guide11title=Make a hole
-guide11objective=Use [input=mouse1] your [item=woodshovel] shovel to uncover dirt, then dig again with [input=mouse2] to make a [item=shallowholetile] Shallow Hole.\n\nThese holes have many uses. You can use them for crafting, for accessing caves, and to protect yourself in a pinch.\n\nYou can also simply dig once for collecting dirt, which will be useful in the future. Grass won't be growing on these fine dirt tiles, but they will slowly recover over a period of a couple of days.
+guide11objective=Use [input=mouse1] your [item=woodshovel] shovel to uncover dirt, then dig again twice with [input=mouse2] to make a [item=shallowholetile] Shallow Hole.\n\nThese holes have many uses. You can use them for crafting, for accessing caves, and to protect yourself in a pinch.\n\nYou can also simply dig once for collecting dirt, which will be useful in the future. Grass won't be growing on these fine dirt tiles, but they will slowly recover over a period of a couple of days.
 guide12title=Make a trapdoor
 guide12objective=Craft a [item=trapdoor] trapdoor in your workbench. You can put this trapdoor over a [item=shallowholetile] shallow hole to create a hiding spot from enemies. However, you will need to remove the trapdoor with an axe if you want to use the hole for other purposes.
 guide13title=Find some Firemone
