@@ -14,6 +14,7 @@ import opusliews.armor.CarpenterShirtArmorItem;
 import opusliews.crafting.CraftingComponentCategories;
 import opusliews.crafting.CraftingMaterialItem;
 import opusliews.item.*;
+import opusliews.logging.Logging;
 
 public class DSItemRegistry {
     public static final String featherStringID = "feather";
@@ -136,10 +137,31 @@ public class DSItemRegistry {
     public static final String ironShearsBladeStringID = "ironshearsblade";
     public static final String stringStringID = "string";
     public static final String clothpanelStringID = "clothpanel";
+    public static final String leatherpanelStringID = "leatherpanel";
     public static final String bonepanelStringID = "bonepanel";
-    public static final String slimearmorpanelStringID = "slimearmorpanel";
-    public static final String dryadarmorpanelStringID = "dryadarmorpanel";
-    public static final String runicarmorpanelStringID = "runicarmorpanel";
+    public static final String slimepanelStringID = "slimepanel";
+    public static final String dryadpanelStringID = "dryadpanel";
+    public static final String runicpanelStringID = "runicpanel";
+    public static final String copperpanelStringID = "copperpanel";
+    public static final String ironpanelStringID = "ironpanel";
+    public static final String goldpanelStringID = "goldpanel";
+    public static final String tungstenpanelStringID = "tungstenpanel";
+    public static final String demonicpanelStringID = "demonicpanel";
+    public static final String ivypanelStringID = "ivypanel";
+    public static final String quartzpanelStringID = "quartzpanel";
+    public static final String glacialpanelStringID = "glacialpanel";
+    public static final String myceliumpanelStringID = "myceliumpanel";
+    public static final String spideritepanelStringID = "spideritepanel";
+    public static final String nightsteelpanelStringID = "nightsteelpanel";
+    public static final String ancientfossilpanelStringID = "ancientfossilpanel";
+    public static final String arcanicpanelStringID = "arcanicpanel";
+    public static final String crystalpanelStringID = "crystalpanel";
+    public static final String emeraldpanelStringID = "emeraldpanel";
+    public static final String rubypanelStringID = "rubypanel";
+    public static final String amethystpanelStringID = "amethystpanel";
+    public static final String bloodplatepanelStringID = "bloodplatepanel";
+    public static final String spiderpanelStringID = "spiderpanel";
+    public static final String voidpanelStringID = "voidpanel";
     public static final String hookStringID = "metalhook";
     public static final String metalcasingStringID = "metalcasing";
     public static final String clockworkmechanismStringID = "clockworkmechanism";
@@ -312,11 +334,35 @@ public class DSItemRegistry {
        registerMaterial(ironSickleBladeStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL), 60.0F, "sickleblade", "metal", "iron");
        registerMaterial(ironShearsBladeStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL), 60.0F, "shearsblade", "metal", "iron");
        registerMaterial(stringStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL), 5.0F, "string", "textile", "grass");
-       registerMaterial(clothpanelStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanyarmorpanel"), 56.0F, "armorpanel", "textile", "cloth");
-       registerMaterial(bonepanelStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanyarmorpanel"), 88.0F, "armorpanel", "bone", "bone");
-       registerMaterial(slimearmorpanelStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanyarmorpanel"), 116.0F, "armorpanel", "organic", "slime");
-       registerMaterial(dryadarmorpanelStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanyarmorpanel"), 58.0F, "armorpanel", "wood", "dryad");
-       registerMaterial(runicarmorpanelStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanyarmorpanel"), 66.0F, "armorpanel", "magic", "runic");
+       registerMaterial(clothpanelStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanypanel"), 56.0F, "panel", "textile", "cloth");
+       registerArmorPanel(leatherpanelStringID, 28.0F, "textile", null);
+       registerMaterial(bonepanelStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanypanel"), 88.0F, "panel", "bone", "bone");
+       registerMaterial(slimepanelStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanypanel"), 116.0F, "panel", "organic", "slime");
+       registerMaterial(dryadpanelStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanypanel"), 58.0F, "panel", "wood", "dryad");
+       registerMaterial(runicpanelStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanypanel"), 66.0F, "panel", "magic", "runic");
+
+       if (Logging.logEnabled) Logging.logMessage("[ArmorPanels] Registering 20 new material panel items");
+       registerArmorPanel(copperpanelStringID, 44.0F, "metal", "copper");
+       registerArmorPanel(ironpanelStringID, 52.0F, "metal", "iron");
+       registerArmorPanel(goldpanelStringID, 68.0F, "metal", "gold");
+       registerArmorPanel(tungstenpanelStringID, 108.0F, "metal", "tungsten");
+       registerArmorPanel(demonicpanelStringID, 68.0F, "metal", "demonic");
+       registerArmorPanel(ivypanelStringID, 76.0F, "organic", "ivy");
+       registerArmorPanel(quartzpanelStringID, 88.0F, "gem", "quartz");
+       registerArmorPanel(glacialpanelStringID, 108.0F, "metal", "glacial");
+       registerArmorPanel(myceliumpanelStringID, 108.0F, "organic", "mycelium");
+       registerArmorPanel(spideritepanelStringID, 140.0F, "metal", "spiderite");
+       registerArmorPanel(nightsteelpanelStringID, 124.0F, "metal", "nightsteel");
+       registerArmorPanel(ancientfossilpanelStringID, 108.0F, "metal", "ancientfossil");
+       registerArmorPanel(arcanicpanelStringID, 128.0F, "magic", "arcanic");
+       registerArmorPanel(crystalpanelStringID, 128.0F, "gem", "crystal");
+       registerArmorPanel(emeraldpanelStringID, 168.0F, "gem", "emerald");
+       registerArmorPanel(rubypanelStringID, 168.0F, "gem", "ruby");
+       registerArmorPanel(amethystpanelStringID, 168.0F, "gem", "amethyst");
+       registerArmorPanel(bloodplatepanelStringID, 88.0F, "metal", "bloodplate");
+       registerArmorPanel(spiderpanelStringID, 200.0F, "organic", "spider");
+       registerArmorPanel(voidpanelStringID, 108.0F, "magic", "void");
+       if (Logging.logEnabled) Logging.logMessage("[ArmorPanels] Registered 20 new material panel items");
        registerMaterial(hookStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL), 3.0F, "hook", "metal", "metal");
        registerMaterial(metalcasingStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL), 0.6F, "casing", "metal", "metal");
        registerMaterial(clockworkmechanismStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL), 12.0F, "mechanism", "metal", "metal");
@@ -348,6 +394,17 @@ public class DSItemRegistry {
        registerMaterial(thickTungstenPlateStringID, new MatItem(500, Item.Rarity.NORMAL), 24.0F, null, null, null);
     }
 
+    private static void registerArmorPanel(String id, float brokerValue, String materialClass, String material) {
+       if (Logging.logEnabled) Logging.logMessage("[ArmorPanels] Registering panel item " + id);
+       try {
+          registerMaterial(id, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanypanel"), brokerValue, "panel", materialClass, material);
+       } catch (RuntimeException e) {
+          if (Logging.logEnabled) Logging.logMessage("[ArmorPanels] Failed to register panel item " + id + ": " + e);
+          throw e;
+       }
+       if (Logging.logEnabled) Logging.logMessage("[ArmorPanels] Registered panel item " + id);
+    }
+
     private static void registerGlobalGroups() {
        registerGlobal("dsanyplank");
        registerGlobal("dsanyshaft");
@@ -359,7 +416,7 @@ public class DSItemRegistry {
        registerGlobal("dsanypickaxehead");
        registerGlobal("dsanyaxehead");
        registerGlobal("dsanyshovelhead");
-       registerGlobal("dsanyarmorpanel");
+       registerGlobal("dsanypanel");
     }
 
     private static void registerGlobal(String id) {

@@ -13,7 +13,7 @@ public class CraftingComponentCategories {
 
 	public static void register() {
 		if (registered) return;
-		typeManager.createCategory("000", new LocalMessage("componenttype", "armorpanel"), "armorpanel");
+		typeManager.createCategory("000", new LocalMessage("componenttype", "panel"), "panel");
 		typeManager.createCategory("001", new LocalMessage("componenttype", "blade"), "blade");
 		typeManager.createCategory("002", new LocalMessage("componenttype", "casing"), "casing");
 		typeManager.createCategory("003", new LocalMessage("componenttype", "focus"), "focus");

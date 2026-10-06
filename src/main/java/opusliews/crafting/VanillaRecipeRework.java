@@ -6,6 +6,7 @@ import necesse.engine.registries.RecipeTechRegistry;
 import necesse.inventory.recipe.GlobalIngredient;
 import necesse.inventory.recipe.Ingredient;
 import necesse.inventory.recipe.Recipe;
+import opusliews.logging.Logging;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -30,6 +31,7 @@ public class VanillaRecipeRework {
 			calculatedHashField = Recipe.class.getDeclaredField("calculatedHash");
 			calculatedHashField.setAccessible(true);
 		} catch (ReflectiveOperationException e) {
+			if (Logging.logEnabled) Logging.logMessage("[VanillaRecipeRework] Failed to initialize recipe reflection: " + e);
 			throw new RuntimeException("Could not initialize Dynamic Settlements recipe rework reflection", e);
 		}
 	}
@@ -88,6 +90,7 @@ public class VanillaRecipeRework {
 				ingredientsField.set(recipe, ingredients);
 				calculatedHashField.setInt(recipe, 0);
 			} catch (IllegalAccessException e) {
+				if (Logging.logEnabled) Logging.logMessage("[VanillaRecipeRework] Failed to replace ingredients for " + recipe.resultStringID + " at " + recipe.tech.getStringID() + ": " + e);
 				throw new RuntimeException("Could not replace vanilla recipe ingredients for " + recipe.resultStringID, e);
 			}
 		}
@@ -119,6 +122,7 @@ public class VanillaRecipeRework {
 		Map<String, IngredientSpec[]> out = new HashMap<>();
 		InputStream stream = VanillaRecipeRework.class.getResourceAsStream("/resources/crafting_recipe_rework.tsv");
 		if (stream == null) {
+			if (Logging.logEnabled) Logging.logMessage("[VanillaRecipeRework] Missing resources/crafting_recipe_rework.tsv");
 			throw new IllegalStateException("Missing resources/crafting_recipe_rework.tsv");
 		}
 
@@ -134,6 +138,7 @@ public class VanillaRecipeRework {
 
 				String[] columns = line.split("\\t", -1);
 				if (columns.length != 3) {
+					if (Logging.logEnabled) Logging.logMessage("[VanillaRecipeRework] Invalid TSV columns on line " + lineNumber + ": " + line);
 					throw new IllegalStateException("Invalid crafting recipe rework line " + lineNumber + ": " + line);
 				}
 
@@ -144,6 +149,7 @@ public class VanillaRecipeRework {
 					String ingredientSpec = ingredientSpecs[i].trim();
 					int split = ingredientSpec.lastIndexOf(':');
 					if (split <= 0 || split == ingredientSpec.length() - 1) {
+						if (Logging.logEnabled) Logging.logMessage("[VanillaRecipeRework] Invalid ingredient spec on line " + lineNumber + ": " + ingredientSpec);
 						throw new IllegalStateException("Invalid ingredient spec on line " + lineNumber + ": " + ingredientSpec);
 					}
 
@@ -154,12 +160,15 @@ public class VanillaRecipeRework {
 
 				String replacementKey = key(columns[0].trim(), columns[1].trim());
 				if (out.put(replacementKey, specs) != null) {
+					if (Logging.logEnabled) Logging.logMessage("[VanillaRecipeRework] Duplicate recipe rework entry on line " + lineNumber + ": " + replacementKey);
 					throw new IllegalStateException("Duplicate crafting recipe rework entry on line " + lineNumber + ": " + replacementKey);
 				}
 			}
 		} catch (RuntimeException e) {
+			if (Logging.logEnabled) Logging.logMessage("[VanillaRecipeRework] Failed loading crafting recipe rework: " + e);
 			throw e;
 		} catch (Exception e) {
+			if (Logging.logEnabled) Logging.logMessage("[VanillaRecipeRework] Failed loading crafting recipe rework: " + e);
 			throw new RuntimeException("Could not load Dynamic Settlements crafting recipe rework", e);
 		}
 
@@ -179,6 +188,10 @@ public class VanillaRecipeRework {
 			return;
 		}
 
+		if (Logging.logEnabled) Logging.logMessage(
+				"[VanillaRecipeRework] Unknown ingredient " + ingredientID
+						+ " for " + recipe.resultStringID + " at " + recipe.tech.getStringID()
+		);
 		throw new IllegalStateException(
 				"Unknown crafting rework ingredient \"" + ingredientID
 						+ "\" for recipe \"" + recipe.resultStringID

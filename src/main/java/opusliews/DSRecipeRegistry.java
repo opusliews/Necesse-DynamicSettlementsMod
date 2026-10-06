@@ -8,6 +8,7 @@ import necesse.inventory.recipe.Tech;
 import opusliews.earlygame.CrudeAnvilFeature;
 import opusliews.earlygame.CrudeWorkbenchFeature;
 import opusliews.item.*;
+import opusliews.logging.Logging;
 import opusliews.object.*;
 
 import static necesse.inventory.recipe.Recipes.ingredientsFromScript;
@@ -194,11 +195,36 @@ public class DSRecipeRegistry {
 		register(slimebladeStringID, 1, RecipeTechRegistry.FALLEN_ANVIL, ingredient(slimeplateStringID, 1));
 
 		// Armor panels
-		register(clothpanelStringID, 1, RecipeTechRegistry.IRON_ANVIL, ingredient("wool", 4), ingredient("leather", 4));
-		register(bonepanelStringID, 1, RecipeTechRegistry.TUNGSTEN_CARPENTER, ingredient("bone", 4), ingredient(clothpanelStringID, 1));
-		register(slimearmorpanelStringID, 1, RecipeTechRegistry.FALLEN_ANVIL, ingredient("slimematter", 4), ingredient(clothpanelStringID, 1));
-		register(dryadarmorpanelStringID, 1, RecipeTechRegistry.TUNGSTEN_CARPENTER, ingredient(dryadplankStringID, 4), ingredient(clothpanelStringID, 1));
-		register(runicarmorpanelStringID, 1, RecipeTechRegistry.DEMONIC_ANVIL, ingredient(clothpanelStringID, 1), ingredient("runestone", 1));
+		register(clothpanelStringID, 1, RecipeTechRegistry.IRON_ANVIL, ingredient("wool", 4));
+		register(leatherpanelStringID, 1, RecipeTechRegistry.IRON_ANVIL, ingredient("leather", 4));
+
+		register(bonepanelStringID, 1, RecipeTechRegistry.TUNGSTEN_CARPENTER, ingredient("bone", 4), ingredient("leather", 4));
+		register(slimepanelStringID, 1, RecipeTechRegistry.FALLEN_ANVIL, ingredient("slimematter", 4), ingredient("leather", 4));
+		register(runicpanelStringID, 1, RecipeTechRegistry.DEMONIC_ANVIL, ingredient(clothpanelStringID, 1), ingredient("runestone", 1));
+
+		if (Logging.logEnabled) Logging.logMessage("[ArmorPanels] Registering 21 new material panel recipes");
+		registerArmorPanelRecipe(copperpanelStringID, copperplateStringID, RecipeTechRegistry.IRON_ANVIL);
+		registerArmorPanelRecipe(ironpanelStringID, ironplateStringID, RecipeTechRegistry.IRON_ANVIL);
+		registerArmorPanelRecipe(goldpanelStringID, goldplateStringID, RecipeTechRegistry.IRON_ANVIL);
+		registerArmorPanelRecipe(tungstenpanelStringID, tungstenplateStringID, RecipeTechRegistry.TUNGSTEN_ANVIL);
+		registerArmorPanelRecipe(demonicpanelStringID, demonicplateStringID, RecipeTechRegistry.DEMONIC_ANVIL);
+		registerArmorPanelRecipe(ivypanelStringID, ivyplateStringID, RecipeTechRegistry.DEMONIC_ANVIL);
+		registerArmorPanelRecipe(quartzpanelStringID, quartzplateStringID, RecipeTechRegistry.DEMONIC_ANVIL);
+		registerArmorPanelRecipe(glacialpanelStringID, glacialplateStringID, RecipeTechRegistry.TUNGSTEN_ANVIL);
+		registerArmorPanelRecipe(myceliumpanelStringID, myceliumplateStringID, RecipeTechRegistry.TUNGSTEN_ANVIL);
+		registerArmorPanelRecipe(spideritepanelStringID, spideriteplateStringID, RecipeTechRegistry.FALLEN_ANVIL);
+		registerArmorPanelRecipe(nightsteelpanelStringID, nightsteelplateStringID, RecipeTechRegistry.FALLEN_ANVIL);
+		registerArmorPanelRecipe(ancientfossilpanelStringID, ancientfossilplateStringID, RecipeTechRegistry.TUNGSTEN_ANVIL);
+		registerArmorPanelRecipe(arcanicpanelStringID, arcanicplateStringID, RecipeTechRegistry.FALLEN_ANVIL);
+		registerArmorPanelRecipe(crystalpanelStringID, crystalplateStringID, RecipeTechRegistry.FALLEN_ANVIL);
+		registerArmorPanelRecipe(emeraldpanelStringID, emeraldplateStringID, RecipeTechRegistry.TUNGSTEN_ANVIL);
+		registerArmorPanelRecipe(rubypanelStringID, rubyplateStringID, RecipeTechRegistry.TUNGSTEN_ANVIL);
+		registerArmorPanelRecipe(amethystpanelStringID, amethystplateStringID, RecipeTechRegistry.DEMONIC_ANVIL);
+		registerArmorPanelRecipe(bloodplatepanelStringID, bloodplateplateStringID, RecipeTechRegistry.DEMONIC_ANVIL);
+		registerArmorPanelRecipe(spiderpanelStringID, spiderplateStringID, RecipeTechRegistry.FALLEN_ANVIL);
+		registerArmorPanelRecipe(voidpanelStringID, voidplateStringID, RecipeTechRegistry.DEMONIC_ANVIL);
+		registerArmorPanelRecipe(dryadpanelStringID, dryadplateStringID, RecipeTechRegistry.TUNGSTEN_CARPENTER);
+		if (Logging.logEnabled) Logging.logMessage("[ArmorPanels] Registered 21 new material panel recipes");
 
 		// Misc components
 		register(metalcasingStringID, 10, RecipeTechRegistry.IRON_ANVIL, ingredient("ironbar", 1));
@@ -221,6 +247,17 @@ public class DSRecipeRegistry {
 		register(TrapdoorObject.openStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("dsanyplank", 4));
 		register(HoleCaveLadderObject.stringID, 1, CrudeWorkbenchFeature.tech, ingredient(woodenshaftStringID, 32));
 		register(HoleCaveLadderObject.stringID, 1, RecipeTechRegistry.WORKSTATION, ingredient(woodenshaftStringID, 32));
+	}
+
+	private static void registerArmorPanelRecipe(String panelStringID, String plateStringID, Tech tech) {
+		if (Logging.logEnabled) Logging.logMessage("[ArmorPanels] Registering recipe " + panelStringID + " from " + plateStringID);
+		try {
+			register(panelStringID, 1, tech, ingredient(plateStringID, 2), ingredient("leather", 4));
+		} catch (RuntimeException e) {
+			if (Logging.logEnabled) Logging.logMessage("[ArmorPanels] Failed to register recipe " + panelStringID + ": " + e);
+			throw e;
+		}
+		if (Logging.logEnabled) Logging.logMessage("[ArmorPanels] Registered recipe " + panelStringID);
 	}
 
 	private static Ingredient ingredient(String stringID, int amount) {
