@@ -271,6 +271,9 @@ craftingtaskboard=Crafting Task Board
 openbuilderform=Open Builder Form
 
 [ui]
+craftingguidemadefrom=Made from
+craftingguideusedto=Used to make
+craftingguidenorecipes=No crafting recipes found
 newjournalentrybubble=I have a new journal entry
 settlementassignfishingareas=Assign Fishing Areas
 settlementmanagefishingareas=Manage Fishing Areas
@@ -492,6 +495,7 @@ blueprintnameempty=Blueprint name cannot be empty
 blueprintclipboardinvalid=Clipboard does not contain valid blueprint JSON
 [tech]
 crudeworkbench=Crude Workbench
+transmutation=Transmutation Station
 
 [globalingredient]
 dsanyplank=Any Plank
@@ -641,7 +645,7 @@ guide27objective=Craft a [item=saw] Saw in your new [item=ironanvil] Iron Anvil.
 guide27atitle=Make a proper workstation
 guide27aobjective=Craft a [item=workstationduo] Workstation from your Crude Workstation.\n\nMake sure to use your [item=craftingguide] Crafting Guide to find out how to make components you don't know.\n\nYou can click them in the guide and the book will automatically navigate to them.
 guide28title=Start a settlement
-guide28objective=Craft a [item=settlementflag] Settlement Flag and start a new settlement, or join an existing settlement.
+guide28objective=Craft a [item=settlementflag] Settlement Flag and start a new settlement
 guide29title=Craft a Carpenter's Bench
 guide29objective=Craft a [item=carpentersbench] Carpenter's Bench.
 guide30title=Craft a Landscaping Station

@@ -757,7 +757,7 @@ stonepressureplate	demonic	stone:10,wire:5
 stonetiledfloor	workstation	stone:1
 stonewall	workstation	stone:5
 stool	carpenter	dsanyplank:1,woodenshaft:1,nail:1,raspberry:1
-storagebox	workstation	anylog:8
+storagebox	workstation	oakplank:4,nail:4,hinge:2
 strawtile	workstation	wheat:1
 swampcandlepedestal	carpenter	wax:1,string:1,honey:1
 swampcandlestand	carpenter	wax:1,string:1

@@ -215,7 +215,7 @@ public class DSRecipeRegistry {
 		register("metalworkhammer", 1, RecipeTechRegistry.IRON_ANVIL, ingredient("copperbar", 2), ingredient(woodenshaftStringID, 1));
 		register("ironanvil", 1, CrudeAnvilFeature.tech, ingredientsFromScript("{{thickironplate, 2},{metalworkhammer, 1}}"));
 		register("ironanvil", 1, RecipeTechRegistry.IRON_ANVIL, ingredientsFromScript("{{thickironplate, 2},{metalworkhammer, 1}}"));
-		register("workstationduo", 1, CrudeAnvilFeature.tech, ingredient("saw", 1), ingredient("dsanyplank", 4), ingredient("woodenshaft", 4), ingredient("nail", 4));
+		register("workstationduo", 1, CrudeWorkbenchFeature.tech, ingredient("saw", 1), ingredient("dsanyplank", 4), ingredient("woodenshaft", 4), ingredient("nail", 4));
 		// Tools
 		register(TrapdoorObject.openStringID, 1, CrudeWorkbenchFeature.tech, ingredient("dsanyplank", 4));
 		register(TrapdoorObject.openStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("dsanyplank", 4));
