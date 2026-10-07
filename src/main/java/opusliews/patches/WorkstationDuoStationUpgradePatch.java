@@ -14,11 +14,11 @@ public class WorkstationDuoStationUpgradePatch {
 	public static void onExit(@Advice.Return(readOnly = false) CraftingStationUpgrade result) {
 		result = new CraftingStationUpgrade(
 			ObjectRegistry.getObject("demonicworkstationduo"),
-			new Ingredient[]{new Ingredient("demonicplate", 4)}
+			new Ingredient[]{new Ingredient("demonicbar", 8)}
 		);
 
 		if (Logging.logEnabled) {
-			Logging.logMessage("Patched Workstation Duo -> Demonic Workstation Duo upgrade cost: 4 demonicplate");
+			Logging.logMessage("Patched Workstation Duo -> Demonic Workstation Duo upgrade cost: 8 demonicbar");
 		}
 	}
 }

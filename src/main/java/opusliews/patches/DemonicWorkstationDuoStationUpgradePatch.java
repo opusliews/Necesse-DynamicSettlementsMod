@@ -15,13 +15,13 @@ public class DemonicWorkstationDuoStationUpgradePatch {
 		result = new CraftingStationUpgrade(
 			ObjectRegistry.getObject("tungstenworkstation"),
 			new Ingredient[]{
-				new Ingredient("tungstenplate", 4),
+				new Ingredient("tungstenbar", 8),
 				new Ingredient("quartz", 4)
 			}
 		);
 
 		if (Logging.logEnabled) {
-			Logging.logMessage("Patched Demonic Workstation Duo -> Tungsten Workstation upgrade cost: 4 tungstenplate, 4 quartz");
+			Logging.logMessage("Patched Demonic Workstation Duo -> Tungsten Workstation upgrade cost: 8 tungstenbar, 4 quartz");
 		}
 	}
 }
