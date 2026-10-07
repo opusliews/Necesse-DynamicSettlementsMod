@@ -48,13 +48,6 @@ public final class ForgeCookingRecipeRegistry {
 		registerMoldedBar("spideritebar", "spideriteore", 4);
 		registerMoldedBar("ivybar", "ivyore", 4);
 
-		registerMoldedBarFromMaterial("demonicbar", "copperbar", 3);
-		registerMoldedBarFromMaterial("demonicbar", "copperore", 12);
-		registerMoldedBarFromMaterial("demonicbar", "ironbar", 2);
-		registerMoldedBarFromMaterial("demonicbar", "ironore", 8);
-		registerMoldedBarFromMaterial("demonicbar", "goldbar", 1);
-		registerMoldedBarFromMaterial("demonicbar", "goldore", 4);
-
 		register(new ForgeCookingRecipe(
 				"ironbar_from_brokenirontool",
 				ForgeCookingInput.durabilityUse("brokenirontool"),

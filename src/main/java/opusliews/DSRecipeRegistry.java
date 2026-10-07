@@ -196,7 +196,9 @@ public class DSRecipeRegistry {
 
 		// Armor panels
 		register(clothpanelStringID, 1, RecipeTechRegistry.IRON_ANVIL, ingredient("wool", 4));
+		register(clothpanelStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("wool", 4));
 		register(leatherpanelStringID, 1, RecipeTechRegistry.IRON_ANVIL, ingredient("leather", 4));
+		register(leatherpanelStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("leather", 4));
 
 		register(bonepanelStringID, 1, RecipeTechRegistry.TUNGSTEN_CARPENTER, ingredient("bone", 4), ingredient("leather", 4));
 		register(slimepanelStringID, 1, RecipeTechRegistry.FALLEN_ANVIL, ingredient("slimematter", 4), ingredient("leather", 4));

@@ -463,6 +463,7 @@ public class DynamicSettlements {
 		}
 
 		GuideStoryObjectiveRegistry.applyOrdering();
+		GuideStoryObjectiveRegistry.moveObjectiveAfter("defeatevilsprotector", "guide27a");
 		GuideStoryObjectiveRegistry.removeObjectivesFromOrdering(
 				"gettingstarted",
 				"equippingtrinket",

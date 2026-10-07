@@ -18,7 +18,7 @@ ancientfossilmask	tungstenanvil	ancientfossilplate:2,leather:2,wormcarapace:1
 ancientfossilpickaxe	tungstenanvil	ancientfossilpickaxehead:1,woodenshaft:1
 ancientfossilshovel	tungstenanvil	ancientfossilshovelhead:1,woodenshaft:1
 ancientrelics	tungstenworkstation	airvessel:1,templependant:1
-ancientruindoor	fallen	crystalstone:15
+ancientruindoor	fallen	crystalstone:15,nail:8,hinge:2
 ancientruinwall	fallen	crystalstone:5
 ancientstatue	demonic	demonicbar:4,quartz:4,voidshard:4
 andgate	demonic	copperbar:1,wire:5
@@ -33,7 +33,7 @@ arcanearmory	demonic	demonicbar:10,voidshard:10,ivybar:10,quartz:10
 arcanicboots	fallenanvil	arcanicplate:4,leather:2,omnicrystal:1
 arcanicchestplate	fallenanvil	arcanicpanel:4,omnicrystal:1
 arcaniccolumn	fallencarpenter	stone:1,electrifiedmana:1
-arcanicdoor	fallen	anystone:5,electrifiedmana:1
+arcanicdoor	fallen	anystone:5,electrifiedmana:1,nail:8,hinge:2
 arcanicfloor	fallen	electrifiedmana:2
 arcanichelmet	fallenanvil	arcanicplate:2,leather:2,omnicrystal:1
 arcaniclamp	fallencarpenter	arcanicshaft:1,glass:1,string:1,electrifiedmana:1
@@ -55,7 +55,7 @@ bambooclock	tungstencarpenter	bambooplank:1,clockworkmechanism:1,glass:1
 bamboodesk	tungstencarpenter	bambooplank:4,nail:4
 bamboodinnertable	tungstencarpenter	bambooplank:4,woodenshaft:4,nail:4
 bamboodisplay	tungstencarpenter	bamboo:1
-bamboodoor	tungstenworkstation	bamboo:4
+bamboodoor	tungstenworkstation	bamboo:4,nail:8,hinge:2
 bamboodoublebed	tungstencarpenter	bambooplank:4,woodenshaft:4,clothpanel:1,string:1,nail:4
 bamboodresser	tungstencarpenter	bambooplank:1,nail:4,hinge:2
 bamboofloor	tungstenworkstation	bamboo:1
@@ -71,7 +71,7 @@ bannerofsummonspeed	demonic	wool:30,voidshard:20
 barrel	carpenter	dsanyplank:1,ironshaft:2,nail:1
 barshelf	tungstencarpenter	dsanyplank:1,nail:4
 basaltcolumn	tungstencarpenter	basalt:1
-basaltdoor	tungstenworkstation	basalt:15
+basaltdoor	tungstenworkstation	basalt:15,nail:8,hinge:2
 basaltfloor	tungstenworkstation	basalt:1
 basaltpathtile	tungstenworkstation	basalt:2
 basaltpressureplate	tungstenworkstation	basalt:10,wire:5
@@ -178,7 +178,7 @@ cryostaff	tungstenanvil	dsanyshaft:1,magicfocus:1,glacialshard:1
 cryowitchhat	tungstenanvil	glacialplate:2,leather:2,string:1,witchhat:1,icecrown:1
 cryowitchrobe	tungstenanvil	glacialpanel:4,string:1,witchrobe:1,glacialshard:1
 cryowitchshoes	tungstenanvil	glacialplate:4,leather:2,witchshoes:1,glacialshard:1
-cryptdoor	fallen	cryptstone:15
+cryptdoor	fallen	cryptstone:15,nail:8,hinge:2
 cryptwall	fallen	cryptstone:5
 crystalboots	fallenanvil	crystalplate:4,leather:2,pearlescentdiamond:1
 crystalbullet	fallenanvil	metalcasing:1,groundfiremone:1,sapphire:1
@@ -186,7 +186,7 @@ crystalchestplate	fallenanvil	crystalpanel:4,pearlescentdiamond:1
 crystallizedskull	fallenanvil	ruby:1,pearlescentdiamond:1,omnicrystal:1,crystalessence:1
 crystalshield	fallenanvil	crystalplate:1,leather:1,pearlescentdiamond:1
 cutter	demonic	ironbar:10
-dawndoor	fallen	dawnwall:5
+dawndoor	fallen	dawnwall:5,nail:8,hinge:2
 deadwoodbathtub	fallencarpenter	deadwoodlog:1
 deadwoodbed	fallencarpenter	deadwoodplank:4,woodenshaft:4,clothpanel:1,string:1,nail:4
 deadwoodbench	fallencarpenter	deadwoodplank:1,woodenshaft:4,nail:4
@@ -214,24 +214,24 @@ deepfrostboots	tungstenanvil	glacialplate:4,leather:2,frostboots:1,glacialshard:
 deepfrostchestplate	tungstenanvil	glacialpanel:4,frostchestplate:1,bonearrow:1
 deepfrosthood	tungstenanvil	glacialplate:2,leather:2,string:1,frosthood:1,glacialshard:1
 deepsandstonecolumn	tungstencarpenter	deepsandstone:1
-deepsandstonedoor	tungstenworkstation	deepsandstone:15
+deepsandstonedoor	tungstenworkstation	deepsandstone:15,nail:8,hinge:2
 deepsandstonewall	tungstenworkstation	deepsandstone:5
 deepsnowstonebrickfloor	tungstenworkstation	deepsnowstone:1
 deepsnowstonecolumn	tungstencarpenter	deepsnowstone:1
-deepsnowstonedoor	tungstenworkstation	deepsnowstone:15
+deepsnowstonedoor	tungstenworkstation	deepsnowstone:15,nail:8,hinge:2
 deepsnowstonefloor	tungstenworkstation	deepsnowstone:1
 deepsnowstonepressureplate	tungstenworkstation	deepsnowstone:10,wire:5
 deepsnowstonewall	tungstenworkstation	deepsnowstone:5
 deepstonebrickfloor	tungstenworkstation	deepstone:1
 deepstonecolumn	tungstencarpenter	deepstone:1
-deepstonedoor	tungstenworkstation	deepstone:15
+deepstonedoor	tungstenworkstation	deepstone:15,nail:8,hinge:2
 deepstonefloor	tungstenworkstation	deepstone:1
 deepstonepressureplate	tungstenworkstation	deepstone:10,wire:5
 deepstonetiledfloor	tungstenworkstation	deepstone:1
 deepstonewall	tungstenworkstation	deepstone:5
 deepswampstonebrickfloor	tungstenworkstation	deepswampstone:1
 deepswampstonecolumn	tungstencarpenter	deepswampstone:1
-deepswampstonedoor	tungstenworkstation	deepswampstone:15
+deepswampstonedoor	tungstenworkstation	deepswampstone:15,nail:8,hinge:2
 deepswampstonefloor	tungstenworkstation	deepswampstone:1
 deepswampstonepressureplate	tungstenworkstation	deepswampstone:10,wire:5
 deepswampstonewall	tungstenworkstation	deepswampstone:5
@@ -277,7 +277,7 @@ dryadcrown	tungstenanvil	dryadplate:2,leather:2,amber:1
 dryaddesk	tungstencarpenter	dryadplank:4,nail:4
 dryaddinnertable	tungstencarpenter	dryadplank:4,woodenshaft:4,nail:4
 dryaddisplay	tungstencarpenter	dryadlog:1
-dryaddoor	tungstenworkstation	dryadplank:4
+dryaddoor	tungstenworkstation	dryadplank:4,nail:8,hinge:2
 dryaddoublebed	tungstencarpenter	dryadplank:4,woodenshaft:4,clothpanel:1,string:1,nail:4
 dryaddresser	tungstencarpenter	dryadplank:1,nail:4,hinge:2
 dryadfloor	tungstenworkstation	dryadlog:1
@@ -292,7 +292,7 @@ dryadshovel	tungstenanvil	dryadshovelhead:1,woodenshaft:1,amber:1
 dryadtoilet	tungstencarpenter	dryadlog:1
 dryadwall	tungstenworkstation	dryadplank:2
 dungeonmap	demonic	mapfragment:2
-duskdoor	fallen	duskwall:5
+duskdoor	fallen	duskwall:5,nail:8,hinge:2
 eggcellentbanner	carpenter	clothpanel:1,woodenshaft:1,string:1,egg:1
 eggnest	workstation	wheat:10
 elderlywand	fallenanvil	dsanyshaft:1,magicfocus:1,shadowessence:1
@@ -303,7 +303,7 @@ empresscommand	fallenanvil	spideressence:1,spideritebar:1,spidervenom:1
 essenceofrebirth	tungstenworkstation	essenceofperspective:1,essenceofprolonging:1,lifequartz:10
 explorercloak	tungstenworkstation	travelercloak:1,piratetelescope:1
 explorersatchel	demonic	leatherglove:1,trackerboot:1,shinebelt:1
-factorydoor	fallen	junk:15
+factorydoor	fallen	junk:15,nail:8,hinge:2
 factorywall	fallen	junk:5
 fallenaltar	tungstenworkstation	gatewaytablet:0,tungstenbar:10,glacialbar:10,myceliumbar:10,ancientfossilbar:10
 fallenanvil	fallenanvil	thicktungstenplate:2,anytier1essence:10,upgradeshard:10
@@ -376,7 +376,7 @@ goldsword	ironanvil	goldblade:1,dsanyshaft:1
 grainmill	workstation	anylog:20,wool:10,ironbar:10
 granitebrickfloor	workstation	granite:1
 granitecolumn	carpenter	granite:1
-granitedoor	workstation	granite:15
+granitedoor	workstation	granite:15,nail:8,hinge:2
 granitefloor	workstation	granite:1
 granitepathtile	workstation	granite:2
 granitewall	workstation	granite:5
@@ -393,7 +393,7 @@ hexedbladegreatsword	tungstenanvil	goldblade:1,dsanyshaft:1,necroticgreatsword:1
 hivescepter	ironanvil	honey:1,queenbee:1,goldbar:1
 hysteriatablet	tungstenworkstation	mesmertablet:1,inducingamulet:1
 icecrown	tungstenworkstation	glacialbar:4,glacialshard:8,bone:8
-icedoor	demonic	snowstone:10,frostshard:1
+icedoor	demonic	snowstone:10,frostshard:1,nail:8,hinge:2
 icepickaxe	fallenanvil	dsanymetalplate:1,woodenshaft:1,cryoessence:1
 icewall	demonic	snowstone:3,frostshard:1
 iciclestaff	tungstenanvil	dsanyshaft:1,magicfocus:1,glacialshard:1
@@ -520,7 +520,7 @@ oakdresser	carpenter	oakplank:1,nail:4,hinge:2
 oakmodulartable	carpenter	oakplank:4,woodenshaft:4,nail:4
 oaktoilet	carpenter	oaklog:1
 obsidiancolumn	tungstencarpenter	obsidian:1
-obsidiandoor	tungstenworkstation	obsidian:8
+obsidiandoor	tungstenworkstation	obsidian:8,nail:8,hinge:2
 obsidianwall	tungstenworkstation	obsidian:2
 oillantern	carpenter	coppershaft:1,glass:1,string:1
 orbofslimes	fallenanvil	magicfocus:1,slimeessence:1,slimematter:1,slimeum:1
@@ -537,7 +537,7 @@ palmclock	carpenter	palmplank:1,clockworkmechanism:1,glass:1
 palmdesk	carpenter	palmplank:4,nail:4
 palmdinnertable	carpenter	palmplank:4,woodenshaft:4,nail:4
 palmdisplay	carpenter	palmlog:1
-palmdoor	workstation	palmplank:4
+palmdoor	workstation	palmplank:4,nail:8,hinge:2
 palmdoublebed	carpenter	palmplank:4,woodenshaft:4,clothpanel:1,string:1,nail:4
 palmdresser	carpenter	palmplank:1,nail:4,hinge:2
 palmfloor	workstation	palmlog:1
@@ -566,7 +566,7 @@ pineclock	carpenter	pineplank:1,clockworkmechanism:1,glass:1
 pinedesk	carpenter	pineplank:4,nail:4
 pinedinnertable	carpenter	pineplank:4,woodenshaft:4,nail:4
 pinedisplay	carpenter	pinelog:1
-pinedoor	workstation	pineplank:4
+pinedoor	workstation	pineplank:4,nail:8,hinge:2
 pinedoublebed	carpenter	pineplank:4,woodenshaft:4,clothpanel:1,string:1,nail:4
 pinedresser	carpenter	pineplank:1,nail:4,hinge:2
 pinefloor	workstation	pinelog:1
@@ -608,7 +608,7 @@ quartzpickaxe	demonicanvil	quartzpickaxehead:1,woodenshaft:1,quartz:1
 quartzshovel	demonicanvil	quartzshovelhead:1,woodenshaft:1,quartz:1
 quartzstaff	demonicanvil	dsanyshaft:1,magicfocus:1,quartz:1,voidshard:1
 ravenbeakspear	fallenanvil	dsanymetalshaft:1,woodenshaft:1,ravenfeather:1,slimeessence:1
-ravendoor	fallen	anystone:5,ravenfeather:1
+ravendoor	fallen	anystone:5,ravenfeather:1,nail:8,hinge:2
 ravenfloor	fallen	ravenfeather:2
 ravenlordsboots	fallenanvil	dsanymetalplate:1,leather:1,ravenfeather:1,anytier2essence:1
 ravenlordschestplate	fallenanvil	dsanymetalplate:1,leather:1,ravenfeather:1,anytier2essence:1
@@ -644,7 +644,7 @@ sandgraveltile	workstation	sandtile:1,anystone:1
 sandknife	tungstenanvil	quartz:1,ancientfossilbar:1,wormcarapace:1
 sandstonebrickfloor	demonic	sandstone:1
 sandstonecolumn	carpenter	sandstone:1
-sandstonedoor	demonic	sandstone:15
+sandstonedoor	demonic	sandstone:15,nail:8,hinge:2
 sandstonefloor	demonic	sandstone:1
 sandstonepathtile	demonic	sandstone:2
 sandstonepressureplate	demonic	sandstone:10,wire:5
@@ -655,7 +655,7 @@ sapphirestaff	ironanvil	dsanyshaft:1,magicfocus:1,sapphire:1
 scryingcards	demonic	prophecyslab:1,magicmanual:1
 scryingmirror	fallen	primordialessence:20
 sensorgate	demonic	ironbar:2,wire:10
-settlementflag	workstation	anystone:50,goldbar:10,coin:1000
+settlementflag	workstation	anystone:50,goldbar:10,coin:1000,demonicshaft:2,clothpanel:4
 shadowbeam	fallenanvil	shadowessence:1
 shadowbolt	tungstenanvil	ectoplasm:1,book:1
 shadowboots	tungstenanvil	leather:1,string:1,ectoplasm:1,bone:1
@@ -689,7 +689,7 @@ slimestaff	fallenanvil	dsanyshaft:1,magicfocus:1,slimeessence:1,slimematter:1,sl
 snowcandlepedestal	carpenter	wax:1,string:1,honey:1
 snowstonebrickfloor	workstation	snowstone:1
 snowstonecolumn	carpenter	snowstone:1
-snowstonedoor	workstation	snowstone:15
+snowstonedoor	workstation	snowstone:15,nail:8,hinge:2
 snowstonefloor	workstation	snowstone:1
 snowstonepathtile	workstation	snowstone:2
 snowstonepressureplate	demonic	snowstone:10,wire:5
@@ -707,7 +707,7 @@ spellstone	tungstenworkstation	sparegemstones:1,ectoplasm:10
 spiderboomerang	ironanvil	spiderplate:1
 spiderboots	ironanvil	spiderplate:4,leather:2
 spidercastlecarpet	fallen	silk:1
-spidercastledoor	fallen	spiderstone:15
+spidercastledoor	fallen	spiderstone:15,nail:8,hinge:2
 spidercastlefloor	fallen	spiderstone:1
 spidercastlewall	fallen	spiderstone:5
 spiderchestplate	ironanvil	spiderpanel:4
@@ -748,7 +748,7 @@ stonearrow	ironanvil	woodenshaft:1,stone:1,feather:1
 stonebrickfloor	workstation	stone:1
 stonecandlepedestal	carpenter	wax:1,string:1,honey:1
 stonecolumn	carpenter	stone:1
-stonedoor	workstation	stone:15
+stonedoor	workstation	stone:15,nail:8,hinge:2
 stonefence	workstation	stone:4
 stonefencegate	workstation	stone:4,dsanyplank:2,hinge:4
 stonefloor	workstation	stone:1
@@ -766,7 +766,7 @@ swampdwellerstaff	fallenanvil	dsanyshaft:1,magicfocus:1,bioessence:1
 swampsgrasp	fallenanvil	bioessence:1
 swampstonebrickfloor	demonic	swampstone:1
 swampstonecolumn	carpenter	swampstone:1
-swampstonedoor	demonic	swampstone:15
+swampstonedoor	demonic	swampstone:15,nail:8,hinge:2
 swampstonefloor	demonic	swampstone:1
 swampstonepathtile	demonic	swampstone:2
 swampstonepressureplate	demonic	swampstone:10,wire:5
@@ -840,7 +840,7 @@ willowclock	carpenter	willowplank:1,clockworkmechanism:1,glass:1
 willowdesk	carpenter	willowplank:4,nail:4
 willowdinnertable	carpenter	willowplank:4,woodenshaft:4,nail:4
 willowdisplay	carpenter	willowlog:1
-willowdoor	workstation	willowplank:4
+willowdoor	workstation	willowplank:4,nail:8,hinge:2
 willowdoublebed	carpenter	willowplank:4,woodenshaft:4,clothpanel:1,string:1,nail:4
 willowdresser	carpenter	willowplank:1,nail:4,hinge:2
 willowfloor	workstation	willowlog:1
@@ -855,7 +855,7 @@ woodboomerang	workstation	dsanyplank:1
 woodbow	ironanvil	woodenshaft:1,string:1
 woodbow	workstation	woodenshaft:1,string:1
 woodcolumn	carpenter	anylog:1
-wooddoor	workstation	dsanyplank:4
+wooddoor	workstation	dsanyplank:4,nail:8,hinge:2
 woodencandleset	tungstencarpenter	wax:1,string:1,honey:1
 woodfence	workstation	dsanyplank:2
 woodfencegate	workstation	dsanyplank:4,hinge:4

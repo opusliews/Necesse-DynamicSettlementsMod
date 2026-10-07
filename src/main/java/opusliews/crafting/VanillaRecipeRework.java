@@ -98,7 +98,6 @@ public class VanillaRecipeRework {
 
 	private static boolean isLegacyBarRecipe(Recipe recipe) {
 		if (recipe == null || recipe.resultStringID == null) return false;
-		if ("demonicbar".equals(recipe.resultStringID)) return true;
 		if (recipe.tech != RecipeTechRegistry.FORGE) return false;
 
 		switch (recipe.resultStringID) {

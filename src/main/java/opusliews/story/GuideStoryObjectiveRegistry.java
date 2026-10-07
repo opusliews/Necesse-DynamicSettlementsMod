@@ -157,6 +157,53 @@ public class GuideStoryObjectiveRegistry {
 		}
 	}
 
+	public static void moveObjectiveAfter(String stringID, String afterObjectiveStringID) {
+		if (stringID == null || stringID.isEmpty()) {
+			Logging.logMessage("[StoryObjectives] Cannot move objective: stringID is null or empty");
+			return;
+		}
+		if (afterObjectiveStringID == null || afterObjectiveStringID.isEmpty()) {
+			Logging.logMessage("[StoryObjectives] Cannot move objective " + stringID + ": anchor is null or empty");
+			return;
+		}
+
+		try {
+			Field sortedElementsField = StoryObjectiveRegistry.class.getDeclaredField("sortedElements");
+			sortedElementsField.setAccessible(true);
+			ArrayList elements = (ArrayList)sortedElementsField.get(null);
+			if (elements == null) {
+				Logging.logMessage("[StoryObjectives] Cannot move " + stringID + " after " + afterObjectiveStringID + ": sortedElements is null");
+				return;
+			}
+
+			int objectiveIndex = findElementIndex(elements, stringID);
+			if (objectiveIndex < 0) {
+				Logging.logMessage("[StoryObjectives] Cannot move " + stringID + " after " + afterObjectiveStringID + ": objective not found");
+				return;
+			}
+
+			Object objectiveElement = elements.remove(objectiveIndex);
+			int anchorIndex = findElementIndex(elements, afterObjectiveStringID);
+			if (anchorIndex < 0) {
+				elements.add(objectiveIndex, objectiveElement);
+				Logging.logMessage("[StoryObjectives] Cannot move " + stringID + " after " + afterObjectiveStringID + ": anchor not found");
+				return;
+			}
+
+			elements.add(anchorIndex + 1, objectiveElement);
+			Field sortedIndexField = StoryObjectiveRegistry.StoryObjectiveRegistryElement.class.getDeclaredField("sortedIndex");
+			sortedIndexField.setAccessible(true);
+			for (int i = 0; i < elements.size(); i++) {
+				sortedIndexField.setInt(elements.get(i), i);
+			}
+			if (Logging.logEnabled) Logging.logMessage("[StoryObjectives] Moved " + stringID + " after " + afterObjectiveStringID);
+		}
+		catch (ReflectiveOperationException e) {
+			Logging.logMessage("[StoryObjectives] Failed moving " + stringID + " after " + afterObjectiveStringID + ": " + e.getMessage());
+			throw new RuntimeException("Failed to move story objective in ordering", e);
+		}
+	}
+
 	@SuppressWarnings("unchecked")
 	public static void removeObjectivesFromOrdering(String... stringIDs) {
 		if (stringIDs == null || stringIDs.length == 0) return;
