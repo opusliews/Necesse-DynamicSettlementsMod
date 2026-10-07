@@ -46,6 +46,7 @@ import necesse.inventory.item.Item;
 import necesse.inventory.item.ItemAttackerWeaponItem;
 import necesse.inventory.item.armorItem.ArmorItem;
 import necesse.inventory.item.placeableItem.consumableItem.food.FoodConsumableItem;
+import necesse.inventory.itemFilter.ItemCategoriesFilter;
 import necesse.level.maps.Level;
 import necesse.level.maps.levelData.jobs.AbstractLevelJob;
 import necesse.level.maps.levelData.jobs.HasStorageLevelJob;
@@ -65,7 +66,9 @@ import necesse.level.maps.levelData.settlementData.storage.SettlementStorageReco
 import necesse.level.maps.levelData.settlementData.storage.SettlementStorageRecords;
 import necesse.level.maps.levelData.settlementData.storage.SettlementStorageRecordsRegionData;
 import necesse.level.maps.levelData.settlementData.LevelSettler;
+import necesse.level.maps.levelData.settlementData.SettlementStoragePickupFuture;
 import opusliews.guard.GuardLevelAssignmentSystem;
+import opusliews.hunger.SettlerStarvationSystem;
 import opusliews.clay.ClayPackageSystem;
 import opusliews.fishing.FishingAreaSystem;
 import opusliews.logging.Logging;
@@ -90,6 +93,200 @@ public final class SettlementCrossLevelJobSystem {
 	private static long nextSeenJobCleanupTime;
 
 	private SettlementCrossLevelJobSystem() {
+	}
+
+	/** True whenever vanilla/emergency hunger rules currently allow ConsumeFoodLevelJob. */
+	public static boolean isFoodSearchEligible(JobFinder finder) {
+		if (finder == null || !(finder.mob instanceof HumanMob)) return false;
+		HumanMob human = (HumanMob)finder.mob;
+		return human.isSettler()
+				&& human.getLevel() != null
+				&& human.getLevel().isServer()
+				&& SettlerStarvationSystem.shouldConsumeFood(human);
+	}
+
+	/** True while this JobFinder belongs to a critically hungry settler that must search only for food. */
+	public static boolean isEmergencyFoodSearch(JobFinder finder) {
+		if (finder == null || !(finder.mob instanceof HumanMob)) return false;
+		HumanMob human = (HumanMob)finder.mob;
+		return human.isSettler()
+				&& human.getLevel() != null
+				&& human.getLevel().isServer()
+				&& SettlerStarvationSystem.isEmergencyEating(human);
+	}
+
+	/**
+	 * When food is currently eligible, keep the multi-level ordering deterministic: local food
+	 * first, then reachable food on the other settlement level. This mirrors vanilla's maximum
+	 * ConsumeFood priority without allowing a pending/remote normal-work job to jump ahead of it.
+	 */
+	public static boolean shouldPreferLocalFood(JobFinder finder) {
+		return isFoodSearchEligible(finder)
+				&& SettlerStarvationSystem.hasAccessibleFood((HumanMob)finder.mob);
+	}
+
+	/**
+	 * Vanilla ConsumeFoodLevelJob is an extra/synthetic job rather than a jobsLayer entry, so the
+	 * ordinary remote job scanner cannot see it. If no local food is executable, synthesize only
+	 * the relocation step to a different settlement level with reachable, unreserved edible food.
+	 * Once there, vanilla ConsumeFoodLevelJob performs the actual pickup and eating sequence.
+	 */
+	public static FoundJob findCrossLevelFoodRelocation(JobFinder finder) {
+		if (!isFoodSearchEligible(finder)) return null;
+
+		HumanMob human = (HumanMob)finder.mob;
+		if (human.getLevel() == null || !human.getLevel().isServer() || !human.isSettler()) return null;
+
+		// Same-level food must always be attempted first.
+		if (SettlerStarvationSystem.hasAccessibleFood(human)) return null;
+
+		CrossLevelFoodTarget target = findCrossLevelFoodTargetOnOtherLevel(human);
+		if (target == null) return null;
+
+		JobTypeHandler handler = human.getJobTypeHandler();
+		if (handler == null) {
+			if (Logging.logEnabled) Logging.logMessage("[CrossLevelFood] Cannot relocate for food because JobTypeHandler is null settler=" + human.getUniqueID());
+			return null;
+		}
+
+		JobTypeHandler.SubHandler foodHandler;
+		try {
+			foodHandler = handler.getJobHandler(ConsumeFoodLevelJob.class);
+		}
+		catch (Throwable error) {
+			if (Logging.logEnabled) Logging.logMessage("[CrossLevelFood] Could not resolve ConsumeFood handler for cross-level relocation settler="
+					+ human.getUniqueID() + " error=" + error.getClass().getSimpleName() + ": " + error.getMessage());
+			return null;
+		}
+		if (foodHandler == null || foodHandler.priority == null) {
+			if (Logging.logEnabled) Logging.logMessage("[CrossLevelFood] ConsumeFood handler/priority unavailable for cross-level relocation settler=" + human.getUniqueID());
+			return null;
+		}
+
+		LevelSettler levelSettler = human.getSettlerSettlementServerData() == null
+				? null
+				: human.getSettlerSettlementServerData().getSettler(human.getUniqueID());
+		ItemCategoriesFilter dietFilter = levelSettler == null
+				? (human.levelSettler == null ? null : human.levelSettler.dietFilter)
+				: levelSettler.dietFilter;
+		ConsumeFoodLevelJob foodJob = new ConsumeFoodLevelJob(human, foodHandler, dietFilter);
+
+		if (Logging.logEnabled) {
+			Logging.logMessage("[CrossLevelFood] Food relocation selected settler=" + human.getUniqueID()
+					+ " from=" + human.getLevel().getIdentifier()
+					+ " to=" + target.levelType
+					+ " storage=" + target.storageTileX + "," + target.storageTileY
+					+ " food=" + target.foodItemStringID
+					+ " emergency=" + SettlerStarvationSystem.isEmergencyEating(human)
+					+ " route=" + target.route);
+		}
+
+		return new CrossLevelFoodRelocationFoundJob(human, foodJob, foodHandler.priority, target.route, target.levelType);
+	}
+
+	/** Non-mutating preview used by the starvation tick before it cancels the settler's work. */
+	public static boolean hasReachableFoodOnOtherLevel(HumanMob human) {
+		return findCrossLevelFoodTargetOnOtherLevel(human) != null;
+	}
+
+	private static CrossLevelFoodTarget findCrossLevelFoodTargetOnOtherLevel(HumanMob human) {
+		try {
+			return findCrossLevelFoodTargetOnOtherLevelUnsafe(human);
+		}
+		catch (Throwable error) {
+			if (Logging.logEnabled) {
+				Logging.logMessage("[CrossLevelFood] Remote food scan failed settler="
+						+ (human == null ? "null" : human.getStringID() + "#" + human.getUniqueID())
+						+ " level=" + (human == null || human.getLevel() == null ? "null" : human.getLevel().getIdentifier())
+						+ " error=" + error.getClass().getSimpleName() + ": " + error.getMessage());
+			}
+			return null;
+		}
+	}
+
+	@SuppressWarnings("rawtypes")
+	private static CrossLevelFoodTarget findCrossLevelFoodTargetOnOtherLevelUnsafe(HumanMob human) {
+		if (human == null || human.getLevel() == null || !human.getLevel().isServer() || !human.isSettler()) return null;
+
+		ServerSettlementData settlement = human.getSettlerSettlementServerData();
+		if (settlement == null) return null;
+		SettlementLevelDomain domain = SettlementMultiLevelSystem.get(settlement);
+		if (domain == null) return null;
+
+		SettlementLevelType currentType = domain.getLevelType(human.getLevel().getIdentifier());
+		if (currentType == null) return null;
+		SettlementLevelType otherType = currentType == SettlementLevelType.SURFACE
+				? SettlementLevelType.CAVE
+				: SettlementLevelType.SURFACE;
+		Level remoteLevel = getLoadedLevel(domain, otherType);
+		if (remoteLevel == null) return null;
+
+		LevelSettler levelSettler = settlement.getSettler(human.getUniqueID());
+		ItemCategoriesFilter dietFilter = levelSettler == null
+				? (human.levelSettler == null ? null : human.levelSettler.dietFilter)
+				: levelSettler.dietFilter;
+
+		RemoteWorker worker = new RemoteWorker(human, settlement, domain, remoteLevel, getRemoteSearchOrigin(human, domain, otherType));
+		ZoneTester restrictZone = worker.getJobRestrictZone();
+		Stream stream = worker.streamValidJobsWithinRange(worker.getJobSearchBounds());
+		Iterator iterator = stream.iterator();
+		CrossLevelFoodTarget best = null;
+
+		while (iterator.hasNext()) {
+			Object next = iterator.next();
+			if (!(next instanceof HasStorageLevelJob)) continue;
+			HasStorageLevelJob storageJob = (HasStorageLevelJob)next;
+			if (storageJob.getLevel() == null || !remoteLevel.getIdentifier().equals(storageJob.getLevel().getIdentifier())) continue;
+			if (!storageJob.isWithinRestrictZone(restrictZone)) continue;
+
+			SettlementStoragePickupFuture food = (SettlementStoragePickupFuture)storageJob.settlementInventory
+					.findFutureUnreservedSlots()
+					.filter(candidate -> isCrossLevelEdibleFood(candidate.item, dietFilter))
+					.findFirst()
+					.orElse(null);
+			if (food == null) continue;
+
+			SettlementLevelPosition foodPosition = new SettlementLevelPosition(
+					remoteLevel.getIdentifier(),
+					storageJob.settlementInventory.tileX,
+					storageJob.settlementInventory.tileY
+			);
+			SettlementCrossLevelRoute route = SettlementCrossLevelRouting.findBestRouteQuiet(
+					human,
+					domain,
+					foodPosition,
+					true,
+					SettlementLevelZoneSystem.getRouteRestriction(human)
+			);
+			if (route == null || route.ladder == null) {
+				if (Logging.logEnabled) {
+					Logging.logMessage("[CrossLevelFood] Remote storage has edible food but no valid cross-level route settler="
+							+ human.getUniqueID()
+							+ " targetLevel=" + otherType
+							+ " storage=" + storageJob.settlementInventory.tileX + "," + storageJob.settlementInventory.tileY
+							+ " food=" + food.item.item.getStringID());
+				}
+				continue;
+			}
+
+			CrossLevelFoodTarget candidate = new CrossLevelFoodTarget(
+					otherType,
+					route,
+					storageJob.settlementInventory.tileX,
+					storageJob.settlementInventory.tileY,
+					food.item.item.getStringID()
+			);
+			if (best == null || candidate.route.totalDistance < best.route.totalDistance) best = candidate;
+		}
+
+		return best;
+	}
+
+	private static boolean isCrossLevelEdibleFood(InventoryItem item, ItemCategoriesFilter dietFilter) {
+		if (item == null || !item.item.isFoodItem()) return false;
+		if (dietFilter != null && !dietFilter.isItemAllowed(item.item)) return false;
+		FoodConsumableItem food = (FoodConsumableItem)item.item;
+		return food.nutrition > 0 && food.quality != null;
 	}
 
 	/**
@@ -991,6 +1188,22 @@ public final class SettlementCrossLevelJobSystem {
 		}
 	}
 
+	private static final class CrossLevelFoodTarget {
+		final SettlementLevelType levelType;
+		final SettlementCrossLevelRoute route;
+		final int storageTileX;
+		final int storageTileY;
+		final String foodItemStringID;
+
+		CrossLevelFoodTarget(SettlementLevelType levelType, SettlementCrossLevelRoute route, int storageTileX, int storageTileY, String foodItemStringID) {
+			this.levelType = levelType;
+			this.route = route;
+			this.storageTileX = storageTileX;
+			this.storageTileY = storageTileY;
+			this.foodItemStringID = foodItemStringID;
+		}
+	}
+
 	private static final class Candidate {
 		final FoundJob found;
 		final SettlementLevelType levelType;
@@ -1246,6 +1459,47 @@ public final class SettlementCrossLevelJobSystem {
 		@Override public boolean wantsToDoRecreation() { return human.wantsToDoRecreation(); }
 		@Override public boolean isOnStrike() { return human.isOnStrike(); }
 		@Override public boolean attemptStartStrike(boolean activateOthers) { return human.attemptStartStrike(activateOthers); }
+	}
+
+	private static final class CrossLevelFoodRelocationFoundJob extends FoundJob {
+		final HumanMob human;
+		final SettlementCrossLevelRoute route;
+		final SettlementLevelType targetType;
+
+		CrossLevelFoodRelocationFoundJob(
+				HumanMob human,
+				ConsumeFoodLevelJob foodJob,
+				JobTypeHandler.TypePriority priority,
+				SettlementCrossLevelRoute route,
+				SettlementLevelType targetType
+		) {
+			super(human, foodJob, priority, null);
+			this.human = human;
+			this.route = route;
+			this.targetType = targetType;
+		}
+
+		@Override
+		public void startCooldown(long currentTime) {
+			// Do not cooldown ConsumeFood while this sequence only relocates the settler.
+		}
+
+		@Override
+		protected JobSequence getNewSequence() {
+			// Use the vanilla consuming activity key so SettlerStarvationSystem recognizes the
+			// ladder trip as part of the emergency food sequence and does not cancel it.
+			LinkedListJobSequence sequence = new LinkedListJobSequence(
+					new necesse.engine.localization.message.LocalMessage(
+							"activities",
+							"consuming",
+							"item",
+							new StaticMessage("food")
+					),
+					false
+			);
+			sequence.add(new RelocationActiveJob(human, priority, route, targetType, null));
+			return sequence;
+		}
 	}
 
 	private static final class RelocationFoundJob extends FoundJob {

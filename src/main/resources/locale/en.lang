@@ -474,6 +474,7 @@ moldunbreakingtip=Unbreaking: This mold no longer loses durability when used in 
 
 
 [misc]
+settlerstarved=<settler> starved to death.
 settlementladdernosettlement=This ladder is not inside a settlement.
 settlementladdernoaccess=You do not have access to this settlement.
 settlementladderunsupportedlevel=This ladder is not on a supported settlement level.

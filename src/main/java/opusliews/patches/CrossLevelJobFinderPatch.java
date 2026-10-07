@@ -14,6 +14,18 @@ public class CrossLevelJobFinderPatch {
 			@Advice.Argument(0) boolean ignoreRecreationJobs,
 			@Advice.Local("dsCrossLevelFoundJob") FoundJob foundJob
 	) {
+		foundJob = SettlementCrossLevelJobSystem.findCrossLevelFoodRelocation(finder);
+		if (foundJob != null) return true;
+
+		// ConsumeFood has vanilla maximum first priority. Preserve that across levels: when
+		// executable food exists locally, step aside immediately so vanilla can take it before
+		// a remembered or newly-selected cross-level work job.
+		if (SettlementCrossLevelJobSystem.shouldPreferLocalFood(finder)) return false;
+
+		// At critical hunger, if neither local nor remote food can currently be executed, do not
+		// let unrelated cross-level work slip in while the emergency state is still active.
+		if (SettlementCrossLevelJobSystem.isEmergencyFoodSearch(finder)) return false;
+
 		foundJob = SettlementCrossLevelJobSystem.findPendingExactJob(finder, ignoreRecreationJobs);
 		if (foundJob == null) foundJob = SettlementCrossLevelJobSystem.findRemoteRelocation(finder, ignoreRecreationJobs);
 		return foundJob != null;

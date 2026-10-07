@@ -27,6 +27,7 @@ import necesse.level.maps.levelData.settlementData.NetworkSettlementData;
 import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import opusliews.multilevelsettlement.SettlementCrossLevelGuardCombatSystem;
 import opusliews.logging.Logging;
+import opusliews.hunger.SettlerStarvationSystem;
 
 public final class GuardNeedsSystem {
 	public enum BreakType {
@@ -65,6 +66,12 @@ public final class GuardNeedsSystem {
 	public static boolean shouldYieldPatrolForBreak(GuardHumanMob guard) {
 		if (!isActiveNightGuard(guard) || isInCombat(guard)) {
 			return false;
+		}
+
+		// Emergency feeding must not wait for the normal one-guard-at-a-time break reservation.
+		// The starvation system only enters this state after confirming reachable edible food.
+		if (SettlerStarvationSystem.isEmergencyEating(guard)) {
+			return true;
 		}
 
 		ServerSettlementData settlement = guard.getSettlerSettlementServerData();
@@ -146,16 +153,21 @@ public final class GuardNeedsSystem {
 			}
 		}
 
-		if (guard.attemptStartStrike(true)) {
+		boolean emergencyHunger = SettlerStarvationSystem.isEmergencyEating(guard);
+		if (emergencyHunger && isInCombat(guard)) {
+			return null;
+		}
+
+		if (!emergencyHunger && guard.attemptStartStrike(true)) {
 			releaseBreak(guard, false);
 			return null;
 		}
 
-		if (!shouldYieldPatrolForBreak(guard)) {
+		if (!emergencyHunger && !shouldYieldPatrolForBreak(guard)) {
 			return null;
 		}
 
-		BreakType breakType = getBreakType(guard);
+		BreakType breakType = emergencyHunger ? BreakType.HUNGER : getBreakType(guard);
 		if (breakType == BreakType.NONE || breakType == BreakType.RECREATION && ignoreRecreationJobs) {
 			return null;
 		}
@@ -193,8 +205,13 @@ public final class GuardNeedsSystem {
 		if (first == null) {
 			handler.lastPerformedJobID = -1;
 			handler.prioritizeNextJobID = -1;
-			deferBreakRetry(guard);
-			releaseBreak(guard, false);
+			if (!emergencyHunger) {
+				deferBreakRetry(guard);
+				releaseBreak(guard, false);
+			}
+			else if (Logging.logEnabled) {
+				Logging.logMessage("[EmergencyFood] Night guard emergency food search found no executable food job guard=" + guard.getUniqueID());
+			}
 			return null;
 		}
 
@@ -208,13 +225,21 @@ public final class GuardNeedsSystem {
 
 		JobSequence sequence = first.getSequence();
 		if (sequence == null) {
-			deferBreakRetry(guard);
-			releaseBreak(guard, false);
+			if (!emergencyHunger) {
+				deferBreakRetry(guard);
+				releaseBreak(guard, false);
+			}
+			else if (Logging.logEnabled) {
+				Logging.logMessage("[EmergencyFood] Night guard emergency food job could not build a sequence guard=" + guard.getUniqueID());
+			}
 			return null;
 		}
 
-		confirmBreakSequence(guard, sequence);
-		Logging.logMessage("NightGuard: guard " + guard.getUniqueID() + " started " + breakType + " break job");
+		if (!emergencyHunger) confirmBreakSequence(guard, sequence);
+		if (Logging.logEnabled) {
+			Logging.logMessage((emergencyHunger ? "[EmergencyFood] Night guard " : "NightGuard: guard ")
+					+ guard.getUniqueID() + " started " + breakType + " break job");
+		}
 		return sequence;
 	}
 

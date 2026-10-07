@@ -1,6 +1,7 @@
 package opusliews;
 
 import necesse.engine.loading.ClientLoader;
+import necesse.engine.commands.CommandsManager;
 import necesse.engine.localization.message.LocalMessage;
 import necesse.engine.modLoader.LoadedMod;
 import necesse.engine.modLoader.ModListData;
@@ -34,6 +35,8 @@ import opusliews.clayfiring.ClayFiringAutomationLevelData;
 import opusliews.clayfiring.ClayFiringBlockedNotification;
 import opusliews.clayfiring.ClayFiringZone;
 import opusliews.container.BlueprintWorkstationContainer;
+import opusliews.commands.ListSettlementSettlersCommand;
+import opusliews.commands.SetSettlerHungerCommand;
 import opusliews.container.CrudeWorkbenchContainer;
 import opusliews.crafting.CraftingStationFeature;
 import opusliews.crafting.CraftingTasksFeature;
@@ -191,6 +194,9 @@ public class DynamicSettlements {
 			return;
 		}
 		// Registrations
+		CommandsManager.registerServerCommand(new ListSettlementSettlersCommand());
+		CommandsManager.registerServerCommand(new SetSettlerHungerCommand());
+
 		BuffRegistry.registerBuff(MalignanceGogglesItem.buffStringID, new MalignanceGogglesBuff());
 		BuffRegistry.registerBuff(TrapdoorHiddenBuff.stringID, new TrapdoorHiddenBuff());
 		BuffRegistry.registerBuff(DeepHoleHiddenBuff.stringID, new DeepHoleHiddenBuff());
