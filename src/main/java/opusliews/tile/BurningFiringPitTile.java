@@ -16,7 +16,7 @@ public class BurningFiringPitTile extends FiringPitLogTile {
 	public BurningFiringPitTile() {
 		super();
 		mapColor = new Color(82, 61, 48);
-		lightLevel = 90;
+		lightLevel = 150;
 		lightHue = 35.0F;
 		lightSat = 0.65F;
 	}

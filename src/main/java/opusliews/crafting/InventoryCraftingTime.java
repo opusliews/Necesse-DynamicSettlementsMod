@@ -38,6 +38,7 @@ public final class InventoryCraftingTime {
 			int craftAmount,
 			boolean transferToInventory
 	) {
+		container = redirectStaleClientInventoryContainer(container);
 		if (!isInventoryContainer(container)) return -1;
 
 		CraftState state = getState(container);
@@ -68,6 +69,74 @@ public final class InventoryCraftingTime {
 			}
 		}
 		return 1;
+	}
+
+	public static void onInventoryContainerReplaced(Container oldContainer, Container newContainer, String side) {
+		if (oldContainer == newContainer) return;
+		if (oldContainer == null || newContainer == null) {
+			if (Logging.logEnabled) {
+				Logging.logMessage("[InventoryCrafting] Container replacement on " + side + " has null endpoint old="
+						+ describeContainer(oldContainer) + " new=" + describeContainer(newContainer));
+			}
+			return;
+		}
+		if (!isInventoryContainer(oldContainer) || !isInventoryContainer(newContainer)) {
+			Logging.logMessage("[InventoryCrafting] Refusing to migrate non-inventory container state on " + side
+					+ " old=" + describeContainer(oldContainer) + " new=" + describeContainer(newContainer));
+			return;
+		}
+
+		synchronized (states) {
+			CraftState oldState = states.remove(oldContainer);
+			if (oldState == null) {
+				if (Logging.logEnabled) {
+					Logging.logMessage("[InventoryCrafting] Inventory container replaced on " + side
+							+ " with no crafting state to migrate old=" + describeContainer(oldContainer)
+							+ " new=" + describeContainer(newContainer));
+				}
+				return;
+			}
+
+			CraftState newState = states.get(newContainer);
+			if (newState == null) {
+				newState = createState(newContainer);
+				states.put(newContainer, newState);
+			}
+
+			InventoryItem oldOutput = oldState.outputInventory == null ? null : oldState.outputInventory.getItem(0);
+			InventoryItem newOutput = newState.outputInventory == null ? null : newState.outputInventory.getItem(0);
+			if (oldOutput != null) {
+				if (newOutput != null) {
+					Logging.logMessage("[InventoryCrafting] Output collision while migrating inventory container on " + side
+							+ " old=" + describeContainer(oldContainer) + " new=" + describeContainer(newContainer));
+				} else {
+					newState.outputInventory.setItem(0, oldOutput);
+					newState.outputInventory.markDirty(0);
+					newContainer.getSlot(newState.outputSlot).markDirty();
+					oldState.outputInventory.clearSlot(0);
+				}
+			}
+
+			newState.crafting = oldState.crafting;
+			newState.completing = oldState.completing;
+			newState.recipeID = oldState.recipeID;
+			newState.recipeHash = oldState.recipeHash;
+			newState.startTime = oldState.startTime;
+			newState.durationMs = oldState.durationMs;
+
+			if (Logging.logEnabled) {
+				Logging.logMessage("[InventoryCrafting] Migrated inventory crafting state on " + side
+						+ " old=" + describeContainer(oldContainer) + " new=" + describeContainer(newContainer)
+						+ " crafting=" + newState.crafting + " completing=" + newState.completing
+						+ " recipeID=" + newState.recipeID + " hadOutput=" + (oldOutput != null));
+			}
+		}
+	}
+
+	public static String describeContainer(Container container) {
+		if (container == null) return "null";
+		return container.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(container))
+				+ "[seed=" + container.uniqueSeed + "]";
 	}
 
 	public static void tick(Container container) {
@@ -218,6 +287,40 @@ public final class InventoryCraftingTime {
 		return container != null && container.getClass() == Container.class && container.uniqueSeed == 0;
 	}
 
+	private static Container redirectStaleClientInventoryContainer(Container container) {
+		if (!isInventoryContainer(container) || container.client == null || !container.client.isClient()
+				|| container.client.playerMob == null) return container;
+
+		Client client = container.client.playerMob.getClient();
+		if (client == null) {
+			Logging.logMessage("[InventoryCrafting] Client inventory craft has no Client instance for " + describeContainer(container));
+			return container;
+		}
+
+		Container current = client.getInventoryContainer();
+		if (current == null) {
+			Logging.logMessage("[InventoryCrafting] Client inventory craft has null current inventory container; bound="
+					+ describeContainer(container));
+			return container;
+		}
+
+		if (current != container) {
+			if (!isInventoryContainer(current)) {
+				Logging.logMessage("[InventoryCrafting] Stale recipe container detected but current inventory container is invalid. stale="
+						+ describeContainer(container) + " current=" + describeContainer(current));
+				return container;
+			}
+
+			if (Logging.logEnabled) {
+				Logging.logMessage("[InventoryCrafting] Redirecting stale client recipe container to current inventory container. stale="
+						+ describeContainer(container) + " current=" + describeContainer(current));
+			}
+			return current;
+		}
+
+		return container;
+	}
+
 	private static CraftState getExistingState(Container container) {
 		synchronized (states) {
 			return states.get(container);
@@ -226,20 +329,29 @@ public final class InventoryCraftingTime {
 
 	private static CraftState getState(Container container) {
 		synchronized (states) {
-			CraftState state = getExistingState(container);
+			CraftState state = states.get(container);
 			if (state != null) return state;
 
-			state = new CraftState();
-			state.outputInventory = new Inventory(1);
-			state.outputInventory.filter = (slot, item) -> item == null;
-			state.outputSlot = container.addSlot(new ExtractOnlyContainerSlot(state.outputInventory, 0));
-			container.getCraftInventories().remove(state.outputInventory);
-			final int outputSlot = state.outputSlot;
-			container.addQuickTransferOption(slot -> slot != null && slot.getContainerIndex() == outputSlot, outputSlot, outputSlot, container.CLIENT_HOTBAR_START, container.CLIENT_HOTBAR_END);
-			container.addQuickTransferOption(slot -> slot != null && slot.getContainerIndex() == outputSlot, outputSlot, outputSlot, container.CLIENT_INVENTORY_START, container.CLIENT_INVENTORY_END);
+			state = createState(container);
 			states.put(container, state);
 			return state;
 		}
+	}
+
+	private static CraftState createState(Container container) {
+		CraftState state = new CraftState();
+		state.outputInventory = new Inventory(1);
+		state.outputInventory.filter = (slot, item) -> item == null;
+		state.outputSlot = container.addSlot(new ExtractOnlyContainerSlot(state.outputInventory, 0));
+		container.getCraftInventories().remove(state.outputInventory);
+		final int outputSlot = state.outputSlot;
+		container.addQuickTransferOption(slot -> slot != null && slot.getContainerIndex() == outputSlot, outputSlot, outputSlot, container.CLIENT_HOTBAR_START, container.CLIENT_HOTBAR_END);
+		container.addQuickTransferOption(slot -> slot != null && slot.getContainerIndex() == outputSlot, outputSlot, outputSlot, container.CLIENT_INVENTORY_START, container.CLIENT_INVENTORY_END);
+		if (Logging.logEnabled) {
+			Logging.logMessage("[InventoryCrafting] Created crafting state/output slot for " + describeContainer(container)
+					+ " outputSlot=" + outputSlot);
+		}
+		return state;
 	}
 
 	private static final class ClientProgressState {
