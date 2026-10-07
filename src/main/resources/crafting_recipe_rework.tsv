@@ -130,13 +130,10 @@ brownbearcarpet	carpenter	leather:1
 bucket	workstation	ironbar:3
 buffergate	demonic	ironbar:2,wire:10
 calmingminersbouquet	demonic	calmingrose:1,miningcharm:1
-campfire	workstation	anylog:10,anystone:20,firestarter:1
 candle	carpenter	wax:1,string:1,honey:1
 cannonball	tungstenanvil	ironbar:1,handcannon:0
 carapacedagger	tungstenanvil	bonehilt:1,wormcarapace:1
 carapaceshield	tungstenanvil	dsanyplank:1,leather:1,wormcarapace:1
-carpentersbench	carpenter	saw:1,dsanyplank:4,woodenshaft:4,nail:4
-carpentersbench	workstation	saw:1,dsanyplank:4,woodenshaft:4,nail:4
 cartographertable	workstation	anylog:10,mapfragment:2
 causticexecutioner	fallenanvil	spideressence:1,spideritebar:1,spidervenom:1
 chainshirt	demonic	ironbar:10,leather:10
@@ -431,7 +428,6 @@ ivyspear	demonicanvil	ivyshaft:1,woodenshaft:1
 ivysword	demonicanvil	ivyblade:1,dsanyshaft:1
 jailfence	demonic	ironshaft:1
 jailfencegate	demonic	ironplate:2,hinge:4
-ladderdown	workstation	anylog:10
 landfill	workstation	anystone:2
 landscapingstation	demonic	anystone:20,anylog:15,firemone:4
 lantern	carpenter	tungstenshaft:1,glass:1,string:1
@@ -623,7 +619,6 @@ refractor	fallenanvil	emerald:1,pearlescentdiamond:1,omnicrystal:1,crystalessenc
 regenpendant	workstation	goldbar:10,healthregenpotion:5
 reinforcedkatana	tungstenanvil	katana:1,tungstenbar:1
 revsword	fallenanvil	dsanymetalblade:1,dsanyshaft:1,fuelskull:1,pristinegear:1,radiatedessence:1
-roastingstation	workstation	anylog:10
 rocklever	demonic	anystone:10,wire:5
 royalegg	demonic	demonicbar:4,frostshard:4,cavespidergland:4
 rubycrown	fallenanvil	rubyplate:2,leather:2,pearlescentdiamond:1,omnicrystal:1
@@ -866,16 +861,13 @@ woodpathtile	workstation	anylog:2
 woodpressureplate	demonic	anylog:5,wire:5
 woodshield	ironanvil	ironplate:1,leather:1
 woodshield	workstation	ironplate:1,leather:1
-woodshovel	ironanvil	dsanyplank:1,woodenshaft:1
 woodshovel	workstation	dsanyplank:1,woodenshaft:1
 woodspear	ironanvil	woodenshaft:1
 woodspear	workstation	woodenshaft:1
 woodstaff	ironanvil	dsanyshaft:1,magicfocus:1,batwing:1
-woodsword	ironanvil	dsanyplank:1
 woodsword	workstation	dsanyplank:1
 woodwall	workstation	dsanyplank:2
 woolcarpet	carpenter	wool:1
-workstationduo	workstation	saw:1,dsanyplank:4,woodenshaft:4,nail:4
 wrench	demonic	ironbar:10
 xorgate	demonic	copperbar:1,wire:5
 zephyrboots	workstation	leatherdashers:1,zephyrcharm:1

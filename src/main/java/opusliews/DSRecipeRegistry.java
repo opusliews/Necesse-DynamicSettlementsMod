@@ -102,6 +102,19 @@ public class DSRecipeRegistry {
 	}
 
 	private static void registerVanillaRecipes() {
+		// These vanilla recipes are deliberately removed by VanillaRecipeRework before TSV
+		// ingredient replacements are applied. Register their reworked versions as mod recipes
+		// so they survive the default-recipe removal pass.
+		registerRestoredVanillaRecipe("campfire", 1, RecipeTechRegistry.WORKSTATION,
+				ingredient("anylog", 10), ingredient("anystone", 20), ingredient(FirestarterItem.stringID, 1));
+		registerRestoredVanillaRecipe("carpentersbench", 1, RecipeTechRegistry.CARPENTER,
+				ingredient(sawStringID, 1), ingredient("dsanyplank", 4), ingredient(woodenshaftStringID, 4), ingredient(nailStringID, 4));
+		registerRestoredVanillaRecipe("carpentersbench", 1, RecipeTechRegistry.WORKSTATION,
+				ingredient(sawStringID, 1), ingredient("dsanyplank", 4), ingredient(woodenshaftStringID, 4), ingredient(nailStringID, 4));
+		registerRestoredVanillaRecipe("roastingstation", 1, RecipeTechRegistry.WORKSTATION, ingredient(woodenshaftStringID, 5), ingredient("string", 10));
+		registerRestoredVanillaRecipe("workstationduo", 1, RecipeTechRegistry.WORKSTATION,
+				ingredient(sawStringID, 1), ingredient("dsanyplank", 4), ingredient(woodenshaftStringID, 4), ingredient(nailStringID, 4));
+
 		register("brickwall", 1, RecipeTechRegistry.WORKSTATION, ingredient(brickStringID, 4));
 		register("brickdoor", 1, RecipeTechRegistry.WORKSTATION, ingredient(brickStringID, 4));
 		register("torch", 4, RecipeTechRegistry.WORKSTATION, ingredient(woodenshaftStringID, 1), ingredient("charcoal", 1), ingredient("groundfiremone", 1));
@@ -113,7 +126,7 @@ public class DSRecipeRegistry {
 		register("woodsword", 1, RecipeTechRegistry.WORKSTATION, ingredient("dsanyplank", 1));
 		register("forge", 1, CrudeWorkbenchFeature.tech, ingredient("brick", 8), ingredient(FirestarterItem.stringID, 1));
 		register("forge", 1, RecipeTechRegistry.WORKSTATION, ingredient("brick", 8), ingredient(FirestarterItem.stringID, 1));
-		register("campfire", 1, CrudeWorkbenchFeature.tech, ingredient("anylog", 10), ingredient(FirestarterItem.stringID, 1));
+		register("campfire", 1, CrudeWorkbenchFeature.tech, ingredient("anylog", 10), ingredient("anystone", 20), ingredient(FirestarterItem.stringID, 1));
 		register("roastingstation", 1, CrudeWorkbenchFeature.tech, ingredientsFromScript("{{woodenshaft, 5}, {string, 4}}"));
 
 		register("clay", 1, RecipeTechRegistry.ALCHEMY, ingredient(DirtPileItem.stringID, 1));
@@ -249,6 +262,16 @@ public class DSRecipeRegistry {
 		register(TrapdoorObject.openStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("dsanyplank", 4));
 		register(HoleCaveLadderObject.stringID, 1, CrudeWorkbenchFeature.tech, ingredient(woodenshaftStringID, 32));
 		register(HoleCaveLadderObject.stringID, 1, RecipeTechRegistry.WORKSTATION, ingredient(woodenshaftStringID, 32));
+	}
+
+	private static void registerRestoredVanillaRecipe(String resultStringID, int resultAmount, Tech tech, Ingredient... ingredients) {
+		if (Logging.logEnabled) Logging.logMessage("[RecipeRestore] Registering removed vanilla recipe result=" + resultStringID + " tech=" + tech.getStringID());
+		try {
+			register(resultStringID, resultAmount, tech, ingredients);
+		} catch (RuntimeException e) {
+			if (Logging.logEnabled) Logging.logMessage("[RecipeRestore] Failed registering result=" + resultStringID + " tech=" + tech.getStringID() + ": " + e);
+			throw e;
+		}
 	}
 
 	private static void registerArmorPanelRecipe(String panelStringID, String plateStringID, Tech tech) {

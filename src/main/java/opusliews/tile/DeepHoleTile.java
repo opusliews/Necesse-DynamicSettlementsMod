@@ -1,12 +1,12 @@
 package opusliews.tile;
 
-import java.awt.Color;
 import necesse.engine.registries.ObjectRegistry;
 import necesse.entity.mobs.Mob;
 import necesse.entity.mobs.PlayerMob;
 import necesse.level.maps.Level;
-import opusliews.deephole.DeepHoleSystem;
 import opusliews.object.HoleCaveLadderObject;
+
+import java.awt.*;
 
 public class DeepHoleTile extends ShallowHoleTile {
 	public static final String stringID = "deepholetile";
