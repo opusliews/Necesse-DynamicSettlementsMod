@@ -871,8 +871,8 @@ woodshovel	workstation	dsanyplank:1,woodenshaft:1
 woodspear	ironanvil	woodenshaft:1
 woodspear	workstation	woodenshaft:1
 woodstaff	ironanvil	dsanyshaft:1,magicfocus:1,batwing:1
-woodsword	ironanvil	woodenblade:1,dsanyshaft:1
-woodsword	workstation	woodenblade:1,dsanyshaft:1
+woodsword	ironanvil	dsanyplank:1
+woodsword	workstation	dsanyplank:1
 woodwall	workstation	dsanyplank:2
 woolcarpet	carpenter	wool:1
 workstationduo	workstation	saw:1,dsanyplank:4,woodenshaft:4,nail:4

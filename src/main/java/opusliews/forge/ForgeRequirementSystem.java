@@ -303,7 +303,7 @@ public final class ForgeRequirementSystem {
 
 	private static boolean isForgeFittedComponent(Item item) {
 		try {
-			if (item == null || "woodenblade".equals(item.getStringID()) || "woodenshaft".equals(item.getStringID())) return false;
+			if (item == null || "woodenshaft".equals(item.getStringID())) return false;
 
 			necesse.inventory.item.ItemCategory category = CraftingComponentCategories.typeManager.getItemsCategory(item);
 			return category != null && forgeFittedComponentTypes.contains(category.stringID);

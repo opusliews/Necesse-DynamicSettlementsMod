@@ -83,7 +83,6 @@ public class DSItemRegistry {
     public static final String bloodplateplateStringID = "bloodplateplate";
     public static final String spiderplateStringID = "spiderplate";
     public static final String voidplateStringID = "voidplate";
-    public static final String woodenbladeStringID = "woodenblade";
     public static final String copperbladeStringID = "copperblade";
     public static final String ironbladeStringID = "ironblade";
     public static final String goldbladeStringID = "goldblade";
@@ -279,7 +278,6 @@ public class DSItemRegistry {
        registerMaterial(bloodplateplateStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanyplate", "dsanymetalplate"), 30.0F, "plate", "metal", "bloodplate");
        registerMaterial(spiderplateStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanyplate"), 86.0F, "plate", "organic", "spider");
        registerMaterial(voidplateStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanyplate"), 40.0F, "plate", "magic", "void");
-       registerMaterial(woodenbladeStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanyblade"), 1.5F, "blade", "wood", "wooden");
        registerMaterial(copperbladeStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanyblade", "dsanymetalblade"), 40.0F, "blade", "metal", "copper");
        registerMaterial(ironbladeStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanyblade", "dsanymetalblade"), 60.0F, "blade", "metal", "iron");
        registerMaterial(goldbladeStringID, new CraftingMaterialItem(500, Item.Rarity.NORMAL, "dsanyblade", "dsanymetalblade"), 100.0F, "blade", "metal", "gold");

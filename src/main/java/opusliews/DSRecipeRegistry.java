@@ -191,7 +191,6 @@ public class DSRecipeRegistry {
 		register(voidplateStringID, 1, RecipeTechRegistry.DEMONIC_ANVIL, ingredient(demonicplateStringID, 1), ingredient("voidshard", 2));
 
 		// Blades
-		register(woodenbladeStringID, 1, RecipeTechRegistry.CARPENTER, ingredient("dsanyplank", 3));
 		register(slimebladeStringID, 1, RecipeTechRegistry.FALLEN_ANVIL, ingredient(slimeplateStringID, 1));
 
 		// Armor panels
