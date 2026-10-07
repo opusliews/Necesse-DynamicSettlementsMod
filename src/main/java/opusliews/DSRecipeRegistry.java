@@ -5,6 +5,7 @@ import necesse.inventory.recipe.Ingredient;
 import necesse.inventory.recipe.Recipe;
 import necesse.inventory.recipe.Recipes;
 import necesse.inventory.recipe.Tech;
+import opusliews.crafting.CraftingTaskBoardSelectTool;
 import opusliews.earlygame.CrudeAnvilFeature;
 import opusliews.earlygame.CrudeWorkbenchFeature;
 import opusliews.item.*;
@@ -127,7 +128,9 @@ public class DSRecipeRegistry {
 		register("forge", 1, CrudeWorkbenchFeature.tech, ingredient("brick", 8), ingredient(FirestarterItem.stringID, 1));
 		register("forge", 1, RecipeTechRegistry.WORKSTATION, ingredient("brick", 8), ingredient(FirestarterItem.stringID, 1));
 		register("campfire", 1, CrudeWorkbenchFeature.tech, ingredient("anylog", 10), ingredient("anystone", 20), ingredient(FirestarterItem.stringID, 1));
-		register("roastingstation", 1, CrudeWorkbenchFeature.tech, ingredientsFromScript("{{woodenshaft, 5}, {string, 4}}"));
+		register("roastingstation", 1, RecipeTechRegistry.DEMONIC_WORKSTATION, ingredientsFromScript("{{woodenshaft, 2}, {dsanyplank, 8}, {stackofpaper,1}, {quillandparchment,1}}"));
+
+		register(CraftingTaskBoardObject.STRING_ID, 1, CrudeWorkbenchFeature.tech, ingredientsFromScript("{{woodenshaft, 5}, {string, 4}}"));
 
 		register("clay", 1, RecipeTechRegistry.ALCHEMY, ingredient(DirtPileItem.stringID, 1));
 	}
