@@ -17,6 +17,7 @@ import opusliews.logging.Logging;
 public class GuideStoryObjectiveRegistry {
 	public static final String firstVanillaObjectiveStringID = "gettingstarted";
 	private static final Map<String, Entry> entries = new LinkedHashMap<>();
+	private static final HashSet<String> removedObjectiveStringIDs = new HashSet<>();
 
 	public static void registerBeforeFirstVanilla(String stringID, GameMessage title, GameMessage objective, CompletionCondition completionCondition) {
 		registerBefore(stringID, firstVanillaObjectiveStringID, title, new GameMessage[]{objective}, completionCondition, null, true);
@@ -217,6 +218,7 @@ public class GuideStoryObjectiveRegistry {
 			}
 			HashSet<String> remove = new HashSet<>();
 			Collections.addAll(remove, stringIDs);
+			removedObjectiveStringIDs.addAll(remove);
 			int before = elements.size();
 			elements.removeIf(object -> remove.contains(((StoryObjectiveRegistry.StoryObjectiveRegistryElement)object).getStringID()));
 			Field sortedIndexField = StoryObjectiveRegistry.StoryObjectiveRegistryElement.class.getDeclaredField("sortedIndex");
@@ -228,6 +230,11 @@ public class GuideStoryObjectiveRegistry {
 			Logging.logMessage("[StoryObjectives] Failed to remove vanilla objectives from progression ordering: " + e.getMessage());
 			throw new RuntimeException("Failed to remove vanilla story objectives from ordering", e);
 		}
+	}
+
+
+	public static boolean isRemovedFromOrdering(String stringID) {
+		return stringID != null && removedObjectiveStringIDs.contains(stringID);
 	}
 
 	private static int findElementIndex(ArrayList elements, String stringID) {
