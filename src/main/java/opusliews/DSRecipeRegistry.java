@@ -112,7 +112,7 @@ public class DSRecipeRegistry {
 				ingredient(sawStringID, 1), ingredient("dsanyplank", 4), ingredient(woodenshaftStringID, 4), ingredient(nailStringID, 4));
 		registerRestoredVanillaRecipe("carpentersbench", 1, RecipeTechRegistry.WORKSTATION,
 				ingredient(sawStringID, 1), ingredient("dsanyplank", 4), ingredient(woodenshaftStringID, 4), ingredient(nailStringID, 4));
-		registerRestoredVanillaRecipe("roastingstation", 1, RecipeTechRegistry.WORKSTATION, ingredient(woodenshaftStringID, 5), ingredient("string", 10));
+		registerRestoredVanillaRecipe("roastingstation", 1, RecipeTechRegistry.WORKSTATION, ingredient(woodenshaftStringID, 5), ingredient("string", 4));
 		registerRestoredVanillaRecipe("workstationduo", 1, RecipeTechRegistry.WORKSTATION,
 				ingredient(sawStringID, 1), ingredient("dsanyplank", 4), ingredient(woodenshaftStringID, 4), ingredient(nailStringID, 4));
 
@@ -128,9 +128,9 @@ public class DSRecipeRegistry {
 		register("forge", 1, CrudeWorkbenchFeature.tech, ingredient("brick", 8), ingredient(FirestarterItem.stringID, 1));
 		register("forge", 1, RecipeTechRegistry.WORKSTATION, ingredient("brick", 8), ingredient(FirestarterItem.stringID, 1));
 		register("campfire", 1, CrudeWorkbenchFeature.tech, ingredient("anylog", 10), ingredient("anystone", 20), ingredient(FirestarterItem.stringID, 1));
-		register("roastingstation", 1, RecipeTechRegistry.DEMONIC_WORKSTATION, ingredientsFromScript("{{woodenshaft, 2}, {dsanyplank, 8}, {stackofpaper,1}, {quillandparchment,1}}"));
+		register("roastingstation", 1, CrudeWorkbenchFeature.tech, ingredient(woodenshaftStringID, 5), ingredient("string", 4));
 
-		register(CraftingTaskBoardObject.STRING_ID, 1, CrudeWorkbenchFeature.tech, ingredientsFromScript("{{woodenshaft, 5}, {string, 4}}"));
+		register(CraftingTaskBoardObject.STRING_ID, 1, RecipeTechRegistry.DEMONIC_WORKSTATION, ingredientsFromScript("{{woodenshaft, 2}, {dsanyplank, 8}, {stackofpaper,1}, {quillandparchment,1}}"));
 
 		register("clay", 1, RecipeTechRegistry.ALCHEMY, ingredient(DirtPileItem.stringID, 1));
 	}
