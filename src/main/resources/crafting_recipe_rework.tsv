@@ -850,8 +850,8 @@ willowwall	workstation	willowplank:2
 windboots	demonic	zephyrboots:1,forceofwind:1,runestone:4
 wire	demonic	copperbar:1
 woodboat	workstation	anylog:8
-woodboomerang	ironanvil	woodenplank:1
-woodboomerang	workstation	woodenplank:1
+woodboomerang	ironanvil	dsanyplank:1
+woodboomerang	workstation	dsanyplank:1
 woodbow	ironanvil	woodenshaft:1,string:1
 woodbow	workstation	woodenshaft:1,string:1
 woodcolumn	carpenter	anylog:1
