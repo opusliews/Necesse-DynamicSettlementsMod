@@ -16,11 +16,9 @@ import necesse.entity.mobs.ai.behaviourTree.trees.CollisionPlayerChaserWandererA
 import necesse.entity.mobs.ai.behaviourTree.trees.PlayerChaserWandererAI;
 import necesse.entity.mobs.ai.behaviourTree.util.AIMover;
 import necesse.entity.mobs.ai.behaviourTree.util.MoveToTileAITask;
-import necesse.entity.mobs.friendly.FriendlyMob;
 import necesse.entity.mobs.hostile.FlyingHostileMob;
 import necesse.entity.mobs.hostile.HostileMob;
 import necesse.level.maps.Level;
-import necesse.level.maps.levelData.settlementData.settler.SettlerMob;
 import net.bytebuddy.asm.Advice;
 import opusliews.breaching.ZombieBreaching;
 import opusliews.logging.Logging;
@@ -136,7 +134,8 @@ public class ZombieCrossLevelSmellAIPatch {
 				smellTarget = findSmellTarget(mob, domain, targetType);
 				if (smellTarget == null) return AINodeResult.FAILURE;
 				if (Logging.logEnabled) Logging.logMessage("[HostileSmell] Hostile acquired cross-level scent mob=" + describeMob(mob)
-						+ " target=" + describeMob(smellTarget) + " radiusTiles=" + getSmellRadiusTiles(domain));
+						+ " target=" + describeMob(smellTarget) + " targetKind=" + describeSmellTargetKind(mob, smellTarget)
+						+ " radiusTiles=" + getSmellRadiusTiles(domain));
 				if (domain.getSettlement() != null) GuideProgressionSystem.onUndergroundThreat(domain.getSettlement());
 			}
 
@@ -221,7 +220,7 @@ public class ZombieCrossLevelSmellAIPatch {
 			if (zombie.getLevel() == null || normalSearchDistance <= 0) return false;
 			int tileRange = normalSearchDistance / 32 + 1;
 			for (Mob candidate : zombie.getLevel().entityManager.mobs.getInRegionByTileRange(zombie.getTileX(), zombie.getTileY(), tileRange)) {
-				if (!(candidate instanceof FriendlyMob) || candidate.isHostile || candidate.isPlayer || candidate.isHuman || candidate.removed() || !candidate.isVisible()) continue;
+				if (!ZombiePassiveAggroPatch.isModdedPassiveAggroTarget(zombie, candidate)) continue;
 				if (zombie.getDistance(candidate) < normalSearchDistance) return true;
 			}
 			return false;
@@ -233,32 +232,54 @@ public class ZombieCrossLevelSmellAIPatch {
 			int radiusTiles = getSmellRadiusTiles(domain);
 			int radiusSquared = radiusTiles * radiusTiles;
 			Mob best = null;
+			int bestPriority = Integer.MAX_VALUE;
 			int bestDistanceSquared = Integer.MAX_VALUE;
 
 			for (Mob candidate : targetLevel.entityManager.mobs.getInRegionByTileRange(zombie.getTileX(), zombie.getTileY(), radiusTiles)) {
-				if (!(candidate instanceof SettlerMob) || !candidate.isHuman || candidate.removed() || candidate.getHealth() <= 0) continue;
-				SettlerMob settler = (SettlerMob)candidate;
-				if (!settler.isSettler() || settler.getSettlementUniqueID() != domain.getSettlementUniqueID()) continue;
+				int priority = getSmellAggroPriority(zombie, candidate);
+				if (priority < 0) continue;
 				if (!domain.isTileWithinBounds(targetLevel.getIdentifier(), candidate.getTileX(), candidate.getTileY())) continue;
 				int dx = candidate.getTileX() - zombie.getTileX();
 				int dy = candidate.getTileY() - zombie.getTileY();
 				int distanceSquared = dx * dx + dy * dy;
-				if (distanceSquared > radiusSquared || distanceSquared >= bestDistanceSquared) continue;
+				if (distanceSquared > radiusSquared) continue;
+				if (priority > bestPriority || priority == bestPriority && distanceSquared >= bestDistanceSquared) continue;
 				best = candidate;
+				bestPriority = priority;
 				bestDistanceSquared = distanceSquared;
 			}
 			return best;
 		}
 
 		private boolean isValidSmellTarget(Mob zombie, SettlementLevelDomain domain, SettlementLevelType targetType, Mob target) {
-			if (target == null || target.removed() || target.getHealth() <= 0 || !(target instanceof SettlerMob)) return false;
+			if (!isSmellAggroTarget(zombie, target)) return false;
 			if (target.getLevel() == null || domain.getLevelType(target.getLevel().getIdentifier()) != targetType) return false;
-			SettlerMob settler = (SettlerMob)target;
-			if (!settler.isSettler() || settler.getSettlementUniqueID() != domain.getSettlementUniqueID()) return false;
+			if (!domain.isTileWithinBounds(target.getLevel().getIdentifier(), target.getTileX(), target.getTileY())) return false;
 			int radiusTiles = getSmellRadiusTiles(domain);
 			int dx = target.getTileX() - zombie.getTileX();
 			int dy = target.getTileY() - zombie.getTileY();
 			return dx * dx + dy * dy <= radiusTiles * radiusTiles;
+		}
+
+		private boolean isSmellAggroTarget(Mob hostile, Mob target) {
+			return getSmellAggroPriority(hostile, target) >= 0;
+		}
+
+		private int getSmellAggroPriority(Mob hostile, Mob target) {
+			if (target == null || target == hostile || target.removed() || target.getHealth() <= 0 || !target.isVisible()) return -1;
+
+			if (isPrimaryAggroTargetType(target)) {
+				return !target.isSameTeam(hostile)
+						&& !hostile.isInAttackOwnerChain(target)
+						&& hostile.canTarget(target) ? 0 : -1;
+			}
+
+			return ZombiePassiveAggroPatch.isModdedPassiveAggroTarget(hostile, target) ? 1 : -1;
+		}
+
+		private boolean isPrimaryAggroTargetType(Mob target) {
+			int team = target.getTeam();
+			return team == -100 || target.isHuman && team != -1 || target.isPlayer;
 		}
 
 		private SettlementLadderLink findBestPhysicalLink(Mob zombie, SettlementLevelDomain domain, SettlementLevelType currentType, Mob target) {
@@ -296,6 +317,14 @@ public class ZombieCrossLevelSmellAIPatch {
 			if (blackboard.mover.isCurrentlyMovingFor(this)) blackboard.mover.stopMoving(mob);
 			activeLink = null;
 			if (clearTarget) smellTarget = null;
+		}
+
+		private String describeSmellTargetKind(Mob hostile, Mob target) {
+			if (target == null) return "none";
+			if (target.isPlayer) return "player";
+			if (target.isHuman) return "human";
+			if (ZombiePassiveAggroPatch.isModdedPassiveAggroTarget(hostile, target)) return "passiveMob";
+			return "other";
 		}
 
 		private String describeMob(Mob mob) {

@@ -30,7 +30,7 @@ public class EarlyHealthProgressionSystem {
 	public static final int oreMinedTarget = 50;
 	public static final int uniqueFoodsTarget = 8;
 	public static final int startingHungerPips = 2;
-	public static final int maxHungerPips = 8;
+	public static final int maxHungerPips = 10;
 
 	private static final String saveKey = "DS_EARLY_PROGRESSION";
 	private static final Set<String> earlyOreObjects =  Stream.of(

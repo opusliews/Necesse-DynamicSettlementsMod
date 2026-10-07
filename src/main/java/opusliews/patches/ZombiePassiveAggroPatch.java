@@ -100,6 +100,10 @@ public class ZombiePassiveAggroPatch {
 				&& target.isVisible();
 	}
 
+	public static boolean isModdedPassiveAggroTarget(Mob hostile, Mob target) {
+		return isZombieEnemy(hostile) && isPassiveMob(target);
+	}
+
 	private static boolean canHaveZombiePanicAI(Mob mob) {
 		return mob instanceof FriendlyMob
 				&& !(mob instanceof PolarBearMob)
