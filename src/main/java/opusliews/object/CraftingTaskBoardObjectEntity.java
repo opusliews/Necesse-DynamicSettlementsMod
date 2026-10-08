@@ -571,7 +571,10 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 				craftingJob.remove();
 				craftingJob = null;
 			}
-			if (getLevel().isServer()) CraftingStationLinkCache.refreshBoard(this);
+			if (getLevel().isServer()) {
+				CraftingStationLinkCache.refreshBoard(this);
+				if (linkedStation != null) pruneUnsupportedTasksAfterRelink();
+			}
 		}
 		markDirty();
 		nextStatusRefreshTime = 0L;
@@ -579,6 +582,40 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 			syncContent();
 		}
 
+	}
+
+	/** Retain tasks supported by the newly linked station, including shared recipes. */
+	private void pruneUnsupportedTasksAfterRelink() {
+		if (tasks.isEmpty()) return;
+		// A transient/inconsistent link must not silently erase the player's task queue.
+		if (getValidLinkedStationObject() == null) {
+			if (Logging.logEnabled) Logging.logMessage("[CraftingTaskBoard] Relink task validation deferred: unresolved station board="
+					+ tileX + "," + tileY + " station=" + linkedStation);
+			return;
+		}
+		int removed = 0;
+		for (int i = tasks.size() - 1; i >= 0; i--) {
+			CraftingTask task = tasks.get(i);
+			try {
+				if (CraftingTaskLogic.getTaskRecipe(this, task) != null) continue;
+			} catch (Exception error) {
+				Logging.logMessage("[CraftingTaskBoard] Recipe validation failed; keeping task board="
+						+ tileX + "," + tileY + " taskID=" + task.taskID + " error=" + error);
+				continue;
+			}
+			if (Logging.logEnabled) Logging.logMessage("[CraftingTaskBoard] Removing unsupported task after station relink board="
+					+ tileX + "," + tileY + " station=" + linkedStation + " taskID=" + task.taskID
+					+ " itemID=" + task.itemID + " sourceType=" + task.sourceType);
+			tasks.remove(i);
+			removed++;
+		}
+		if (removed > 0) {
+			if (nextTaskIndex >= tasks.size()) nextTaskIndex = 0;
+			commitTaskEdit();
+			CraftingInputProtectionSystem.refreshBoardConfiguration(this);
+			if (Logging.logEnabled) Logging.logMessage("[CraftingTaskBoard] Relink pruning finished board="
+					+ tileX + "," + tileY + " removed=" + removed + " remaining=" + tasks.size());
+		}
 	}
 
 	private boolean isWorkerAssignedElsewhere(int uniqueID) {

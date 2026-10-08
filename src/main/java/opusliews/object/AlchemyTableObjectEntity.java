@@ -28,6 +28,11 @@ public class AlchemyTableObjectEntity extends DynamicCraftingStationObjectEntity
 	}
 
 	@Override
+	public String getSettlerCraftingWorkItemStringID() {
+		return "glassbottle";
+	}
+
+	@Override
 	public void playSettlerCraftingWorkEffect() {
 		if (!getLevel().isServer() || getLevel().getServer() == null) return;
 		getLevel().getServer().network.sendToClientsWithTile(

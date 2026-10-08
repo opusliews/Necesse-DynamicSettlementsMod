@@ -29,6 +29,11 @@ public class WorkstationObjectEntity extends DynamicCraftingStationObjectEntity 
 	}
 
 	@Override
+	public String getSettlerCraftingWorkItemStringID() {
+		return "saw";
+	}
+
+	@Override
 	public void playSettlerCraftingWorkEffect() {
 		if (!getLevel().isServer() || getLevel().getServer() == null) return;
 		getLevel().getServer().network.sendToClientsWithTile(
