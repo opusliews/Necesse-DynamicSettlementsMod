@@ -33,7 +33,7 @@ import java.util.function.Predicate;
 public final class SettlerStarvationSystem {
 	public static final float sleepHungerFloor = 60.0F / HumanMob.secondsToPassAtFullHunger;
 	public static final float emergencyEatingHungerThreshold = sleepHungerFloor;
-	public static final float emergencyEatingFullThreshold = 1.0F;
+	public static final float emergencyEatingFullThreshold = 0.30F;
 	public static final long emergencyFoodCheckInterval = 1000L;
 	public static final long starvationDamageInterval = 1000L;
 	public static final int starvationDamageTicksToDeath = 20;
@@ -222,7 +222,7 @@ public final class SettlerStarvationSystem {
 				state.emergencyEating = false;
 				state.noFoodAtCriticalLogged = false;
 				if (Logging.logEnabled) {
-					Logging.logMessage("[EmergencyFood] Settler reached full hunger; emergency feeding ended settler="
+					Logging.logMessage("[EmergencyFood] Settler reached 30% hunger; emergency feeding ended settler="
 							+ human.getStringID() + "#" + human.getUniqueID() + " hunger=" + human.hungerLevel);
 				}
 			}
