@@ -11,6 +11,7 @@ import necesse.engine.world.worldData.SettlementsWorldData;
 import necesse.entity.mobs.BasicPathDoorOption;
 import necesse.entity.mobs.Mob;
 import necesse.entity.mobs.PathDoorOption;
+import opusliews.logging.Logging;
 import necesse.entity.mobs.ai.path.SubRegionPathResult;
 import necesse.level.gameObject.DoorObject;
 import necesse.level.gameObject.GameObject;
@@ -150,6 +151,10 @@ public final class ZombieBreaching {
 		}
 
 		State state = getState(zombie);
+		if (state.scentBarrier != null && state.scentLocation != null
+				&& state.scentBarrier.x == lo.tileX && state.scentBarrier.y == lo.tileY) {
+			return lo.object.isFence || lo.object instanceof DoorObject;
+		}
 		if (state.rememberedDoor != null && state.rememberedDoor.x == lo.tileX && state.rememberedDoor.y == lo.tileY) {
 			return lo.object instanceof DoorObject && !lo.object.isFence;
 		}
@@ -217,6 +222,11 @@ public final class ZombieBreaching {
 
 	private static void trackActiveBreach(Mob zombie, LevelObject lo) {
 		State state = getState(zombie);
+		if (lo != null && lo.object != null && state.scentLocation != null && state.scentBarrier != null
+				&& state.scentBarrier.x == lo.tileX && state.scentBarrier.y == lo.tileY) {
+			if (!state.scentCommitted && Logging.logEnabled) Logging.logMessage("[ZombieScent] Breach committed mob=" + zombie.getUniqueID() + " barrier=" + lo.tileX + "," + lo.tileY);
+			state.scentCommitted = true;
+		}
 		if (lo != null && lo.object != null && lo.object.isFence && state.currentTarget != null) {
 			state.setActiveBreach(lo.tileX, lo.tileY, state.currentTarget);
 		}
@@ -232,6 +242,16 @@ public final class ZombieBreaching {
 		public volatile Mob breachDecisionTarget;
 		public volatile Point breachDecisionTargetTile;
 		public volatile boolean breachRequired;
+		public volatile Point scentLocation;
+		public volatile Point scentBarrier;
+		public volatile boolean scentCommitted;
+
+		public void clearScent() {
+			scentLocation = null;
+			scentBarrier = null;
+			scentCommitted = false;
+			pathDoorOption.invalidateCache();
+		}
 
 		private State(Mob zombie) {
 			this.pathDoorOption = new ZombiePathDoorOption(zombie);
@@ -315,6 +335,10 @@ public final class ZombieBreaching {
 			}
 
 			State state = getState(zombie);
+			if (state.scentLocation != null && state.scentBarrier != null
+					&& state.scentBarrier.x == tileX && state.scentBarrier.y == tileY) {
+				return object.isFence || object instanceof DoorObject;
+			}
 			if (state.rememberedDoor != null && state.rememberedDoor.x == tileX && state.rememberedDoor.y == tileY) {
 				return object instanceof DoorObject && !object.isFence;
 			}

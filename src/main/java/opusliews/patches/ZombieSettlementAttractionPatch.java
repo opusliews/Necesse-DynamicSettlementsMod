@@ -16,6 +16,8 @@ import necesse.level.maps.levelData.settlementData.CachedSettlementData;
 import necesse.level.maps.levelData.settlementData.SettlementBoundsManager;
 import opusliews.breaching.ZombieBreaching;
 import opusliews.logging.Logging;
+import opusliews.progression.GuideProgressionSystem;
+import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import opusliews.multilevelsettlement.SettlementMultiLevelSystem;
 
 /** A last-resort walking goal: never competes with combat, smell, or door breaching. */
@@ -74,6 +76,7 @@ public class ZombieSettlementAttractionPatch {
                     clearTask();
                     // Aim toward a random position inside the bounds, not necessarily the center.
                     chooseDestination(mob);
+                    revealWinterIsComing(level, found);
                 }
             }
             return destinationBounds == null ? AINodeResult.FAILURE : super.tick(mob, blackboard);
@@ -100,6 +103,33 @@ public class ZombieSettlementAttractionPatch {
             retryAfter = mob.getTime() + 5000L;
             nextSearch = retryAfter;
             return AINodeResult.FAILURE;
+        }
+    }
+
+    /** A real, player-owned settlement attracted this zombie; journal reveal is idempotent per player. */
+    public static void revealWinterIsComing(Level level, Rectangle bounds) {
+        try {
+            if (level == null || !level.isServer() || level.getServer() == null || bounds == null) return;
+            necesse.engine.util.LevelIdentifier surface = SettlementMultiLevelSystem.getSurfaceIdentifier(level.getIdentifier());
+            if (surface == null) return;
+            SettlementsWorldData data = SettlementsWorldData.getSettlementsData(level.getServer());
+            for (CachedSettlementData cached : (List<CachedSettlementData>) data.streamSettlements()
+                    .filter(entry -> entry != null && entry.getOwnerAuth() != -1L && surface.equals(entry.levelIdentifier))
+                    .collect(Collectors.toList())) {
+                Rectangle realBounds = SettlementBoundsManager.getTileRectangleFromTier(
+                        cached.getTileX(), cached.getTileY(), cached.getFlagTier());
+                if (!realBounds.equals(bounds)) continue;
+                ServerSettlementData settlement = data.getServerData(cached.uniqueID);
+                if (settlement == null) {
+                    if (Logging.logEnabled) Logging.logMessage("[ZombieAttraction] Journal reveal deferred: settlement unavailable id=" + cached.uniqueID);
+                    return;
+                }
+                GuideProgressionSystem.revealForSettlement(settlement, "winteriscoming");
+                return;
+            }
+            if (Logging.logEnabled) Logging.logMessage("[ZombieAttraction] Journal reveal: no matching owned settlement bounds=" + bounds);
+        } catch (Exception error) {
+            Logging.logMessage("[ZombieAttraction] Winter is Coming journal reveal failed: " + error);
         }
     }
 

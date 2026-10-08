@@ -39,6 +39,7 @@ public class ZombieCrossLevelSmellAIPatch {
 			CollisionPlayerChaserWandererAI root = (CollisionPlayerChaserWandererAI)tree;
 			if (root.wandererAINode != null) {
                 root.addChildBefore(root.wandererAINode, new HostileCrossLevelSmellAINode(root.collisionPlayerChaserAI.targetFinderAINode));
+                if (ZombieBreaching.isZombie(mob)) root.addChildBefore(root.collisionPlayerChaserAI, new ZombieLocalScentAIPatch.ScentNode(root.collisionPlayerChaserAI.targetFinderAINode));
                 if (ZombieBreaching.isZombie(mob)) root.addChildBefore(root.wandererAINode, new ZombieSettlementAttractionPatch.AttractionNode());
             }
 		}
@@ -46,6 +47,7 @@ public class ZombieCrossLevelSmellAIPatch {
 			PlayerChaserWandererAI root = (PlayerChaserWandererAI)tree;
 			if (root.wandererAINode != null) {
                 root.addChildBefore(root.wandererAINode, new HostileCrossLevelSmellAINode(root.playerChaserAI.targetFinderAINode));
+                if (ZombieBreaching.isZombie(mob)) root.addChildBefore(root.playerChaserAI, new ZombieLocalScentAIPatch.ScentNode(root.playerChaserAI.targetFinderAINode));
                 if (ZombieBreaching.isZombie(mob)) root.addChildBefore(root.wandererAINode, new ZombieSettlementAttractionPatch.AttractionNode());
             }
 		}

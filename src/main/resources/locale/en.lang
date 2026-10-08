@@ -787,6 +787,8 @@ undergroundthreatsbody=Moving underground does not make your settlement untoucha
 multilevelraidstitle=Raids Below Ground
 multilevelraidsbody=Raiders see your surface and underground settlement as parts of the same target.\n\nA Raid may threaten both levels and divide its forces according to your wealth distribution.\n\nIf raiders see tempting targets underground they can dig into the cave and attack from below, so make sure every level that matters has proper defences.
 
+winteriscomingtitle=Winter is Coming
+winteriscomingbody=You have erected a settlement. This means people, sounds, smells. This will attract the attention of zombies from all around the settlement perimeter. The larger your settlement area, the more it will attract them.\n\nZombies that wander close to your settlement will be enticed to check inside. And if they smell humans close to them, even behind walls, they will pursue them, and try to get to them through doors or gates if necessary. May be time to hire some guards, or improve your defences.
 starvationtitle=Starving Settlers
 starvationbody=Settlers need a steady supply of food. If a settler's Hunger reaches zero, they will begin taking starvation damage and cannot recover health until they eat again. If starvation continues, they will eventually collapse and become downed, requiring revival like any other downed settler.\n\nA settler stranded underground is in even greater danger. If they have no accessible food and no usable settlement route back to the surface, reaching zero Hunger will down them immediately. Keep cave residents supplied, or make sure they have a working way back to the surface.
 interfacecontrolstitle=Interface Shortcuts

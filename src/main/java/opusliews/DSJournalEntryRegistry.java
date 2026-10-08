@@ -129,7 +129,7 @@ public class DSJournalEntryRegistry {
 				"charcoalautomation", "clayautomation", "fishingareas", "settlementdefence", "warningbells",
 				"guardduty", "guardfatigue", "malignance", "sleeping", "sleepalarms", "cavesettlements",
 				"caveresidents", "caveinfrastructure", "crosslevellogistics", "crosslevelcommands", "caveguards",
-				"undergroundthreats", "multilevelraids", "starvation"
+				"undergroundthreats", "multilevelraids", "starvation", "winteriscoming"
 		};
 		for (String section : triggeredSections) GuideProgressionSystem.registerRevealChallenge(section);
 
@@ -186,6 +186,7 @@ public class DSJournalEntryRegistry {
 		registerTriggeredButton("undergroundthreats");
 		registerTriggeredButton("multilevelraids");
 		registerTriggeredButton("starvation");
+		registerTriggeredButton("winteriscoming");
 
 
 		// IMPORTANT, KEEP THIS REGISTRATION AT THE VERY END OF JOURNAL REGISTRATIONS
