@@ -69,6 +69,7 @@ import necesse.level.maps.levelData.settlementData.LevelSettler;
 import necesse.level.maps.levelData.settlementData.SettlementStoragePickupFuture;
 import opusliews.guard.GuardLevelAssignmentSystem;
 import opusliews.hunger.SettlerStarvationSystem;
+import opusliews.hunger.SettlementFoodAvailabilityCache;
 import opusliews.clay.ClayPackageSystem;
 import opusliews.fishing.FishingAreaSystem;
 import opusliews.logging.Logging;
@@ -97,22 +98,26 @@ public final class SettlementCrossLevelJobSystem {
 
 	/** True whenever vanilla/emergency hunger rules currently allow ConsumeFoodLevelJob. */
 	public static boolean isFoodSearchEligible(JobFinder finder) {
+
 		if (finder == null || !(finder.mob instanceof HumanMob)) return false;
 		HumanMob human = (HumanMob)finder.mob;
 		return human.isSettler()
 				&& human.getLevel() != null
 				&& human.getLevel().isServer()
 				&& SettlerStarvationSystem.shouldConsumeFood(human);
+
 	}
 
 	/** True while this JobFinder belongs to a critically hungry settler that must search only for food. */
 	public static boolean isEmergencyFoodSearch(JobFinder finder) {
+
 		if (finder == null || !(finder.mob instanceof HumanMob)) return false;
 		HumanMob human = (HumanMob)finder.mob;
 		return human.isSettler()
 				&& human.getLevel() != null
 				&& human.getLevel().isServer()
 				&& SettlerStarvationSystem.isEmergencyEating(human);
+
 	}
 
 	/**
@@ -121,8 +126,10 @@ public final class SettlementCrossLevelJobSystem {
 	 * ConsumeFood priority without allowing a pending/remote normal-work job to jump ahead of it.
 	 */
 	public static boolean shouldPreferLocalFood(JobFinder finder) {
+
 		return isFoodSearchEligible(finder)
 				&& SettlerStarvationSystem.hasAccessibleFood((HumanMob)finder.mob);
+
 	}
 
 	/**
@@ -132,6 +139,7 @@ public final class SettlementCrossLevelJobSystem {
 	 * Once there, vanilla ConsumeFoodLevelJob performs the actual pickup and eating sequence.
 	 */
 	public static FoundJob findCrossLevelFoodRelocation(JobFinder finder) {
+
 		if (!isFoodSearchEligible(finder)) return null;
 
 		HumanMob human = (HumanMob)finder.mob;
@@ -182,14 +190,18 @@ public final class SettlementCrossLevelJobSystem {
 		}
 
 		return new CrossLevelFoodRelocationFoundJob(human, foodJob, foodHandler.priority, target.route, target.levelType);
+
 	}
 
 	/** Non-mutating preview used by the starvation tick before it cancels the settler's work. */
 	public static boolean hasReachableFoodOnOtherLevel(HumanMob human) {
+
 		return findCrossLevelFoodTargetOnOtherLevel(human) != null;
+
 	}
 
 	private static CrossLevelFoodTarget findCrossLevelFoodTargetOnOtherLevel(HumanMob human) {
+
 		try {
 			return findCrossLevelFoodTargetOnOtherLevelUnsafe(human);
 		}
@@ -202,10 +214,12 @@ public final class SettlementCrossLevelJobSystem {
 			}
 			return null;
 		}
+
 	}
 
 	@SuppressWarnings("rawtypes")
 	private static CrossLevelFoodTarget findCrossLevelFoodTargetOnOtherLevelUnsafe(HumanMob human) {
+
 		if (human == null || human.getLevel() == null || !human.getLevel().isServer() || !human.isSettler()) return null;
 
 		ServerSettlementData settlement = human.getSettlerSettlementServerData();
@@ -226,6 +240,10 @@ public final class SettlementCrossLevelJobSystem {
 				? (human.levelSettler == null ? null : human.levelSettler.dietFilter)
 				: levelSettler.dietFilter;
 
+		// Cache only answers the stable inventory-content question. An unknown cache state is fail-open,
+		// while route, restrict-zone and reservation checks below remain fully live.
+		if (!SettlementFoodAvailabilityCache.levelMayContainEdibleFood(settlement, remoteLevel, dietFilter)) return null;
+
 		RemoteWorker worker = new RemoteWorker(human, settlement, domain, remoteLevel, getRemoteSearchOrigin(human, domain, otherType));
 		ZoneTester restrictZone = worker.getJobRestrictZone();
 		Stream stream = worker.streamValidJobsWithinRange(worker.getJobSearchBounds());
@@ -238,6 +256,7 @@ public final class SettlementCrossLevelJobSystem {
 			HasStorageLevelJob storageJob = (HasStorageLevelJob)next;
 			if (storageJob.getLevel() == null || !remoteLevel.getIdentifier().equals(storageJob.getLevel().getIdentifier())) continue;
 			if (!storageJob.isWithinRestrictZone(restrictZone)) continue;
+			if (!SettlementFoodAvailabilityCache.storageMayContainEdibleFood(settlement, storageJob.settlementInventory, dietFilter)) continue;
 
 			SettlementStoragePickupFuture food = (SettlementStoragePickupFuture)storageJob.settlementInventory
 					.findFutureUnreservedSlots()
@@ -280,13 +299,16 @@ public final class SettlementCrossLevelJobSystem {
 		}
 
 		return best;
+
 	}
 
 	private static boolean isCrossLevelEdibleFood(InventoryItem item, ItemCategoriesFilter dietFilter) {
+
 		if (item == null || !item.item.isFoodItem()) return false;
 		if (dietFilter != null && !dietFilter.isItemAllowed(item.item)) return false;
 		FoodConsumableItem food = (FoodConsumableItem)item.item;
 		return food.nutrition > 0 && food.quality != null;
+
 	}
 
 	/**
@@ -296,6 +318,7 @@ public final class SettlementCrossLevelJobSystem {
 	 */
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	public static FoundJob findPendingExactJob(JobFinder finder, boolean ignoreRecreationJobs) {
+
 		if (finder == null || !(finder.mob instanceof HumanMob)) return null;
 		HumanMob human = (HumanMob)finder.mob;
 		if (human.getLevel() == null || !human.getLevel().isServer() || !human.isSettler()) return null;
@@ -387,9 +410,11 @@ public final class SettlementCrossLevelJobSystem {
 					+ " error=" + error.getClass().getSimpleName() + ": " + error.getMessage());
 			return null;
 		}
+
 	}
 
 	private static void rememberPendingExactJob(HumanMob human, AbstractLevelJob job, SettlementLevelType targetType) {
+
 		if (human == null || job == null || job.getLevel() == null || targetType == null) return;
 		PendingCrossLevelJob pending = new PendingCrossLevelJob(job, job.getLevel().getIdentifier(), targetType);
 		synchronized (pendingCrossLevelJobs) {
@@ -398,11 +423,11 @@ public final class SettlementCrossLevelJobSystem {
 		if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Remembered exact post-transition job settler=" + human.getUniqueID()
 				+ " job=" + job.getStringID() + "@" + job.getTileX() + "," + job.getTileY()
 				+ " targetLevel=" + targetType + " identifier=" + pending.targetLevel);
+
 	}
 
-
-
 	private static void clearPendingExactJob(HumanMob human, PendingCrossLevelJob expected, String reason) {
+
 		boolean removed = false;
 		synchronized (pendingCrossLevelJobs) {
 			if (pendingCrossLevelJobs.get(human) == expected) {
@@ -415,6 +440,7 @@ public final class SettlementCrossLevelJobSystem {
 					+ " job=" + (expected.job == null ? "null" : expected.job.getStringID() + "@" + expected.job.getTileX() + "," + expected.job.getTileY())
 					+ " reason=" + reason);
 		}
+
 	}
 
 	/**
@@ -422,6 +448,7 @@ public final class SettlementCrossLevelJobSystem {
 	 * roll. Returning null means vanilla JobFinder should continue completely unchanged.
 	 */
 	public static FoundJob findRemoteRelocation(JobFinder localFinder, boolean ignoreRecreationJobs) {
+
 		if (localFinder == null || !(localFinder.mob instanceof HumanMob)) return null;
 		HumanMob human = (HumanMob)localFinder.mob;
 		if (human.getLevel() == null || !human.getLevel().isServer() || !human.isSettler()) return null;
@@ -508,10 +535,12 @@ public final class SettlementCrossLevelJobSystem {
 		}
 
 		return new RelocationFoundJob(human, selected);
+
 	}
 
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	private static void collectLocalCandidates(JobFinder finder, boolean ignoreRecreationJobs, SettlementLevelDomain domain, SettlementLevelType levelType, long now, List<Candidate> out) {
+
 		Stream stream = finder.streamFoundJobs(ignoreRecreationJobs);
 		Iterator iterator = stream.iterator();
 		while (iterator.hasNext()) {
@@ -531,13 +560,17 @@ public final class SettlementCrossLevelJobSystem {
 			Candidate candidate = createCandidate(found, domain, levelType, now);
 			if (candidate != null) out.add(candidate);
 		}
+
 	}
 
 	private static boolean passesNonMutatingLocalSequencePreview(EntityJobWorker worker, FoundJob found) {
+
 		return passesNonMutatingSequencePreview(worker, found, "local");
+
 	}
 
 	private static boolean passesNonMutatingSequencePreview(EntityJobWorker worker, FoundJob found, String source) {
+
 		if (worker == null || found == null || found.job == null) return false;
 
 		boolean valid = true;
@@ -589,17 +622,21 @@ public final class SettlementCrossLevelJobSystem {
 					+ " reason=" + reason);
 		}
 		return valid;
+
 	}
 
 	private static boolean canDropOffWorkInventoryWithoutMutating(EntityJobWorker worker, HasStorageLevelJob job) {
+
 		if (worker.getWorkInventory().isEmpty()) return false;
 		for (InventoryItem item : ClayPackageSystem.getExpandedContents(worker.getWorkInventory().items())) {
 			if (job.settlementInventory.canAddFutureDropOff(item) > 0) return true;
 		}
 		return false;
+
 	}
 
 	private static boolean canConsumeFoodWithoutMutating(EntityJobWorker worker, ConsumeFoodLevelJob job) {
+
 		java.util.function.Predicate<InventoryItem> foodFilter = item -> {
 			if (item == null || !item.item.isFoodItem()) return false;
 			if (job.dietFilter != null && !job.dietFilter.isItemAllowed(item.item)) return false;
@@ -609,9 +646,11 @@ public final class SettlementCrossLevelJobSystem {
 
 		if (worker.getWorkInventory().stream().anyMatch(foodFilter)) return true;
 		return HasStorageLevelJob.getItemCount(worker, foodFilter, 1, false, false) > 0;
+
 	}
 
 	private static boolean canStorePickupWithoutMutating(EntityJobWorker worker, StorePickupItemLevelJob job) {
+
 		if (!(job.target instanceof ItemPickupEntity)) return false;
 		ItemPickupEntity pickup = (ItemPickupEntity)job.target;
 		int available = pickup.getAvailableAmount();
@@ -620,9 +659,11 @@ public final class SettlementCrossLevelJobSystem {
 		if (available <= 0) return false;
 		InventoryItem dropOffItem = pickup.item.copy(Math.min(available, pickup.item.itemStackSize()));
 		return !HasStorageLevelJob.findDropOffLocation(worker, dropOffItem, pickup.getPositionPoint()).isEmpty();
+
 	}
 
 	private static boolean canManageEquipmentWithoutMutating(EntityJobWorker worker, ManageEquipmentLevelJob job) {
+
 		Mob mob = worker.getMobWorker();
 		if (!(mob instanceof HumanMob)) return false;
 		HumanMob human = (HumanMob)mob;
@@ -675,10 +716,12 @@ public final class SettlementCrossLevelJobSystem {
 			}
 		}
 		return false;
+
 	}
 
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	private static List<EquipmentOption> getStorageEquipmentOptions(EntityJobWorker worker, HumanMob human, ManageEquipmentLevelJob job, SettlementStorageEquipmentTypeIndex index, SettlementStorageEquipmentTypeIndex.EquipmentType type) {
+
 		SettlementStorageRecordsRegionData data = index.getEquipmentType(type);
 		if (data == null) return Collections.emptyList();
 		Map<Integer, EquipmentOption> bestByItemID = new HashMap<>();
@@ -707,32 +750,39 @@ public final class SettlementCrossLevelJobSystem {
 			}
 		}
 		return new ArrayList<>(bestByItemID.values());
+
 	}
 
 	private static EquipmentOption currentWeaponOption(InventoryItem item, HumanMob human, ManageEquipmentLevelJob job) {
+
 		if (item == null || !(item.item instanceof ItemAttackerWeaponItem)) return null;
 		if (job.equipmentFilter != null && !job.equipmentFilter.isItemAllowed(item.item)) return null;
 		ItemAttackerWeaponItem weapon = (ItemAttackerWeaponItem)item.item;
 		if (weapon.getItemAttackerCanUseError(human, item) != null) return null;
 		double value = weapon.getItemAttackerWeaponValue(human, item);
 		return value > 0.0 ? new EquipmentOption(item, value) : null;
+
 	}
 
 	private static EquipmentOption currentArmorOption(InventoryItem item, ArmorItem.ArmorType type, HumanMob human, ManageEquipmentLevelJob job) {
+
 		if (item == null || !item.item.isArmorItem()) return null;
 		if (job.equipmentFilter != null && !job.equipmentFilter.isItemAllowed(item.item)) return null;
 		ArmorItem armor = (ArmorItem)item.item;
 		if (armor.armorType != type || !armor.canMobEquip(human, item)) return null;
 		double value = armor.getSettlerEquipmentValue(item, human);
 		return value > 0.0 ? new EquipmentOption(item, value) : null;
+
 	}
 
 	private static double armorScore(EquipmentOption head, EquipmentOption chest, EquipmentOption feet, boolean preferSet) {
+
 		double score = (head == null ? 0.0 : head.value) + (chest == null ? 0.0 : chest.value) + (feet == null ? 0.0 : feet.value);
 		if (preferSet && head != null && chest != null && feet != null
 				&& head.item != null && chest.item != null && feet.item != null
 				&& ((ArmorItem)head.item.item).hasSet(head.item, chest.item, feet.item)) score *= 1.5;
 		return score;
+
 	}
 
 	private static final class EquipmentOption {
@@ -747,6 +797,7 @@ public final class SettlementCrossLevelJobSystem {
 
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	private static boolean canStartExpeditionWithoutMutating(EntityJobWorker worker, StartExpeditionLevelJob job) {
+
 		Mob mob = worker.getMobWorker();
 		if (!(mob instanceof HumanMob)) return false;
 		HumanMob human = (HumanMob)mob;
@@ -804,10 +855,12 @@ public final class SettlementCrossLevelJobSystem {
 		}
 
 		return false;
+
 	}
 
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	private static void collectRemoteCandidates(HumanMob human, JobFinder localFinder, boolean ignoreRecreationJobs, ServerSettlementData settlement, SettlementLevelDomain domain, Level remoteLevel, SettlementLevelType remoteType, long now, List<Candidate> out) {
+
 		LevelIdentifier remoteIdentifier = remoteLevel.getIdentifier();
 		RemoteWorker worker = new RemoteWorker(human, settlement, domain, remoteLevel, getRemoteSearchOrigin(human, domain, remoteType));
 		JobTypeHandler handler = worker.getJobTypeHandler();
@@ -870,17 +923,21 @@ public final class SettlementCrossLevelJobSystem {
 		}
 
 		if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Remote jobsLayer scan complete settler=" + human.getUniqueID() + " level=" + remoteType + " scanned=" + scanned + " accepted=" + accepted);
+
 	}
 
 	private static Point getRemoteSearchOrigin(HumanMob human, SettlementLevelDomain domain, SettlementLevelType remoteType) {
+
 		SettlementCrossLevelRoute route = SettlementCrossLevelRouting.findBestTransitionRouteQuiet(human, domain, remoteType);
 		if (route != null && route.target != null) return new Point(route.target.tileX, route.target.tileY);
 		Rectangle bounds = domain.getTileBounds(remoteType);
 		if (bounds != null) return new Point(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
 		return new Point(human.getTileX(), human.getTileY());
+
 	}
 
 	private static Candidate createCandidate(FoundJob found, SettlementLevelDomain domain, SettlementLevelType levelType, long now) {
+
 		if (found == null || found.job == null || found.job.getLevel() == null) return null;
 		try {
 			PriorityKey priorityKey = PriorityKey.from(found);
@@ -892,9 +949,11 @@ public final class SettlementCrossLevelJobSystem {
 			if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Could not rank candidate job=" + found.job.getStringID() + " tile=" + found.job.getTileX() + "," + found.job.getTileY() + " error=" + e.getClass().getSimpleName() + ": " + e.getMessage());
 			return null;
 		}
+
 	}
 
 	private static List<Candidate> findFirstReachablePriorityGroup(HumanMob human, ServerSettlementData settlement, SettlementLevelDomain domain, List<Candidate> sorted) {
+
 		if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Priority grouping begin settler=" + human.getUniqueID() + " candidates=" + sorted.size());
 
 		int index = 0;
@@ -991,9 +1050,11 @@ public final class SettlementCrossLevelJobSystem {
 
 		if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Priority grouping found no reachable candidates settler=" + human.getUniqueID());
 		return Collections.emptyList();
+
 	}
 
 	private static boolean evaluateReachability(HumanMob human, ServerSettlementData settlement, SettlementLevelDomain domain, Candidate candidate) {
+
 		try {
 			if (candidate.levelType == domain.getLevelType(human.getLevel().getIdentifier())) {
 				if (!candidate.found.canMoveTo()) return false;
@@ -1013,9 +1074,11 @@ public final class SettlementCrossLevelJobSystem {
 			if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Candidate reachability check failed settler=" + human.getUniqueID() + " job=" + describe(candidate) + " error=" + e.getClass().getSimpleName() + ": " + e.getMessage());
 			return false;
 		}
+
 	}
 
 	private static Candidate selectCandidate(HumanMob human, SettlementLevelType currentType, List<Candidate> candidates, long now) {
+
 		if (candidates.isEmpty()) return null;
 
 		if (Logging.logEnabled) {
@@ -1117,27 +1180,35 @@ public final class SettlementCrossLevelJobSystem {
 				+ " totalWeight=" + (currentWeight + otherWeight)
 				+ " selected=" + describe(selected));
 		return selected;
+
 	}
 
 	private static double levelWeight(SettlementLevelPreference preference, SettlementLevelType currentType, SettlementLevelType candidateType, double preferenceWeight) {
+
 		double weight = candidateType == currentType ? CURRENT_LEVEL_WEIGHT : 1.0;
 		if (preference != SettlementLevelPreference.AUTO && isPreferred(preference, candidateType)) weight *= preferenceWeight;
 		return weight;
+
 	}
 
 	private static boolean isPreferred(SettlementLevelPreference preference, SettlementLevelType type) {
+
 		return preference == SettlementLevelPreference.SURFACE && type == SettlementLevelType.SURFACE
 				|| preference == SettlementLevelPreference.CAVE && type == SettlementLevelType.CAVE;
+
 	}
 
 	private static Candidate nearestOnLevel(List<Candidate> candidates, SettlementLevelType levelType) {
+
 		return candidates.stream()
 				.filter(candidate -> candidate.levelType == levelType)
 				.min(Comparator.comparingDouble(candidate -> candidate.travelCost))
 				.orElse(null);
+
 	}
 
 	private static synchronized long markSeen(JobKey key, long now) {
+
 		SeenJob seen = seenJobs.get(key);
 		if (seen == null) {
 			seen = new SeenJob(now, now);
@@ -1147,15 +1218,19 @@ public final class SettlementCrossLevelJobSystem {
 			seen.lastSeenTime = now;
 		}
 		return seen.firstSeenTime;
+
 	}
 
 	private static synchronized void cleanupSeenJobs(long now) {
+
 		if (now < nextSeenJobCleanupTime) return;
 		nextSeenJobCleanupTime = now + JOB_KEY_CLEANUP_INTERVAL_MS;
 		seenJobs.entrySet().removeIf(entry -> now - entry.getValue().lastSeenTime > STALE_JOB_KEY_MS);
+
 	}
 
 	private static Level getLoadedLevel(SettlementLevelDomain domain, SettlementLevelType type) {
+
 		Level level = domain.getLoadedLevel(type);
 		if (level != null) return level;
 		ServerSettlementData settlement = domain.getSettlement();
@@ -1168,11 +1243,14 @@ public final class SettlementCrossLevelJobSystem {
 		level = settlement.getServer().world.getLevel(identifier);
 		if (level == null && Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] FAILED to load settlement level for job discovery settlement=" + domain.getSettlementUniqueID() + " levelType=" + type + " identifier=" + identifier);
 		return level;
+
 	}
 
 	private static String describe(Candidate candidate) {
+
 		if (candidate == null || candidate.found == null || candidate.found.job == null) return "null";
 		return candidate.found.job.getStringID() + "@" + candidate.levelType + ":" + candidate.found.job.getTileX() + "," + candidate.found.job.getTileY();
+
 	}
 
 	private static final Comparator<Candidate> CANDIDATE_PRIORITY_COMPARATOR = (a, b) -> a.priorityKey.compareTo(b.priorityKey);
@@ -1273,6 +1351,7 @@ public final class SettlementCrossLevelJobSystem {
 
 		@Override
 		public int compareTo(PriorityKey other) {
+
 			int value = Integer.compare(-firstPriority, -other.firstPriority);
 			if (value != 0) return value;
 			value = Integer.compare(prioritizeNextOrder, other.prioritizeNextOrder);
@@ -1288,10 +1367,12 @@ public final class SettlementCrossLevelJobSystem {
 			value = Integer.compare(-sameTypePriority, -other.sameTypePriority);
 			if (value != 0) return value;
 			return Integer.compare(-sameJobPriority, -other.sameJobPriority);
+
 		}
 
 		@Override
 		public String toString() {
+
 			return "{first=" + firstPriority
 					+ ", next=" + prioritizeNextOrder
 					+ ", last=" + lastPerformedOrder
@@ -1300,16 +1381,21 @@ public final class SettlementCrossLevelJobSystem {
 					+ ", typeID=" + typeIDOrder
 					+ ", sameType=" + sameTypePriority
 					+ ", sameJob=" + sameJobPriority + "}";
+
 		}
 
 		@Override
 		public boolean equals(Object obj) {
+
 			return obj instanceof PriorityKey && compareTo((PriorityKey)obj) == 0;
+
 		}
 
 		@Override
 		public int hashCode() {
+
 			return Objects.hash(firstPriority, prioritizeNextOrder, lastPerformedOrder, afterPriority, typePriorityOrder, typeIDOrder, sameTypePriority, sameJobPriority);
+
 		}
 	}
 
@@ -1330,14 +1416,18 @@ public final class SettlementCrossLevelJobSystem {
 
 		@Override
 		public boolean equals(Object obj) {
+
 			if (!(obj instanceof JobKey)) return false;
 			JobKey other = (JobKey)obj;
 			return settlementUniqueID == other.settlementUniqueID && jobID == other.jobID && tileX == other.tileX && tileY == other.tileY && Objects.equals(levelIdentifier, other.levelIdentifier);
+
 		}
 
 		@Override
 		public int hashCode() {
+
 			return Objects.hash(settlementUniqueID, levelIdentifier, jobID, tileX, tileY);
+
 		}
 	}
 
@@ -1350,7 +1440,6 @@ public final class SettlementCrossLevelJobSystem {
 			this.lastSeenTime = lastSeenTime;
 		}
 	}
-
 
 	/**
 	 * Worker view used only for discovering jobs on another Level. It never executes a
@@ -1373,21 +1462,28 @@ public final class SettlementCrossLevelJobSystem {
 
 		@Override
 		public Mob getMobWorker() {
+
 			return human;
+
 		}
 
 		@Override
 		public Level getLevel() {
+
 			return level;
+
 		}
 
 		@Override
 		public Point getJobSearchTile() {
+
 			return new Point(searchOrigin);
+
 		}
 
 		@Override
 		public Rectangle getJobSearchBounds() {
+
 			Rectangle tileBounds = domain.getTileBounds(domain.getLevelType(level.getIdentifier()));
 			if (tileBounds == null) return EntityJobWorker.super.getJobSearchBounds();
 
@@ -1396,39 +1492,49 @@ public final class SettlementCrossLevelJobSystem {
 			// Passing tile bounds directly makes remote discovery scan the wrong regions
 			// and return zero jobs even when valid jobs exist on the remote level.
 			return new Rectangle(tileBounds.x * 32, tileBounds.y * 32, tileBounds.width * 32, tileBounds.height * 32);
+
 		}
 
 		@SuppressWarnings("rawtypes")
 		@Override
 		public Stream streamValidJobsWithinRange(Rectangle searchBounds) {
+
 			if (searchBounds == null) searchBounds = getJobSearchBounds();
 			return level.jobsLayer.streamValidJobsInRegionsShape(searchBounds, 0);
+
 		}
 
 		@SuppressWarnings("rawtypes")
 		@Override
 		public Stream streamExtraJobs() {
+
 			// Extra jobs are generated by the real HumanMob for its current level and can
 			// include recreation/chat jobs that assume the worker itself is a
 			// JobWorkerChatter. They must not be projected onto the remote level. Remote
 			// discovery is intentionally limited to that level's jobsLayer; once the
 			// settler relocates, vanilla can generate its normal extra jobs there.
 			return Stream.empty();
+
 		}
 
 		@Override
 		public boolean allowsFindingJobType(JobType jobType) {
+
 			return human.allowsFindingJobType(jobType);
+
 		}
 
 		@Override
 		public boolean estimateCanMoveTo(int tileX, int tileY, boolean acceptAdjacentTiles) {
+
 			SettlementLevelPosition target = new SettlementLevelPosition(level.getIdentifier(), tileX, tileY);
 			return SettlementCrossLevelRouting.findBestRouteQuiet(human, domain, target, acceptAdjacentTiles, SettlementLevelZoneSystem.getRouteRestriction(human)) != null;
+
 		}
 
 		@Override
 		public ZoneTester getJobRestrictZone() {
+
 			LevelSettler levelSettler = settlement.getSettler(human.getUniqueID());
 			if (levelSettler == null) {
 				if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Remote worker could not resolve LevelSettler settler=" + human.getUniqueID());
@@ -1436,6 +1542,7 @@ public final class SettlementCrossLevelJobSystem {
 			}
 			LevelIdentifier identifier = level.getIdentifier();
 			return (tileX, tileY) -> SettlementLevelZoneSystem.isTileAllowed(levelSettler, domain, identifier, tileX, tileY);
+
 		}
 
 		@Override public JobTypeHandler getJobTypeHandler() { return human.getJobTypeHandler(); }
@@ -1481,11 +1588,14 @@ public final class SettlementCrossLevelJobSystem {
 
 		@Override
 		public void startCooldown(long currentTime) {
+
 			// Do not cooldown ConsumeFood while this sequence only relocates the settler.
+
 		}
 
 		@Override
 		protected JobSequence getNewSequence() {
+
 			// Use the vanilla consuming activity key so SettlerStarvationSystem recognizes the
 			// ladder trip as part of the emergency food sequence and does not cancel it.
 			LinkedListJobSequence sequence = new LinkedListJobSequence(
@@ -1499,6 +1609,7 @@ public final class SettlementCrossLevelJobSystem {
 			);
 			sequence.add(new RelocationActiveJob(human, priority, route, targetType, null));
 			return sequence;
+
 		}
 	}
 
@@ -1514,17 +1625,21 @@ public final class SettlementCrossLevelJobSystem {
 
 		@Override
 		public void startCooldown(long currentTime) {
+
 			// The remote job has not been claimed or executed yet. Starting its vanilla
 			// cooldown here would incorrectly hide it while the settler is only travelling.
+
 		}
 
 		@Override
 		protected JobSequence getNewSequence() {
+
 			LinkedListJobSequence sequence = new LinkedListJobSequence(new StaticMessage(
 					Localization.translate("jobs", "switchinglevels")
 			), false);
 			sequence.add(new RelocationActiveJob(human, selected.found.priority, selected.route, selected.levelType, selected.found.job));
 			return sequence;
+
 		}
 	}
 
@@ -1544,25 +1659,31 @@ public final class SettlementCrossLevelJobSystem {
 
 		@Override
 		public JobMoveToTile getMoveToTile(JobMoveToTile last) {
+
 			if (route == null || route.ladder == null || route.source == null) return null;
 			ServerSettlementData settlement = human.getSettlerSettlementServerData();
 			SettlementLevelDomain domain = SettlementMultiLevelSystem.get(settlement);
 			SettlementLevelType sourceType = domain == null || human.getLevel() == null ? null : domain.getLevelType(human.getLevel().getIdentifier());
 			if (sourceType == null || sourceType == targetType) return null;
 			return new JobMoveToTile(route.ladder.getTileX(sourceType), route.ladder.getTileY(sourceType), false);
+
 		}
 
 		@Override
 		public boolean isAt(JobMoveToTile moveToTile) {
+
 			return moveToTile != null && human.getTileX() == moveToTile.tileX && human.getTileY() == moveToTile.tileY && !human.hasCurrentMovement();
+
 		}
 
 		@Override
 		public void tick(boolean isCurrent, boolean isMovingTo) {
+
 		}
 
 		@Override
 		public boolean isValid(boolean isCurrent) {
+
 			if (human.getLevel() == null || route == null || route.ladder == null) return false;
 			ServerSettlementData settlement = human.getSettlerSettlementServerData();
 			SettlementLevelDomain domain = SettlementMultiLevelSystem.get(settlement);
@@ -1579,20 +1700,26 @@ public final class SettlementCrossLevelJobSystem {
 			}
 			if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Relocation invalid because designated ladder disappeared settler=" + human.getUniqueID() + " route=" + route);
 			return false;
+
 		}
 
 		@Override
 		public ActiveJobHitResult onHit(MobWasHitEvent event, boolean isMovingTo) {
+
 			return ActiveJobHitResult.CLEAR_SEQUENCE;
+
 		}
 
 		@Override
 		public ActiveJobTargetFoundResult onTargetFound(Mob target, boolean isCurrent, boolean isMovingTo) {
+
 			return ActiveJobTargetFoundResult.CONTINUE;
+
 		}
 
 		@Override
 		public ActiveJobResult perform() {
+
 			if (human.getLevel() == null) {
 				if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Relocation perform failed because settler has no level settler=" + human.getUniqueID());
 				return ActiveJobResult.FAILED;
@@ -1622,11 +1749,14 @@ public final class SettlementCrossLevelJobSystem {
 			rememberPendingExactJob(human, selectedJob, targetType);
 			if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Relocation transition completed settler=" + human.getUniqueID() + " targetLevel=" + targetType + " selectedJob=" + (selectedJob == null ? "null" : selectedJob.getStringID() + "@" + selectedJob.getTileX() + "," + selectedJob.getTileY()));
 			return ActiveJobResult.FINISHED;
+
 		}
 
 		@Override
 		public void onCancelled(boolean becauseOfInvalid, boolean isCurrent, boolean isMovingTo) {
+
 			if (Logging.logEnabled) Logging.logMessage("[CrossLevelJobs] Relocation cancelled settler=" + human.getUniqueID() + " invalid=" + becauseOfInvalid + " moving=" + isMovingTo + " targetLevel=" + targetType + " selectedJob=" + (selectedJob == null ? "null" : selectedJob.getStringID() + "@" + selectedJob.getTileX() + "," + selectedJob.getTileY()));
+
 		}
 	}
 }

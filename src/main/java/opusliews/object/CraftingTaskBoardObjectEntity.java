@@ -20,9 +20,11 @@ import necesse.level.maps.levelData.settlementData.ServerSettlementData;
 import opusliews.crafting.CraftingTaskLogic;
 import opusliews.crafting.CraftingAutoStockSystem;
 import opusliews.crafting.CraftingInputProtectionSystem;
+import opusliews.crafting.CraftingStationLinkCache;
 import opusliews.crafting.CraftingTaskRecipe;
 import opusliews.forge.ForgeTaskSystem;
 import opusliews.forge.ForgeRequirementSystem;
+import opusliews.forge.ForgeManualCleanupSystem;
 import opusliews.crafting.CraftingTask;
 import opusliews.jobs.CraftingStationLevelJob;
 import opusliews.logging.Logging;
@@ -30,7 +32,7 @@ import opusliews.progression.GuideProgressionSystem;
 
 public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 	public static final String TYPE = "craftingtaskboard";
-	private static final long STATUS_REFRESH_MS = 500L;
+	private static final long STATUS_REFRESH_MS = 1000L;
 
 	private Point linkedStation;
 	private final ArrayList<CraftingTask> tasks = new ArrayList<>();
@@ -43,6 +45,8 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 	private transient int assignedDay = -1;
 	private transient int nextTaskIndex;
 	private transient long nextStatusRefreshTime;
+	private transient boolean linkCacheInitialized;
+	private transient boolean linkValidationDirty;
 
 	public CraftingTaskBoardObjectEntity(Level level, int tileX, int tileY) {
 		super(level, TYPE, tileX, tileY);
@@ -50,6 +54,7 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 
 	@Override
 	public void addSaveData(SaveData save) {
+
 		super.addSaveData(save);
 		if (linkedStation != null) {
 			SaveData link = new SaveData("linkedStation");
@@ -73,10 +78,12 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 			forgeAssignmentsData.addSaveData(assignmentData);
 		}
 		save.addSaveData(forgeAssignmentsData);
+
 	}
 
 	@Override
 	public void applyLoadData(LoadData save) {
+
 		super.applyLoadData(save);
 		LoadData link = save.getFirstLoadDataByName("linkedStation");
 		linkedStation = link == null ? null : new Point(link.getInt("x", 0), link.getInt("y", 0));
@@ -100,10 +107,15 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 			}
 		}
 		nextStatusRefreshTime = 0L;
+		linkCacheInitialized = false;
+		linkValidationDirty = false;
+		if (getLevel().isServer()) ForgeManualCleanupSystem.onBoardForgeAssignmentsChanged(this);
+
 	}
 
 	@Override
 	public void setupContentPacket(PacketWriter writer) {
+
 		super.setupContentPacket(writer);
 		writer.putNextBoolean(linkedStation != null);
 		if (linkedStation != null) {
@@ -116,10 +128,12 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 		for (CraftingTask task : tasks) {
 			task.writePacket(writer);
 		}
+
 	}
 
 	@Override
 	public void applyContentPacket(PacketReader reader) {
+
 		super.applyContentPacket(reader);
 		linkedStation = reader.getNextBoolean() ? new Point(reader.getNextInt(), reader.getNextInt()) : null;
 		taskRevision = reader.getNextInt();
@@ -128,12 +142,19 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 		for (int i = 0; i < count; i++) {
 			tasks.add(new CraftingTask(reader));
 		}
+
 	}
 
 	@Override
 	public void serverTick() {
+
 		super.serverTick();
-		validateLinkedStation();
+		if (!linkCacheInitialized || linkValidationDirty) {
+			validateLinkedStation();
+			CraftingStationLinkCache.refreshBoard(this);
+			linkCacheInitialized = true;
+			linkValidationDirty = false;
+		}
 		processForgeAssignments();
 		updateDailyAssignment();
 		ensureCraftingJob();
@@ -143,19 +164,34 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 			nextStatusRefreshTime = now + STATUS_REFRESH_MS;
 			refreshTaskStatuses(false);
 		}
+
 	}
 
 	@Override
 	public void remove() {
+
 		if (craftingJob != null) {
 			craftingJob.remove();
 			craftingJob = null;
 		}
 		releaseWorker();
+		CraftingStationLinkCache.removeBoard(this);
+		ForgeManualCleanupSystem.onBoardForgeAssignmentsChanged(this);
 		super.remove();
+
+	}
+
+	public void onLinkedStationObjectChanged(int changedTileX, int changedTileY) {
+
+		if (!getLevel().isServer() || linkedStation == null) return;
+		if (linkedStation.x == changedTileX && linkedStation.y == changedTileY) {
+			linkValidationDirty = true;
+		}
+
 	}
 
 	private void validateLinkedStation() {
+
 		if (linkedStation == null) return;
 
 		ObjectEntity objectEntity = getLevel().entityManager.getObjectEntity(linkedStation.x, linkedStation.y);
@@ -168,9 +204,11 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 		if (taskBoard == null || taskBoard.x != tileX || taskBoard.y != tileY) {
 			setLinkedStationInternal(null, true);
 		}
+
 	}
 
 	private void updateDailyAssignment() {
+
 		if (!getLevel().isServer()) {
 			return;
 		}
@@ -193,9 +231,11 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 				releaseWorker();
 			}
 		}
+
 	}
 
 	private void ensureCraftingJob() {
+
 		if (!getLevel().isServer()) return;
 
 		DynamicCraftingStationObjectEntity stationEntity = getLinkedStationEntity();
@@ -237,31 +277,40 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 		Logging.logMessage("[CraftingJob] Board " + tileX + "," + tileY + " addJob result="
 				+ (added == null ? "null" : added.getClass().getSimpleName())
 				+ " valid=" + (craftingJob != null && craftingJob.isValid()));
+
 	}
 
 	public void addForgeAssignment(Point forgePoint, int outputItemID, int outputAmount) {
+
 		if (forgePoint == null || outputItemID < 0 || outputAmount <= 0) return;
 		forgeAssignments.add(new ForgeAssignment(forgePoint.x, forgePoint.y, outputItemID, outputAmount));
+		ForgeManualCleanupSystem.onBoardForgeAssignmentsChanged(this);
 		markDirty();
+
 	}
 
 	public boolean hasForgeAssignment(Point forgePoint) {
+
 		if (forgePoint == null) return false;
 		for (ForgeAssignment assignment : forgeAssignments) {
 			if (assignment.forgeX == forgePoint.x && assignment.forgeY == forgePoint.y) return true;
 		}
 		return false;
+
 	}
 
 	public int getPendingForgeAmount(int itemID) {
+
 		int total = 0;
 		for (ForgeAssignment assignment : forgeAssignments) {
 			if (assignment.outputItemID == itemID) total += assignment.outputAmount;
 		}
 		return total;
+
 	}
 
 	private void processForgeAssignments() {
+
 		if (!getLevel().isServer() || forgeAssignments.isEmpty()) return;
 		boolean changed = false;
 		for (int i = forgeAssignments.size() - 1; i >= 0; i--) {
@@ -281,12 +330,15 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 			}
 		}
 		if (changed) {
+			ForgeManualCleanupSystem.onBoardForgeAssignmentsChanged(this);
 			markDirty();
 			nextStatusRefreshTime = 0L;
 		}
+
 	}
 
 	private void onForgeAssignmentCompleted(int itemID, int producedAmount) {
+
 		ServerSettlementData settlement = SettlementsWorldData.getSettlementsData(getLevel())
 				.getServerDataAtTile(getLevel().getIdentifier(), tileX, tileY);
 		if (settlement != null) GuideProgressionSystem.onAutomatedMetalworkingTaskFinished(settlement);
@@ -298,13 +350,17 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 			}
 			break;
 		}
+
 	}
 
 	public Point getLinkedStation() {
+
 		return linkedStation == null ? null : new Point(linkedStation);
+
 	}
 
 	public DynamicCraftingStationObjectEntity getLinkedStationEntity() {
+
 		if (linkedStation == null) return null;
 		ObjectEntity entity = getLevel().entityManager.getObjectEntity(linkedStation.x, linkedStation.y);
 		if (!(entity instanceof DynamicCraftingStationObjectEntity)) return null;
@@ -313,9 +369,11 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 		Point board = station.getTaskBoard();
 		if (board == null || board.x != tileX || board.y != tileY) return null;
 		return station;
+
 	}
 
 	public LevelObject getValidLinkedStationObject() {
+
 		DynamicCraftingStationObjectEntity station = getLinkedStationEntity();
 		if (station == null) return null;
 
@@ -326,39 +384,53 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 			if (board != null && board.x == tileX && board.y == tileY) claimCount++;
 		}
 		return claimCount > 1 ? null : getLevel().getLevelObject(linkedStation.x, linkedStation.y);
+
 	}
 
 	public String getLinkedStationTextureKey() {
+
 		DynamicCraftingStationObjectEntity station = getLinkedStationEntity();
 		return station == null ? "unlinked" : station.getTaskBoardTextureKey();
+
 	}
 
 	public boolean supportsSettlerCraftingTasks() {
+
 		DynamicCraftingStationObjectEntity station = getLinkedStationEntity();
 		return station != null && station.supportsSettlerCraftingTasks();
+
 	}
 
 	public List<CraftingTask> getTasks() {
+
 		ArrayList<CraftingTask> copy = new ArrayList<>();
 		for (CraftingTask task : tasks) {
 			copy.add(task.copy());
 		}
 		return copy;
+
 	}
 
 	public int getTaskCount() {
+
 		return tasks.size();
+
 	}
 
 	public CraftingTask getTask(int index) {
+
 		return index >= 0 && index < tasks.size() ? tasks.get(index) : null;
+
 	}
 
 	public int getTaskRevision() {
+
 		return taskRevision;
+
 	}
 
 	private void ensureTaskIDs() {
+
 		java.util.HashSet<Long> used = new java.util.HashSet<>();
 		long highest = 0L;
 		for (CraftingTask task : tasks) {
@@ -372,15 +444,19 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 		for (CraftingTask task : tasks) {
 			if (task.taskID == 0L) task.taskID = allocateTaskID(used);
 		}
+
 	}
 
 	private long allocateTaskID() {
+
 		java.util.HashSet<Long> used = new java.util.HashSet<>();
 		for (CraftingTask task : tasks) if (task.taskID > 0L) used.add(task.taskID);
 		return allocateTaskID(used);
+
 	}
 
 	private long allocateTaskID(java.util.Set<Long> used) {
+
 		if (nextTaskID <= 0L) nextTaskID = 1L;
 		while (used.contains(nextTaskID)) {
 			nextTaskID++;
@@ -391,27 +467,33 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 		nextTaskID++;
 		if (nextTaskID <= 0L) nextTaskID = 1L;
 		return result;
+
 	}
 
 	public boolean addTask(int expectedRevision, int itemID, int sourceType) {
+
 		if (expectedRevision != taskRevision) return false;
 		refreshTaskStatusesNow();
 		tasks.add(new CraftingTask(allocateTaskID(), itemID, sourceType, CraftingTask.CONDITION_CRAFT_UNITS, 0));
 		commitTaskEdit();
 		CraftingInputProtectionSystem.refreshBoardConfiguration(this);
 		return true;
+
 	}
 
 	public boolean removeTask(int expectedRevision, int index) {
+
 		if (expectedRevision != taskRevision || index < 0 || index >= tasks.size()) return false;
 		tasks.remove(index);
 		if (nextTaskIndex >= tasks.size()) nextTaskIndex = 0;
 		commitTaskEdit();
 		CraftingInputProtectionSystem.refreshBoardConfiguration(this);
 		return true;
+
 	}
 
 	public boolean moveTask(int expectedRevision, int from, int to) {
+
 		if (expectedRevision != taskRevision || from < 0 || from >= tasks.size() || to < 0 || to >= tasks.size() || from == to) {
 			return false;
 		}
@@ -420,9 +502,11 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 		tasks.add(to, task);
 		commitTaskEdit();
 		return true;
+
 	}
 
 	public boolean updateTask(int expectedRevision, int index, int conditionType, int amount) {
+
 		if (expectedRevision != taskRevision) return false;
 		refreshTaskStatusesNow();
 		CraftingTask task = getTask(index);
@@ -434,9 +518,11 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 		task.amount = Math.max(0, Math.min(65535, amount));
 		commitTaskEdit();
 		return true;
+
 	}
 
 	public boolean setTaskPaused(int expectedRevision, int index, boolean paused) {
+
 		if (expectedRevision != taskRevision) return false;
 		refreshTaskStatusesNow();
 		CraftingTask task = getTask(index);
@@ -444,9 +530,11 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 		task.paused = paused;
 		commitTaskEdit();
 		return true;
+
 	}
 
 	public boolean setTaskPriority(int expectedRevision, int index, boolean priority) {
+
 		if (expectedRevision != taskRevision) {
 			if (Logging.logEnabled) Logging.logMessage("[CraftingPriority] Toggle rejected: stale revision expected="
 					+ expectedRevision + " actual=" + taskRevision + " index=" + index);
@@ -460,33 +548,41 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 				+ " taskID=" + task.taskID + " index=" + index + " priority=" + priority);
 		commitTaskEdit();
 		return true;
+
 	}
 
 	public void decrementCraftAmount(int index, int produced) {
+
 		CraftingTask task = getTask(index);
 		if (task == null || task.conditionType != CraftingTask.CONDITION_CRAFT_UNITS) return;
 		task.amount = Math.max(0, task.amount - Math.max(0, produced));
 		commitTaskEdit();
+
 	}
 
 	public void setLinkedStationInternal(Point point, boolean sync) {
+
 		Point old = linkedStation == null ? null : new Point(linkedStation);
 		linkedStation = point == null ? null : new Point(point);
-		if (old == null ? linkedStation != null : !old.equals(linkedStation)) {
+		boolean changed = old == null ? linkedStation != null : !old.equals(linkedStation);
+		if (changed) {
 			releaseWorker();
 			if (craftingJob != null) {
 				craftingJob.remove();
 				craftingJob = null;
 			}
+			if (getLevel().isServer()) CraftingStationLinkCache.refreshBoard(this);
 		}
 		markDirty();
 		nextStatusRefreshTime = 0L;
 		if (sync) {
 			syncContent();
 		}
+
 	}
 
 	private boolean isWorkerAssignedElsewhere(int uniqueID) {
+
 		for (Object object : getLevel().entityManager.objectEntities) {
 			if (object instanceof CraftingTaskBoardObjectEntity && object != this) {
 				CraftingTaskBoardObjectEntity other = (CraftingTaskBoardObjectEntity)object;
@@ -496,16 +592,20 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 			}
 		}
 		return false;
+
 	}
 
 	public boolean canBeClaimedBy(int uniqueID) {
+
 		if (assignedWorkerID != null && assignedWorkerID != uniqueID) {
 			return false;
 		}
 		return assignedWorkerID != null && assignedWorkerID == uniqueID || !isWorkerAssignedElsewhere(uniqueID);
+
 	}
 
 	public boolean claimWorker(int uniqueID) {
+
 		if (getLevel().getWorldEntity().isNight()) {
 			return false;
 		}
@@ -518,26 +618,36 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 			return true;
 		}
 		return false;
+
 	}
 
 	public boolean isAssignedTo(int uniqueID) {
+
 		return assignedWorkerID != null && assignedWorkerID == uniqueID;
+
 	}
 
 	public boolean isAssigned() {
+
 		return assignedWorkerID != null;
+
 	}
 
 	public void releaseWorker() {
+
 		assignedWorkerID = null;
 		nextTaskIndex = 0;
+
 	}
 
 	public int getNextTaskIndex() {
+
 		return nextTaskIndex;
+
 	}
 
 	public void advanceAfterTask(int index) {
+
 		if (tasks.isEmpty()) {
 			nextTaskIndex = 0;
 			return;
@@ -547,24 +657,30 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 		if (task == null || !task.priority) {
 			nextTaskIndex = (index + 1) % tasks.size();
 		}
+
 	}
 
 	public boolean hasActionableTasksCached() {
+
 		for (int i = 0; i < tasks.size(); i++) {
 			if (isTaskActionableNow(i)) return true;
 		}
 		return false;
+
 	}
 
 	public boolean hasActionableTasks() {
+
 		refreshTaskStatusesNow();
 		for (int i = 0; i < tasks.size(); i++) {
 			if (isTaskActionableNow(i)) return true;
 		}
 		return false;
+
 	}
 
 	public int findNextActionableTask() {
+
 		refreshTaskStatusesNow();
 		if (tasks.isEmpty()) return -1;
 
@@ -585,9 +701,11 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 			if (!task.priority && isTaskActionableNow(index)) return index;
 		}
 		return -1;
+
 	}
 
 	private boolean isTaskActionableNow(int index) {
+
 		CraftingTask task = getTask(index);
 		if (task == null || task.status != CraftingTask.STATUS_IN_PROGRESS) return false;
 		CraftingTaskRecipe taskRecipe = CraftingTaskLogic.getTaskRecipe(this, task);
@@ -598,14 +716,18 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 				&& ForgeTaskSystem.hasAvailableForge(this, taskRecipe)
 				&& ForgeTaskSystem.hasFuelAvailable(this, taskRecipe)
 				&& CraftingTaskLogic.canFitResult(this, taskRecipe);
+
 	}
 
 	public void refreshTaskStatusesNow() {
+
 		refreshTaskStatuses(true);
 		nextStatusRefreshTime = getLevel().getTime() + STATUS_REFRESH_MS;
+
 	}
 
 	private void refreshTaskStatuses(boolean syncImmediately) {
+
 		if (!getLevel().isServer()) {
 			return;
 		}
@@ -729,24 +851,31 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 			markDirty();
 			syncContent();
 		}
+
 	}
 
 	private void commitTaskEdit() {
+
 		taskRevision++;
 		markDirty();
 		nextStatusRefreshTime = 0L;
 		refreshTaskStatuses(false);
 		syncContent();
+
 	}
 
 	public void syncContentNow() {
+
 		syncContent();
+
 	}
 
 	private void syncContent() {
+
 		if (getLevel().isServer() && getLevel().getServer() != null) {
 			getLevel().getServer().network.sendToClientsWithEntity(new PacketObjectEntity(this), this);
 		}
+
 	}
 	private static final class ForgeAssignment {
 		private final int forgeX;
@@ -766,10 +895,12 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 		}
 
 		private void addSaveData(SaveData data) {
+
 			data.addInt("forgeX", forgeX);
 			data.addInt("forgeY", forgeY);
 			data.addInt("outputItemID", outputItemID);
 			data.addInt("outputAmount", outputAmount);
+
 		}
 	}
 

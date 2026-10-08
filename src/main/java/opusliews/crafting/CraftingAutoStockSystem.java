@@ -58,6 +58,12 @@ public final class CraftingAutoStockSystem {
 	public static void tickStation(DynamicCraftingStationObjectEntity station) {
 		if (station == null || !station.getLevel().isServer()) return;
 		sweepStaleRequests();
+		// Settler crafting jobs are explicitly unavailable at night. Keep stale-request
+		// housekeeping alive, but do not repeatedly re-plan ingredient deliveries that
+		// no worker can act on. Because level time advances through the night, the first
+		// daytime tick naturally falls past the old nextUpdateTimes value and refreshes
+		// immediately.
+		if (station.getLevel().getWorldEntity().isNight()) return;
 		long now = station.getLevel().getTime();
 		long next = nextUpdateTimes.getOrDefault(station, 0L);
 		if (now < next) return;

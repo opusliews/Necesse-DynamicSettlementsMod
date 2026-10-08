@@ -14,6 +14,7 @@ import necesse.level.maps.levelData.settlementData.storage.SettlementStorageFood
 import necesse.level.maps.levelData.settlementData.storage.SettlementStorageItemIDIndex;
 import necesse.inventory.item.Item;
 import opusliews.logging.Logging;
+import opusliews.hunger.SettlementFoodAvailabilityCache;
 import opusliews.stock.SettlementStockSystem;
 
 import java.awt.Point;
@@ -31,10 +32,13 @@ public final class SettlementLevelStorageManager {
 	}
 
 	public static SettlementInventory assignStorage(ServerSettlementData settlement, Level level, int tileX, int tileY) {
+
 		return assignStorage(settlement, level, tileX, tileY, true);
+
 	}
 
 	private static SettlementInventory assignStorage(ServerSettlementData settlement, Level level, int tileX, int tileY, boolean persist) {
+
 		if (!isValidTarget(settlement, level, tileX, tileY, "storage")) return null;
 		if (level == settlement.getLevel()) return settlement.storageManager.assignStorage(tileX, tileY, false);
 
@@ -50,19 +54,24 @@ public final class SettlementLevelStorageManager {
 		}
 		created.updateAdjacentSolidState();
 		state.storage.put(key, created);
+		SettlementFoodAvailabilityCache.invalidateTopology(settlement, "level-storage-assigned:" + key);
 		if (persist) {
 			persistEntry(settlement, SettlementLevelManagerLevelData.EntryType.STORAGE, key, true);
 			persistStorageConfig(settlement, created);
 		}
 		if (Logging.logEnabled) Logging.logMessage("[LevelManager] Registered level-aware storage settlement=" + settlement.uniqueID + " position=" + key);
 		return created;
+
 	}
 
 	public static SettlementWorkstation assignWorkstation(ServerSettlementData settlement, Level level, int tileX, int tileY) {
+
 		return assignWorkstation(settlement, level, tileX, tileY, true);
+
 	}
 
 	private static SettlementWorkstation assignWorkstation(ServerSettlementData settlement, Level level, int tileX, int tileY, boolean persist) {
+
 		if (!isValidTarget(settlement, level, tileX, tileY, "workstation")) return null;
 		if (level == settlement.getLevel()) return settlement.storageManager.assignWorkstation(tileX, tileY, false);
 
@@ -81,9 +90,11 @@ public final class SettlementLevelStorageManager {
 		if (persist) persistEntry(settlement, SettlementLevelManagerLevelData.EntryType.WORKSTATION, key, true);
 		if (Logging.logEnabled) Logging.logMessage("[LevelManager] Registered level-aware workstation settlement=" + settlement.uniqueID + " position=" + key);
 		return created;
+
 	}
 
 	public static void removeStorage(ServerSettlementData settlement, LevelIdentifier levelIdentifier, int tileX, int tileY) {
+
 		if (settlement == null || levelIdentifier == null) return;
 		if (settlement.getLevel().getIdentifier().equals(levelIdentifier)) {
 			settlement.storageManager.removeStorage(tileX, tileY, false);
@@ -92,12 +103,15 @@ public final class SettlementLevelStorageManager {
 		SettlementLevelPosition key = new SettlementLevelPosition(levelIdentifier, tileX, tileY);
 		State state = getState(settlement);
 		if (state.storage.remove(key) != null) {
+			SettlementFoodAvailabilityCache.invalidateTopology(settlement, "level-storage-removed:" + key);
 			persistEntry(settlement, SettlementLevelManagerLevelData.EntryType.STORAGE, key, false);
 			if (Logging.logEnabled) Logging.logMessage("[LevelManager] Removed level-aware storage settlement=" + settlement.uniqueID + " position=" + key);
 		}
+
 	}
 
 	public static void removeWorkstation(ServerSettlementData settlement, LevelIdentifier levelIdentifier, int tileX, int tileY) {
+
 		if (settlement == null || levelIdentifier == null) return;
 		if (settlement.getLevel().getIdentifier().equals(levelIdentifier)) {
 			settlement.storageManager.removeWorkstation(tileX, tileY, false);
@@ -109,21 +123,27 @@ public final class SettlementLevelStorageManager {
 			persistEntry(settlement, SettlementLevelManagerLevelData.EntryType.WORKSTATION, key, false);
 			if (Logging.logEnabled) Logging.logMessage("[LevelManager] Removed level-aware workstation settlement=" + settlement.uniqueID + " position=" + key);
 		}
+
 	}
 
 	public static SettlementInventory getStorage(ServerSettlementData settlement, LevelIdentifier levelIdentifier, int tileX, int tileY) {
+
 		if (settlement == null || levelIdentifier == null) return null;
 		if (settlement.getLevel().getIdentifier().equals(levelIdentifier)) return settlement.storageManager.getStorage(tileX, tileY);
 		return getState(settlement).storage.get(new SettlementLevelPosition(levelIdentifier, tileX, tileY));
+
 	}
 
 	public static SettlementWorkstation getWorkstation(ServerSettlementData settlement, LevelIdentifier levelIdentifier, int tileX, int tileY) {
+
 		if (settlement == null || levelIdentifier == null) return null;
 		if (settlement.getLevel().getIdentifier().equals(levelIdentifier)) return settlement.storageManager.getWorkstation(tileX, tileY);
 		return getState(settlement).workstations.get(new SettlementLevelPosition(levelIdentifier, tileX, tileY));
+
 	}
 
 	public static Collection<SettlementInventory> getStorage(ServerSettlementData settlement) {
+
 		if (settlement == null) return Collections.emptyList();
 		ArrayList<SettlementInventory> result = new ArrayList<>();
 		for (Object value : settlement.storageManager.getStorage()) {
@@ -131,9 +151,11 @@ public final class SettlementLevelStorageManager {
 		}
 		result.addAll(getState(settlement).storage.values());
 		return result;
+
 	}
 
 	public static Collection<SettlementWorkstation> getWorkstations(ServerSettlementData settlement) {
+
 		if (settlement == null) return Collections.emptyList();
 		ArrayList<SettlementWorkstation> result = new ArrayList<>();
 		for (Object value : settlement.storageManager.getWorkstations()) {
@@ -141,9 +163,11 @@ public final class SettlementLevelStorageManager {
 		}
 		result.addAll(getState(settlement).workstations.values());
 		return result;
+
 	}
 
 	public static ArrayList<Point> getStoragePositions(ServerSettlementData settlement, LevelIdentifier levelIdentifier) {
+
 		ArrayList<Point> result = new ArrayList<>();
 		if (settlement == null || levelIdentifier == null) return result;
 		if (settlement.getLevel().getIdentifier().equals(levelIdentifier)) {
@@ -159,9 +183,11 @@ public final class SettlementLevelStorageManager {
 			if (levelIdentifier.equals(entry.getKey().levelIdentifier)) result.add(new Point(entry.getKey().tileX, entry.getKey().tileY));
 		}
 		return result;
+
 	}
 
 	public static ArrayList<Point> getWorkstationPositions(ServerSettlementData settlement, LevelIdentifier levelIdentifier) {
+
 		ArrayList<Point> result = new ArrayList<>();
 		if (settlement == null || levelIdentifier == null) return result;
 		if (settlement.getLevel().getIdentifier().equals(levelIdentifier)) {
@@ -177,9 +203,11 @@ public final class SettlementLevelStorageManager {
 			if (levelIdentifier.equals(entry.getKey().levelIdentifier)) result.add(new Point(entry.getKey().tileX, entry.getKey().tileY));
 		}
 		return result;
+
 	}
 
 	public static SettlementStorageRecords getStorageRecords(ServerSettlementData settlement, LevelIdentifier levelIdentifier) {
+
 		if (settlement == null || levelIdentifier == null) return null;
 		if (settlement.getLevel().getIdentifier().equals(levelIdentifier)) return settlement.storageRecords;
 		State state = getState(settlement);
@@ -191,9 +219,11 @@ public final class SettlementLevelStorageManager {
 		records = new SettlementStorageRecords(level);
 		state.recordsByLevel.put(levelIdentifier, records);
 		return records;
+
 	}
 
 	public static Collection<SettlementStorageRecords> getAllStorageRecords(ServerSettlementData settlement) {
+
 		if (settlement == null) return Collections.emptyList();
 		ArrayList<SettlementStorageRecords> result = new ArrayList<>();
 		if (settlement.storageRecords != null) result.add(settlement.storageRecords);
@@ -204,49 +234,63 @@ public final class SettlementLevelStorageManager {
 		SettlementStorageRecords caveRecords = getStorageRecords(settlement, caveIdentifier);
 		if (caveRecords != null && caveRecords != settlement.storageRecords) result.add(caveRecords);
 		return result;
+
 	}
 
 	public static int getTotalStoredItems(ServerSettlementData settlement, Item item) {
+
 		if (settlement == null || item == null) return 0;
 		int total = 0;
 		for (SettlementStorageRecords records : getAllStorageRecords(settlement)) total += getStoredItemCount(records, item);
 		return total;
+
 	}
 
 	public static int getTotalFoodNutrition(ServerSettlementData settlement) {
+
 		if (settlement == null) return 0;
 		int total = 0;
 		for (SettlementStorageRecords records : getAllStorageRecords(settlement)) total += getFoodNutrition(records);
 		return total;
+
 	}
 
 	public static int getTotalFoodItems(ServerSettlementData settlement) {
+
 		if (settlement == null) return 0;
 		int total = 0;
 		for (SettlementStorageRecords records : getAllStorageRecords(settlement)) total += getFoodItems(records);
 		return total;
+
 	}
 
 	private static int getStoredItemCount(SettlementStorageRecords records, Item item) {
+
 		if (records == null) return 0;
 		SettlementStorageItemIDIndex index = (SettlementStorageItemIDIndex)records.getIndex(SettlementStorageItemIDIndex.class);
 		return index == null ? 0 : index.getTotalItems(item);
+
 	}
 
 	private static int getFoodNutrition(SettlementStorageRecords records) {
+
 		if (records == null) return 0;
 		SettlementStorageFoodQualityIndex index = (SettlementStorageFoodQualityIndex)records.getIndex(SettlementStorageFoodQualityIndex.class);
 		return index == null ? 0 : index.getTotalNutrition();
+
 	}
 
 	private static int getFoodItems(SettlementStorageRecords records) {
+
 		if (records == null) return 0;
 		SettlementStorageFoodQualityIndex index = (SettlementStorageFoodQualityIndex)records.getIndex(SettlementStorageFoodQualityIndex.class);
 		return index == null ? 0 : index.getTotalItems();
+
 	}
 
 	/** Keeps non-canonical storage simulations, indexes and HasStorage jobs in sync. */
 	public static void tickLevelStorage(ServerSettlementData settlement) {
+
 		if (settlement == null || settlement.getLevel() == null || !settlement.getLevel().isServer()) return;
 		restorePersisted(settlement);
 		clearInvalids(settlement);
@@ -280,47 +324,61 @@ public final class SettlementLevelStorageManager {
 
 		state.recordsByLevel.clear();
 		state.recordsByLevel.putAll(nextRecords);
+
 	}
 
 	public static SettlementLevelPosition getPosition(SettlementInventory inventory) {
+
 		return inventory == null ? null : new SettlementLevelPosition(inventory.level.getIdentifier(), inventory.tileX, inventory.tileY);
+
 	}
 
 	public static SettlementLevelPosition getPosition(SettlementWorkstation workstation) {
+
 		if (workstation == null) return null;
 		LevelIdentifier levelIdentifier = workstation instanceof SettlementLevelWorkstation
 				? ((SettlementLevelWorkstation)workstation).getLevel().getIdentifier()
 				: workstation.data.getLevel().getIdentifier();
 		return new SettlementLevelPosition(levelIdentifier, workstation.tileX, workstation.tileY);
+
 	}
 
 	public static boolean hasInventory(ServerSettlementData settlement, SettlementInventory inventory) {
+
 		if (settlement == null || inventory == null) return false;
 		if (inventory.level == settlement.getLevel()) return settlement.storageManager.hasInventory(inventory);
 		return getState(settlement).storage.get(getPosition(inventory)) == inventory;
+
 	}
 
 	public static boolean hasWorkstation(ServerSettlementData settlement, SettlementWorkstation workstation) {
+
 		if (settlement == null || workstation == null) return false;
 		if (!(workstation instanceof SettlementLevelWorkstation)) return settlement.storageManager.hasWorkstation(workstation);
 		return getState(settlement).workstations.get(getPosition(workstation)) == workstation;
+
 	}
 
 	public static void persistStorageConfig(ServerSettlementData settlement, SettlementInventory inventory) {
+
 		if (settlement == null || inventory == null || inventory.level == null) return;
 		if (inventory.level.getIdentifier().equals(settlement.getLevel().getIdentifier())) return;
 		SettlementLevelManagerLevelData data = SettlementLevelManagerLevelData.get(settlement.getLevel(), true);
 		if (data != null) data.setStorageConfig(settlement.uniqueID, inventory.level.getIdentifier(), inventory.tileX, inventory.tileY, inventory.priority, inventory.filter, SettlementStockSystem.getTargets(inventory));
+
 	}
 
 	public static void persistWorkstationRecipes(ServerSettlementData settlement, SettlementWorkstation workstation) {
+
 		if (settlement == null || workstation == null || !(workstation instanceof SettlementLevelWorkstation)) return;
 		LevelIdentifier levelIdentifier = ((SettlementLevelWorkstation)workstation).getLevel().getIdentifier();
 		SettlementLevelManagerLevelData data = SettlementLevelManagerLevelData.get(settlement.getLevel(), true);
 		if (data != null) data.setWorkstationRecipes(settlement.uniqueID, levelIdentifier, workstation.tileX, workstation.tileY, workstation.recipes);
+
 	}
 
 	public static void restorePersisted(ServerSettlementData settlement) {
+
 		if (settlement == null || settlement.getLevel() == null) return;
 		State state = getState(settlement);
 		if (state.restored) return;
@@ -368,9 +426,11 @@ public final class SettlementLevelStorageManager {
 		if (Logging.logEnabled && (restoredStorage > 0 || restoredWorkstations > 0)) {
 			Logging.logMessage("[LevelManager] Restored level-aware manager entries settlement=" + settlement.uniqueID + " storage=" + restoredStorage + " workstations=" + restoredWorkstations);
 		}
+
 	}
 
 	public static void clearInvalids(ServerSettlementData settlement) {
+
 		if (settlement == null) return;
 		SettlementLevelDomain domain = SettlementMultiLevelSystem.get(settlement);
 		if (domain == null) return;
@@ -386,20 +446,27 @@ public final class SettlementLevelStorageManager {
 			if (!domain.isTileWithinBounds(entry.getKey()) || !entry.getValue().isTileValid()) workstationRemoves.add(entry.getKey());
 		}
 		for (SettlementLevelPosition key : workstationRemoves) removeWorkstation(settlement, key.levelIdentifier, key.tileX, key.tileY);
+
 	}
 
 	public static void remove(ServerSettlementData settlement) {
+
 		if (settlement == null) return;
 		states.remove(settlement);
+		SettlementFoodAvailabilityCache.remove(settlement);
 		SettlementLevelManagerLevelData levelData = SettlementLevelManagerLevelData.get(settlement.getLevel(), false);
 		if (levelData != null) levelData.clearSettlement(settlement.uniqueID);
+
 	}
 
 	private static State getState(ServerSettlementData settlement) {
+
 		return states.computeIfAbsent(settlement, ignored -> new State());
+
 	}
 
 	private static boolean isValidTarget(ServerSettlementData settlement, Level level, int tileX, int tileY, String kind) {
+
 		if (settlement == null || level == null) return false;
 		SettlementLevelDomain domain = SettlementMultiLevelSystem.get(settlement);
 		if (domain == null || !domain.isTileWithinBounds(level.getIdentifier(), tileX, tileY)) {
@@ -407,12 +474,15 @@ public final class SettlementLevelStorageManager {
 			return false;
 		}
 		return true;
+
 	}
 
 	private static void persistEntry(ServerSettlementData settlement, SettlementLevelManagerLevelData.EntryType type, SettlementLevelPosition position, boolean present) {
+
 		if (settlement == null || position == null) return;
 		SettlementLevelManagerLevelData data = SettlementLevelManagerLevelData.get(settlement.getLevel(), true);
 		if (data != null) data.setEntry(settlement.uniqueID, type, position.levelIdentifier, position.tileX, position.tileY, present);
+
 	}
 
 	private static final class State {

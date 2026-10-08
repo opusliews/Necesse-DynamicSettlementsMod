@@ -23,6 +23,8 @@ import necesse.inventory.recipe.Recipe;
 import opusliews.crafting.CraftingTime;
 import opusliews.crafting.CraftingAutoStockSystem;
 import opusliews.crafting.CraftingInputProtectionSystem;
+import opusliews.crafting.CraftingStationLinkCache;
+import opusliews.forge.ForgeManualCleanupSystem;
 import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
 
@@ -37,6 +39,8 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 	private Point taskBoard;
 	private boolean autoStockMissingIngredients;
 	private transient boolean inputProtectionInitialized;
+	private transient boolean linkCacheInitialized;
+	private transient boolean linkValidationDirty;
 
 	protected DynamicCraftingStationObjectEntity(Level level, String type, int tileX, int tileY) {
 		super(level, type, tileX, tileY);
@@ -46,6 +50,7 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 
 	@Override
 	public void addSaveData(SaveData save) {
+
 		super.addSaveData(save);
 		save.addSaveData(InventorySave.getSave(inventory, "INVENTORY"));
 		addLinkListSaveData(save, "inputStorages", inputStorages);
@@ -53,10 +58,12 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		addLinkListSaveData(save, "linkedForges", linkedForges);
 		addLinkSaveData(save, "taskBoard", taskBoard);
 		save.addBoolean("autoStockMissingIngredients", autoStockMissingIngredients);
+
 	}
 
 	@Override
 	public void applyLoadData(LoadData save) {
+
 		super.applyLoadData(save);
 		LoadData inventoryData = save.getFirstLoadDataByName("INVENTORY");
 		if (inventoryData != null) inventory.override(InventorySave.loadSave(inventoryData));
@@ -69,10 +76,15 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		linkedForges.addAll(readLinkListSaveData(save, "linkedForges"));
 		taskBoard = readLinkSaveData(save, "taskBoard");
 		autoStockMissingIngredients = save.getBoolean("autoStockMissingIngredients", false);
+		linkCacheInitialized = false;
+		linkValidationDirty = false;
+		if (getLevel().isServer()) ForgeManualCleanupSystem.onStationForgeLinksChanged(this);
+
 	}
 
 	@Override
 	public void setupContentPacket(PacketWriter writer) {
+
 		super.setupContentPacket(writer);
 		inventory.writeContent(writer);
 		writeLinks(writer, inputStorages);
@@ -80,10 +92,12 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		writeLinks(writer, linkedForges);
 		writeLink(writer, taskBoard);
 		writer.putNextBoolean(autoStockMissingIngredients);
+
 	}
 
 	@Override
 	public void applyContentPacket(PacketReader reader) {
+
 		super.applyContentPacket(reader);
 		inventory.override(Inventory.getInventory(reader));
 		inputStorages.clear();
@@ -94,57 +108,100 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		linkedForges.addAll(readLinks(reader));
 		taskBoard = readLink(reader);
 		autoStockMissingIngredients = reader.getNextBoolean();
+
 	}
 
 	@Override
 	public ArrayList<InventoryItem> getDroppedItems() {
+
 		ArrayList<InventoryItem> list = new ArrayList<>();
 		if (!inventory.isSlotClear(0)) list.add(inventory.getItem(0));
 		return list;
+
 	}
 
 	@Override
 	public void remove() {
+
+		CraftingStationLinkCache.removeStation(this);
+		ForgeManualCleanupSystem.onStationForgeLinksChanged(this);
 		CraftingAutoStockSystem.removeStation(this);
 		CraftingInputProtectionSystem.removeStation(this);
 		super.remove();
+
 	}
 
 	@Override
 	public void clientTick() {
+
 		super.clientTick();
 		inventory.tickItems((TileEntity)this);
+
 	}
 
 	@Override
 	public void serverTick() {
+
 		super.serverTick();
-		validateStorageLinks();
-		validateForgeLinks();
-		validateTaskBoard();
+		if (!linkCacheInitialized || linkValidationDirty) {
+			initializeLinkCache();
+		}
+
 		inventory.tickItems(this);
+
 		if (!inputProtectionInitialized) {
 			inputProtectionInitialized = true;
 			CraftingInputProtectionSystem.refreshStation(this);
 		}
 		CraftingAutoStockSystem.tickStation(this);
 		serverTickInventorySync(getLevel().getServer(), this);
+
+	}
+
+	private void initializeLinkCache() {
+
+		// Saved links are authoritative, but targets may not have existed yet while
+		// applyLoadData was running. Validate once on the first real server tick,
+		// after object entities have been restored, then switch to event-driven checks.
+		validateStorageLinks();
+		validateForgeLinks();
+		validateTaskBoard();
+		CraftingStationLinkCache.refreshStation(this);
+		linkCacheInitialized = true;
+		linkValidationDirty = false;
+
+	}
+
+	public void onLinkedObjectChanged(int changedTileX, int changedTileY) {
+
+		if (!getLevel().isServer()) return;
+		Point changed = new Point(changedTileX, changedTileY);
+		boolean linked = containsPoint(inputStorages, changed)
+				|| containsPoint(outputStorages, changed)
+				|| containsPoint(linkedForges, changed)
+				|| taskBoard != null && taskBoard.equals(changed);
+		if (linked) linkValidationDirty = true;
+
 	}
 
 	private void validateStorageLinks() {
+
 		boolean changed = inputStorages.removeIf(point -> !isValidLinkedStorage(point));
 		changed |= outputStorages.removeIf(point -> !isValidLinkedStorage(point));
 		if (changed) {
 			if (getLevel().isServer()) {
+			CraftingStationLinkCache.refreshStation(this);
 			CraftingAutoStockSystem.onStationLinksChanged(this);
 			CraftingInputProtectionSystem.refreshStation(this);
-		}
+			}
 			markDirty();
 			syncContent();
 		}
+
 	}
 
 	private boolean isValidLinkedStorage(Point point) {
+
 		if (!isWithinStorageLinkRange(point.x, point.y)) return false;
 
 		LevelObject object = getLevel().getLevelObject(point.x, point.y);
@@ -158,16 +215,20 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 
 		OEInventory linkedInventory = (OEInventory)objectEntity;
 		return linkedInventory.getInventory() != null && linkedInventory.getSettlementStorage() != null;
+
 	}
 
 	private void validateForgeLinks() {
+
 		if (!supportsForgeLinks()) {
 			if (!linkedForges.isEmpty()) {
 				linkedForges.clear();
 				if (getLevel().isServer()) {
-			CraftingAutoStockSystem.onStationLinksChanged(this);
-			CraftingInputProtectionSystem.refreshStation(this);
-		}
+					CraftingStationLinkCache.refreshStation(this);
+					ForgeManualCleanupSystem.onStationForgeLinksChanged(this);
+					CraftingAutoStockSystem.onStationLinksChanged(this);
+					CraftingInputProtectionSystem.refreshStation(this);
+				}
 				markDirty();
 				syncContent();
 			}
@@ -177,15 +238,19 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		boolean changed = linkedForges.removeIf(point -> !isValidLinkedForge(point));
 		if (changed) {
 			if (getLevel().isServer()) {
-			CraftingAutoStockSystem.onStationLinksChanged(this);
-			CraftingInputProtectionSystem.refreshStation(this);
-		}
+				CraftingStationLinkCache.refreshStation(this);
+				ForgeManualCleanupSystem.onStationForgeLinksChanged(this);
+				CraftingAutoStockSystem.onStationLinksChanged(this);
+				CraftingInputProtectionSystem.refreshStation(this);
+			}
 			markDirty();
 			syncContent();
 		}
+
 	}
 
 	private boolean isValidLinkedForge(Point point) {
+
 		if (point == null || !isWithinStorageLinkRange(point.x, point.y)) return false;
 
 		LevelObject object = getLevel().getLevelObject(point.x, point.y);
@@ -195,9 +260,11 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		if (master == null || master.tileX != point.x || master.tileY != point.y) return false;
 
 		return master.getObjectEntity() instanceof ProcessingForgeObjectEntity;
+
 	}
 
 	private void validateTaskBoard() {
+
 		if (taskBoard == null) return;
 
 		ObjectEntity entity = getLevel().entityManager.getObjectEntity(taskBoard.x, taskBoard.y);
@@ -208,20 +275,26 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 
 		Point linkedStation = getTaskBoardLinkedStation(entity);
 		if (linkedStation == null || linkedStation.x != tileX || linkedStation.y != tileY) setTaskBoard(null);
+
 	}
 
 	@Override
 	public void markClean() {
+
 		super.markClean();
 		inventory.clean();
+
 	}
 
 	public void setOutput(InventoryItem item) {
+
 		inventory.setItem(0, item);
 		markDirty();
+
 	}
 
 	public void ejectOutput() {
+
 		InventoryItem item = inventory.getItem(0);
 		if (item == null) return;
 
@@ -235,165 +308,219 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 
 		inventory.clearSlot(0);
 		markDirty();
+
 	}
 
 	public ArrayList<Point> getInputStorages() {
+
 		return copyPoints(inputStorages);
+
 	}
 
 	public ArrayList<Point> getOutputStorages() {
+
 		return copyPoints(outputStorages);
+
 	}
 
 	public ArrayList<Point> getLinkedForges() {
+
 		return copyPoints(linkedForges);
+
 	}
 
-
 	public boolean isAutoStockMissingIngredients() {
+
 		return autoStockMissingIngredients;
+
 	}
 
 	public void setAutoStockMissingIngredients(boolean value) {
+
 		if (autoStockMissingIngredients == value) return;
 		autoStockMissingIngredients = value;
 		if (getLevel().isServer() && !value) CraftingAutoStockSystem.removeStation(this);
 		markDirty();
 		syncContent();
+
 	}
 
 	public Point getTaskBoard() {
+
 		return taskBoard == null ? null : new Point(taskBoard);
+
 	}
 
 	public boolean hasInputStorage(Point point) {
+
 		return containsPoint(inputStorages, point);
+
 	}
 
 	public boolean hasOutputStorage(Point point) {
+
 		return containsPoint(outputStorages, point);
+
 	}
 
 	public boolean hasLinkedForge(Point point) {
+
 		return containsPoint(linkedForges, point);
+
 	}
 
 	public void addInputStorage(Point point) {
+
 		if (point == null || containsPoint(inputStorages, point)) return;
 		inputStorages.add(new Point(point));
 		if (getLevel().isServer()) {
+			CraftingStationLinkCache.refreshStation(this);
 			CraftingAutoStockSystem.onStationLinksChanged(this);
 			CraftingInputProtectionSystem.refreshStation(this);
 		}
 		markDirty();
 		syncContent();
+
 	}
 
 	public void removeInputStorage(Point point) {
+
 		if (point == null || !inputStorages.remove(point)) return;
 		if (getLevel().isServer()) {
+			CraftingStationLinkCache.refreshStation(this);
 			CraftingAutoStockSystem.onStationLinksChanged(this);
 			CraftingInputProtectionSystem.refreshStation(this);
 		}
 		markDirty();
 		syncContent();
+
 	}
 
 	public void addOutputStorage(Point point) {
+
 		if (point == null || containsPoint(outputStorages, point)) return;
 		outputStorages.add(new Point(point));
 		if (getLevel().isServer()) {
+			CraftingStationLinkCache.refreshStation(this);
 			CraftingAutoStockSystem.onStationLinksChanged(this);
 			CraftingInputProtectionSystem.refreshStation(this);
 		}
 		markDirty();
 		syncContent();
+
 	}
 
 	public void removeOutputStorage(Point point) {
+
 		if (point == null || !outputStorages.remove(point)) return;
 		if (getLevel().isServer()) {
+			CraftingStationLinkCache.refreshStation(this);
 			CraftingAutoStockSystem.onStationLinksChanged(this);
 			CraftingInputProtectionSystem.refreshStation(this);
 		}
 		markDirty();
 		syncContent();
+
 	}
 
 	public void clearInputStorages() {
+
 		if (inputStorages.isEmpty()) return;
 		inputStorages.clear();
 		if (getLevel().isServer()) {
+			CraftingStationLinkCache.refreshStation(this);
 			CraftingAutoStockSystem.onStationLinksChanged(this);
 			CraftingInputProtectionSystem.refreshStation(this);
 		}
 		markDirty();
 		syncContent();
+
 	}
 
 	public void clearOutputStorages() {
+
 		if (outputStorages.isEmpty()) return;
 		outputStorages.clear();
 		if (getLevel().isServer()) {
+			CraftingStationLinkCache.refreshStation(this);
 			CraftingAutoStockSystem.onStationLinksChanged(this);
 			CraftingInputProtectionSystem.refreshStation(this);
 		}
 		markDirty();
 		syncContent();
+
 	}
 
 	public void addLinkedForge(Point point) {
+
 		if (!supportsForgeLinks() || point == null || containsPoint(linkedForges, point)) return;
 		linkedForges.add(new Point(point));
 		if (getLevel().isServer()) {
+			CraftingStationLinkCache.refreshStation(this);
+			ForgeManualCleanupSystem.onStationForgeLinksChanged(this);
 			CraftingAutoStockSystem.onStationLinksChanged(this);
 			CraftingInputProtectionSystem.refreshStation(this);
 		}
 		markDirty();
 		syncContent();
+
 	}
 
 	public void removeLinkedForge(Point point) {
+
 		if (point == null || !linkedForges.remove(point)) return;
 		if (getLevel().isServer()) {
+			CraftingStationLinkCache.refreshStation(this);
+			ForgeManualCleanupSystem.onStationForgeLinksChanged(this);
 			CraftingAutoStockSystem.onStationLinksChanged(this);
 			CraftingInputProtectionSystem.refreshStation(this);
 		}
 		markDirty();
 		syncContent();
+
 	}
 
 	public void clearLinkedForges() {
+
 		if (linkedForges.isEmpty()) return;
 		linkedForges.clear();
 		if (getLevel().isServer()) {
+			CraftingStationLinkCache.refreshStation(this);
+			ForgeManualCleanupSystem.onStationForgeLinksChanged(this);
 			CraftingAutoStockSystem.onStationLinksChanged(this);
 			CraftingInputProtectionSystem.refreshStation(this);
 		}
 		markDirty();
 		syncContent();
+
 	}
 
 	public ProcessingForgeObjectEntity getLinkedForge(Point point) {
+
 		if (!hasLinkedForge(point) || !isValidLinkedForge(point)) return null;
 		ObjectEntity entity = getLevel().entityManager.getObjectEntity(point.x, point.y);
 		return entity instanceof ProcessingForgeObjectEntity ? (ProcessingForgeObjectEntity)entity : null;
+
 	}
 
 	public ArrayList<ProcessingForgeObjectEntity> getValidLinkedForges() {
+
 		ArrayList<ProcessingForgeObjectEntity> result = new ArrayList<>();
 		for (Point point : linkedForges) {
 			ProcessingForgeObjectEntity forge = getLinkedForge(point);
 			if (forge != null) result.add(forge);
 		}
 		return result;
+
 	}
 
 	public void setTaskBoard(Point point) {
+
 		Point old = taskBoard == null ? null : new Point(taskBoard);
 		taskBoard = point == null ? null : new Point(point);
 		boolean changed = old == null ? taskBoard != null : !old.equals(taskBoard);
 		if (changed && getLevel().isServer()) {
+			CraftingStationLinkCache.refreshStation(this);
 			CraftingAutoStockSystem.onStationLinksChanged(this);
 			CraftingInputProtectionSystem.refreshStation(this);
 		}
@@ -416,9 +543,11 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		}
 
 		syncContent();
+
 	}
 
 	public boolean isStorageInputForOtherStation(Point point) {
+
 		for (Object object : getLevel().entityManager.objectEntities) {
 			if (!(object instanceof DynamicCraftingStationObjectEntity) || object == this) continue;
 
@@ -426,90 +555,129 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 			if (other.hasInputStorage(point)) return true;
 		}
 		return false;
+
 	}
 
 	public boolean isWithinStorageLinkRange(int x, int y) {
+
 		return Math.abs(x - tileX) <= STORAGE_LINK_RADIUS && Math.abs(y - tileY) <= STORAGE_LINK_RADIUS;
+
 	}
 
 	public final boolean canUseTaskBoard(ObjectEntity entity) {
+
 		return isCompatibleTaskBoard(entity);
+
 	}
 
 	public final Point getLinkedStationForTaskBoard(ObjectEntity entity) {
+
 		return isCompatibleTaskBoard(entity) ? getTaskBoardLinkedStation(entity) : null;
+
 	}
 
 	public boolean canStartPlayerCraft(PlayerMob player, Recipe recipe) {
+
 		return true;
+
 	}
 
 	public boolean canCompletePlayerCraft(PlayerMob player, Recipe recipe) {
+
 		return true;
+
 	}
 
 	public void onPlayerCraftStarted(PlayerMob player, Recipe recipe) {
+
 	}
 
 	public void onPlayerCraftCompleted(PlayerMob player, Recipe recipe, InventoryItem resultItem) {
+
 	}
 
 	protected boolean isCompatibleTaskBoard(ObjectEntity entity) {
+
 		return entity instanceof CraftingTaskBoardObjectEntity;
+
 	}
 
 	protected Point getTaskBoardLinkedStation(ObjectEntity entity) {
+
 		return ((CraftingTaskBoardObjectEntity)entity).getLinkedStation();
+
 	}
 
 	protected void setTaskBoardLinkedStation(ObjectEntity entity, Point station, boolean sync) {
+
 		((CraftingTaskBoardObjectEntity)entity).setLinkedStationInternal(station, sync);
+
 	}
 
 	public boolean supportsForgeLinks() {
+
 		return false;
+
 	}
 
 	public String getTaskBoardTextureKey() {
+
 		return "unlinked";
+
 	}
 
 	public boolean supportsSettlerCraftingTasks() {
+
 		return false;
+
 	}
 
 	public boolean canSettlerPerformCrafting(HumanMob worker) {
+
 		return false;
+
 	}
 
 	public String getSettlerCraftingActivityText() {
+
 		return Localization.translate("activities", "craftingstation");
+
 	}
 
 	public String getSettlerCraftingWorkItemStringID() {
+
 		return null;
+
 	}
 
 	public int getSettlerCraftingActionDelay(HumanMob worker, Recipe recipe) {
+
 		int happiness = Math.max(0, Math.min(100, worker.getSettlerHappiness()));
 		float happinessMultiplier = 2.5F - happiness * 0.0225F;
 		return (int)Math.min(Integer.MAX_VALUE, Math.round(CraftingTime.get(recipe) * happinessMultiplier));
+
 	}
 
 	public String getSettlerCraftingProblem(Recipe recipe) {
+
 		return null;
+
 	}
 
 	public void onSettlerCraftStarted(HumanMob worker, Recipe recipe) {
+
 	}
 
 	public void onSettlerCraftCompleted(HumanMob worker, Recipe recipe, InventoryItem resultItem) {
+
 	}
 
 	public void playSettlerCraftingWorkEffect() {
+
 	}
 
 	public StationState captureStationState() {
+
 		InventoryItem output = inventory.getItem(0);
 		return new StationState(
 				output == null ? null : output.copy(),
@@ -518,9 +686,11 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 				copyPoints(linkedForges),
 				taskBoard == null ? null : new Point(taskBoard)
 		);
+
 	}
 
 	public void applyStationState(StationState state) {
+
 		if (state == null) return;
 
 		inventory.setItem(0, state.output == null ? null : state.output.copy());
@@ -531,24 +701,37 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		linkedForges.clear();
 		linkedForges.addAll(copyPoints(state.linkedForges));
 		taskBoard = state.taskBoard == null ? null : new Point(state.taskBoard);
+		if (getLevel().isServer()) {
+			linkCacheInitialized = false;
+			linkValidationDirty = false;
+			CraftingStationLinkCache.refreshStation(this);
+			ForgeManualCleanupSystem.onStationForgeLinksChanged(this);
+			CraftingAutoStockSystem.onStationLinksChanged(this);
+			CraftingInputProtectionSystem.refreshStation(this);
+		}
 		markDirty();
 		syncContent();
+
 	}
 
 	public static StationState captureStationState(Level level, int tileX, int tileY) {
+
 		if (level == null) return null;
 		ObjectEntity entity = level.entityManager.getObjectEntity(tileX, tileY);
 		return entity instanceof DynamicCraftingStationObjectEntity
 				? ((DynamicCraftingStationObjectEntity)entity).captureStationState()
 				: null;
+
 	}
 
 	public static void applyStationState(Level level, int tileX, int tileY, StationState state) {
+
 		if (level == null || state == null) return;
 		ObjectEntity entity = level.entityManager.getObjectEntity(tileX, tileY);
 		if (entity instanceof DynamicCraftingStationObjectEntity) {
 			((DynamicCraftingStationObjectEntity)entity).applyStationState(state);
 		}
+
 	}
 
 	public static class StationState {
@@ -574,68 +757,93 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 	}
 
 	private void syncContent() {
+
 		if (getLevel().isServer() && getLevel().getServer() != null) {
 			getLevel().getServer().network.sendToClientsWithEntity(new PacketObjectEntity(this), this);
 		}
+
 	}
 
 	@Override
 	public Inventory getInventory() {
+
 		return inventory;
+
 	}
 
 	@Override
 	public GameMessage getInventoryName() {
+
 		return getObject().getLocalization();
+
 	}
 
 	@Override
 	public boolean canSetInventoryName() {
+
 		return false;
+
 	}
 
 	@Override
 	public boolean canQuickStackInventory() {
+
 		return false;
+
 	}
 
 	@Override
 	public boolean canRestockInventory() {
+
 		return false;
+
 	}
 
 	@Override
 	public boolean canSortInventory() {
+
 		return false;
+
 	}
 
 	@Override
 	public boolean canUseForNearbyCrafting() {
+
 		return false;
+
 	}
 
 	@Override
 	public InventoryRange getSettlementStorage() {
+
 		return null;
+
 	}
 
 	private static ArrayList<Point> copyPoints(ArrayList<Point> points) {
+
 		ArrayList<Point> copy = new ArrayList<>(points.size());
 		for (Point point : points) copy.add(new Point(point));
 		return copy;
+
 	}
 
 	private static boolean containsPoint(ArrayList<Point> points, Point target) {
+
 		return target != null && points.contains(target);
+
 	}
 
 	private static void addLinkListSaveData(SaveData save, String key, ArrayList<Point> points) {
+
 		SaveData list = new SaveData(key);
 		for (Point point : points) addLinkSaveData(list, "link", point);
 		save.addSaveData(list);
+
 	}
 
 	private static ArrayList<Point> readLinkListSaveData(LoadData save, String key) {
+
 		ArrayList<Point> points = new ArrayList<>();
 		LoadData list = save.getFirstLoadDataByName(key);
 		if (list == null) return points;
@@ -646,50 +854,63 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 			if (x != Integer.MIN_VALUE && y != Integer.MIN_VALUE) points.add(new Point(x, y));
 		}
 		return points;
+
 	}
 
 	private static void addLinkSaveData(SaveData save, String key, Point point) {
+
 		if (point == null) return;
 
 		SaveData link = new SaveData(key);
 		link.addInt("x", point.x);
 		link.addInt("y", point.y);
 		save.addSaveData(link);
+
 	}
 
 	private static Point readLinkSaveData(LoadData save, String key) {
+
 		LoadData link = save.getFirstLoadDataByName(key);
 		if (link == null) return null;
 
 		int x = link.getInt("x", Integer.MIN_VALUE, false);
 		int y = link.getInt("y", Integer.MIN_VALUE, false);
 		return x == Integer.MIN_VALUE || y == Integer.MIN_VALUE ? null : new Point(x, y);
+
 	}
 
 	private static void writeLinks(PacketWriter writer, ArrayList<Point> points) {
+
 		writer.putNextInt(points.size());
 		for (Point point : points) {
 			writer.putNextInt(point.x);
 			writer.putNextInt(point.y);
 		}
+
 	}
 
 	private static ArrayList<Point> readLinks(PacketReader reader) {
+
 		int count = reader.getNextInt();
 		ArrayList<Point> points = new ArrayList<>(Math.max(0, count));
 		for (int i = 0; i < count; i++) points.add(new Point(reader.getNextInt(), reader.getNextInt()));
 		return points;
+
 	}
 
 	private static void writeLink(PacketWriter writer, Point point) {
+
 		writer.putNextBoolean(point != null);
 		if (point != null) {
 			writer.putNextInt(point.x);
 			writer.putNextInt(point.y);
 		}
+
 	}
 
 	private static Point readLink(PacketReader reader) {
+
 		return reader.getNextBoolean() ? new Point(reader.getNextInt(), reader.getNextInt()) : null;
+
 	}
 }

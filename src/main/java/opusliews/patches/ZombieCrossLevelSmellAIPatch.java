@@ -59,14 +59,16 @@ public class ZombieCrossLevelSmellAIPatch {
 	}
 
 	public static class HostileCrossLevelSmellAINode extends MoveTaskAINode {
-		private static final long smellSearchCooldownMs = 1000L;
+		private static final int smellUpdateIntervalTicks = 40;
+		private static final long serverTickMs = 50L;
+		private static final long smellUpdateIntervalMs = smellUpdateIntervalTicks * serverTickMs;
 		private static final long routeRetryCooldownMs = 1500L;
 
 		private final TargetFinderAINode primaryTargetFinder;
 		private final int normalSearchDistance;
 		private Mob smellTarget;
 		private SettlementLadderLink activeLink;
-		private long nextSmellSearchTime;
+		private long nextSmellUpdateTime;
 		private long nextRouteSearchTime;
 
 		public HostileCrossLevelSmellAINode(TargetFinderAINode primaryTargetFinder) {
@@ -80,6 +82,10 @@ public class ZombieCrossLevelSmellAIPatch {
 
 		@Override
 		public void init(Mob mob, Blackboard blackboard) {
+			// Stagger scans across the 40-tick window so a freshly loaded group of hostiles
+			// does not all perform its cross-level smell search on the same server tick.
+			long phaseTicks = Math.floorMod(mob.getUniqueID(), smellUpdateIntervalTicks);
+			nextSmellUpdateTime = mob.getTime() + phaseTicks * serverTickMs;
 		}
 
 		@Override
@@ -90,6 +96,7 @@ public class ZombieCrossLevelSmellAIPatch {
 
 		@Override
 		public AINodeResult tick(Mob mob, Blackboard blackboard) {
+
 			if (!isEligibleHostile(mob)) {
 				stop(mob, blackboard, true);
 				return AINodeResult.FAILURE;
@@ -102,14 +109,21 @@ public class ZombieCrossLevelSmellAIPatch {
 			}
 
 			boolean followingSmell = isFollowingSmell(blackboard);
+			long now = mob.getTime();
+
+			// Cross-level scent acquisition is deliberately sampled only once every 40
+			// simulated server ticks (~2 seconds). Once a hostile is already following a
+			// scent, keep ticking the active movement/route every tick so navigation and
+			// ladder transitions remain smooth and immediately interruptible.
+			if (!followingSmell) {
+				if (now < nextSmellUpdateTime) return AINodeResult.FAILURE;
+				nextSmellUpdateTime = now + smellUpdateIntervalMs;
+			}
+
 			if (!isIdleForSmell(mob, blackboard)) {
 				stop(mob, blackboard, true);
 				return AINodeResult.FAILURE;
 			}
-
-			long now = mob.getTime();
-			if (smellTarget == null && now < nextSmellSearchTime) return AINodeResult.FAILURE;
-			if (smellTarget == null) nextSmellSearchTime = now + smellSearchCooldownMs;
 
 			SettlementLevelDomain domain = SettlementMultiLevelSystem.findDomainQuiet(level.getServer(), level.getIdentifier(), mob.getTileX(), mob.getTileY());
 			if (domain == null) {
@@ -129,8 +143,10 @@ public class ZombieCrossLevelSmellAIPatch {
 				smellTarget = null;
 				activeLink = null;
 				clearTask();
-				if (hadTarget) nextSmellSearchTime = now + smellSearchCooldownMs;
-				if (now < nextSmellSearchTime && hadTarget) return AINodeResult.FAILURE;
+				if (hadTarget) {
+					nextSmellUpdateTime = now + smellUpdateIntervalMs;
+					return AINodeResult.FAILURE;
+				}
 				smellTarget = findSmellTarget(mob, domain, targetType);
 				if (smellTarget == null) return AINodeResult.FAILURE;
 				if (Logging.logEnabled) Logging.logMessage("[HostileSmell] Hostile acquired cross-level scent mob=" + describeMob(mob)
@@ -166,10 +182,12 @@ public class ZombieCrossLevelSmellAIPatch {
 			}
 
 			return super.tick(mob, blackboard);
+
 		}
 
 		@Override
 		public AINodeResult tickNode(Mob mob, Blackboard blackboard) {
+
 			if (activeLink == null || mob.getLevel() == null) return AINodeResult.FAILURE;
 			SettlementLevelDomain domain = SettlementMultiLevelSystem.findDomainQuiet(mob.getLevel().getServer(), mob.getLevel().getIdentifier(), mob.getTileX(), mob.getTileY());
 			if (domain == null) return AINodeResult.FAILURE;
@@ -184,6 +202,7 @@ public class ZombieCrossLevelSmellAIPatch {
 				boolean moving = path.moveIfWithin(-1, 0, null);
 				return moving ? AINodeResult.RUNNING : AINodeResult.FAILURE;
 			});
+
 		}
 
 		@Override

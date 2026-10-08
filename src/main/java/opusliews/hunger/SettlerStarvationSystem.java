@@ -25,6 +25,7 @@ import opusliews.multilevelsettlement.SettlementMultiLevelSystem;
 import opusliews.progression.GuideProgressionSystem;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.function.Predicate;
@@ -45,15 +46,18 @@ public final class SettlerStarvationSystem {
 	}
 
 	public static void serverTick(HumanMob human) {
+
 		if (human == null || !human.isServer() || !human.isSettler() || human.removed()) return;
 
 		tickSleepingHunger(human);
 		debugCaveHunger(human);
 		tickEmergencyEating(human);
 		tickStarvation(human);
+
 	}
 
 	public static void resetTransientStateAfterDebugHungerChange(HumanMob human) {
+
 		if (human == null) return;
 		StarvationState removed = starvationStates.remove(human);
 		if (Logging.logEnabled) {
@@ -62,67 +66,101 @@ public final class SettlerStarvationSystem {
 					+ " hunger=" + human.hungerLevel
 					+ " hadState=" + (removed != null));
 		}
+
 	}
 
 	public static boolean shouldBlockHealing(HumanMob human, int requestedHealth) {
+
 		return human != null
 				&& human.isServer()
 				&& human.isSettler()
 				&& human.hungerLevel <= 0.0F
 				&& requestedHealth > human.getHealth();
+
 	}
 
 	public static void logBlockedHealing(HumanMob human, int requestedHealth) {
+
 		if (human == null || !Logging.logEnabled) return;
 		Logging.logMessage("[Starvation] Blocked healing while starving settler=" + human.getStringID() + "#" + human.getUniqueID()
 				+ " currentHealth=" + human.getHealth() + " requestedHealth=" + requestedHealth);
+
 	}
 
 	public static boolean isSleepingInBed(HumanMob human) {
+
 		if (human == null) return false;
 		ObjectUserActive user = human.getUsingObject();
 		return user != null && user.object instanceof SettlerBedObject;
+
 	}
 
 	public static boolean hasAccessibleFood(HumanMob human) {
+
 		if (human == null) return false;
 		return hasWorkInventoryFood(human) || hasReachableStorageFood(human);
+
 	}
 
 	public static boolean hasAccessibleFoodAnyLevel(HumanMob human) {
+
 		if (human == null) return false;
 		if (hasAccessibleFood(human)) return true;
 		return SettlementCrossLevelJobSystem.hasReachableFoodOnOtherLevel(human);
+
 	}
 
 	public static boolean isEmergencyEating(HumanMob human) {
+
 		if (human == null) return false;
 		StarvationState state = starvationStates.get(human);
 		return state != null && state.emergencyEating && human.hungerLevel < emergencyEatingFullThreshold;
+
 	}
 
 	public static boolean shouldConsumeFood(HumanMob human) {
+
 		return human != null && (human.hungerLevel <= 0.25F || isEmergencyEating(human));
+
 	}
 
 	public static boolean hasWorkInventoryFood(HumanMob human) {
+
 		if (human == null) return false;
 		ItemCategoriesFilter dietFilter = human.levelSettler == null ? null : human.levelSettler.dietFilter;
 		Predicate<InventoryItem> foodFilter = item -> isEdibleFood(item, dietFilter);
 		return human.getWorkInventory().stream().anyMatch(foodFilter);
+
 	}
 
 	public static boolean hasReachableStorageFood(HumanMob human) {
+
 		if (human == null) return false;
 
 		ItemCategoriesFilter dietFilter = human.levelSettler == null ? null : human.levelSettler.dietFilter;
 		Predicate<InventoryItem> foodFilter = item -> isEdibleFood(item, dietFilter);
 		try {
-			// This is deliberately a preview-only lookup. findPickupItems checks the worker's current
-			// restrict zone, movement estimate and unreserved future slots, but does not reserve them
-			// unless SettlementStoragePickupFuture.accept is called. Emergency checks must never consume
-			// storage reservations just by asking whether food is available.
-			return HasStorageLevelJob.findPickupItems(human, null, foodFilter).findAny().isPresent();
+			ServerSettlementData settlement = human.getSettlerSettlementServerData();
+			if (settlement != null && human.getLevel() != null
+					&& !SettlementFoodAvailabilityCache.levelMayContainEdibleFood(settlement, human.getLevel(), dietFilter)) {
+				return false;
+			}
+
+			// Keep vanilla's live job/restrict-zone/movement/reservation semantics. The cache only filters
+			// out storages that are confidently known not to contain compatible food, so a cache miss or
+			// uncertainty always falls through to the original live checks.
+			Iterator<?> storageJobs = HasStorageLevelJob.streamStorageJobs(human, null).iterator();
+			while (storageJobs.hasNext()) {
+				Object next = storageJobs.next();
+				if (!(next instanceof HasStorageLevelJob)) continue;
+				HasStorageLevelJob storageJob = (HasStorageLevelJob)next;
+				if (!SettlementFoodAvailabilityCache.storageMayContainEdibleFood(settlement, storageJob.settlementInventory, dietFilter)) continue;
+				if (!storageJob.settlementInventory.estimateCanMoveTo(human)) continue;
+				if (storageJob.settlementInventory.findFutureUnreservedSlots().filter(candidate -> foodFilter.test(candidate.item)).findAny().isPresent()) {
+					return true;
+				}
+			}
+			return false;
 		}
 		catch (Throwable error) {
 			if (Logging.logEnabled) {
@@ -133,9 +171,11 @@ public final class SettlerStarvationSystem {
 			}
 			return false;
 		}
+
 	}
 
 	public static boolean hasSurfaceAccess(HumanMob human) {
+
 		if (human == null || human.getLevel() == null) return false;
 		if (human.getSettlerSettlementServerData() == null) return false;
 
@@ -153,9 +193,11 @@ public final class SettlerStarvationSystem {
 		}
 
 		return SettlementCrossLevelRouting.findBestTransitionRouteQuiet(human, domain, SettlementLevelType.SURFACE) != null;
+
 	}
 
 	public static boolean isStrandedWithoutFood(HumanMob human) {
+
 		if (human == null || human.getLevel() == null || human.getSettlerSettlementServerData() == null) return false;
 
 		SettlementLevelDomain domain = SettlementMultiLevelSystem.get(human.getSettlerSettlementServerData());
@@ -163,9 +205,11 @@ public final class SettlerStarvationSystem {
 		if (domain.getLevelType(human.getLevel().getIdentifier()) != SettlementLevelType.CAVE) return false;
 		if (hasAccessibleFood(human)) return false;
 		return !hasSurfaceAccess(human);
+
 	}
 
 	private static void tickEmergencyEating(HumanMob human) {
+
 		long now = human.getWorldEntity().getTime();
 		StarvationState state = starvationStates.get(human);
 		if (state == null) {
@@ -247,9 +291,11 @@ public final class SettlerStarvationSystem {
 					+ " remoteLevelFood=" + remoteFoodAvailable
 					+ " level=" + (human.getLevel() == null ? "null" : human.getLevel().getIdentifier()));
 		}
+
 	}
 
 	private static boolean isCurrentFoodSequence(HumanMob human) {
+
 		if (human == null || human.ai == null) return false;
 		JobSequence sequence = (JobSequence)human.ai.blackboard.getObject(JobSequence.class, "currentJobSequence");
 		if (sequence == null) return false;
@@ -257,9 +303,11 @@ public final class SettlerStarvationSystem {
 		if (!(activity instanceof LocalMessage)) return false;
 		LocalMessage local = (LocalMessage)activity;
 		return "activities".equals(local.category) && "consuming".equals(local.key);
+
 	}
 
 	private static void debugCaveHunger(HumanMob human) {
+
 		if (!Logging.logEnabled || human == null || human.getLevel() == null || human.getSettlerSettlementServerData() == null) return;
 
 		SettlementLevelDomain domain = SettlementMultiLevelSystem.get(human.getSettlerSettlementServerData());
@@ -301,9 +349,11 @@ public final class SettlerStarvationSystem {
 				+ " surfaceAccess=" + surfaceAccess
 				+ " stranded=" + stranded);
 		state.lastDebugHunger = human.hungerLevel;
+
 	}
 
 	private static void tickSleepingHunger(HumanMob human) {
+
 		StarvationState state = starvationStates.get(human);
 		if (state == null) {
 			state = new StarvationState(human.getWorldEntity().getTime() + starvationDamageInterval, Math.max(1, human.getHealth()));
@@ -361,9 +411,11 @@ public final class SettlerStarvationSystem {
 			Logging.logMessage("[Starvation] Sleeping hunger reached safety floor settler=" + human.getStringID() + "#" + human.getUniqueID()
 					+ " hunger=" + human.hungerLevel + " sleepMinimum=" + state.sleepMinimumHunger);
 		}
+
 	}
 
 	private static void tickStarvation(HumanMob human) {
+
 		if (human.hungerLevel > 0.0F) {
 			StarvationState state = starvationStates.get(human);
 			if (state != null && state.starving) {
@@ -427,9 +479,11 @@ public final class SettlerStarvationSystem {
 						+ " damage=" + actualDamage + " health=" + human.getHealth() + " tick=" + state.damageTicks + "/" + starvationDamageTicksToDeath);
 			}
 		}
+
 	}
 
 	private static void revealStarvationJournal(HumanMob human) {
+
 		if (human == null) return;
 		if (human.getSettlerSettlementServerData() == null) {
 			if (Logging.logEnabled) {
@@ -440,9 +494,11 @@ public final class SettlerStarvationSystem {
 		}
 
 		GuideProgressionSystem.revealForSettlement(human.getSettlerSettlementServerData(), "starvation");
+
 	}
 
 	public static GameMessage replaceStarvationDeathMessage(GameMessage message) {
+
 		StarvationChatContext context = starvationChatContext.get();
 		if (context == null || message == null || context.expectedVanillaMessage == null || context.replacementMessage == null) return message;
 
@@ -460,9 +516,11 @@ public final class SettlerStarvationSystem {
 					+ " message=" + message.translate());
 		}
 		return message;
+
 	}
 
 	private static StarvationChatContext buildStarvationChatContext(HumanMob human) {
+
 		if (human == null) return null;
 		ServerSettlementData settlement = human.getSettlerSettlementServerData();
 		if (settlement == null) return null;
@@ -485,9 +543,11 @@ public final class SettlerStarvationSystem {
 				human.getStringID(),
 				human.getUniqueID()
 		);
+
 	}
 
 	private static void forceDownedByStarvation(HumanMob human) {
+
 		if (human == null || !human.isServer() || !human.isSettler() || human.isDowned()) return;
 
 		WorldSettings settings = human.getWorldSettings();
@@ -527,13 +587,16 @@ public final class SettlerStarvationSystem {
 					+ " downed=" + human.isDowned() + " health=" + human.getHealth()
 					+ " restoredCanSettlersDie=" + settings.canSettlersDie);
 		}
+
 	}
 
 	private static boolean isEdibleFood(InventoryItem item, ItemCategoriesFilter dietFilter) {
+
 		if (item == null || !item.item.isFoodItem()) return false;
 		if (dietFilter != null && !dietFilter.isItemAllowed(item.item)) return false;
 		FoodConsumableItem food = (FoodConsumableItem)item.item;
 		return food.nutrition > 0 && food.quality != null;
+
 	}
 
 	private static final class StarvationChatContext {
