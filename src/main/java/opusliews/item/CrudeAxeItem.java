@@ -8,6 +8,10 @@ import necesse.inventory.lootTable.presets.ToolsLootTable;
 import necesse.entity.mobs.itemAttacker.ItemAttackerMob;
 import necesse.entity.mobs.PlayerMob;
 import necesse.level.gameObject.GameObject;
+import necesse.level.gameObject.GrassObject;
+import necesse.level.gameObject.CustomWildFlowerObject;
+import necesse.level.gameObject.FlowerPatchObject;
+import necesse.level.gameObject.furniture.FlowerObject;
 import necesse.level.gameObject.TreeObject;
 import necesse.level.gameObject.TreeStumpObject;
 import necesse.level.maps.Level;
@@ -38,7 +42,11 @@ public class CrudeAxeItem extends CustomAxeToolItem {
 		}
 
 		GameObject object = level.getObject(layerID, tileX, tileY);
-		return object.getClass() == TreeObject.class
+		return object instanceof GrassObject
+				|| object instanceof CustomWildFlowerObject
+				|| object instanceof FlowerPatchObject
+				|| object instanceof FlowerObject
+				|| object.getClass() == TreeObject.class
 				|| object instanceof PlacedLogObject
 				|| object instanceof PlacedPlankObject
 				|| object instanceof TrapdoorObject
