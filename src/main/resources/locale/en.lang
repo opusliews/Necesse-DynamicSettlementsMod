@@ -654,7 +654,7 @@ guide21objective=Craft a [item=campfire] campfire and a [item=roastingstation] r
 guide22title=Let's cook some clay
 guide22objective=You have a new Journal entry for Dynamic Settlements. These will help guide you through some mechanics.\n\nTo complete this objective, complete the new Journal entry.
 guide23title=Let's cook some metal
-guide23objective=Craft a [item=forge] forge.\n\nForges require charcoal to run. Use the crafting guide book to see what you can make with each mold. For now, make a [item=thickironplate] thick iron plate, and a [item=sawblade] saw blade.
+guide23objective=Craft a [item=forge] forge.\n\nForges require charcoal to run.\n\nSome metal items need molds (the ones you cooked in the fire pit) to be crafted. Insert the mold you choose and with the mold insert either 4 x ore/1 x ingot together inside the forge. This will melt the metal into the mold and give you your item.\n\nUse the crafting guide book to see what you can make with each mold. For now, make a [item=thickironplate] thick iron plate, and a [item=sawblade] saw blade.
 guide24title=Let's work with metal
 guide24objective=Make a Crude Anvil by placing [input=mouse2] a [item=thickironplate] Thick Iron Plate over a tree stump.\n\nYou don't have a hammer yet, so you'll have to make do. With a [item=stone] stone in hand, interact [input=mouse2] with the Crude Anvil to use it.\n\nYou can retrieve your Thick Iron Plate at any time.
 guide25title=Let's cook together
