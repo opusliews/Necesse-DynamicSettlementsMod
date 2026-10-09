@@ -26,7 +26,7 @@ Important Note 3) This mod is reasonably stable for an early release but still m
 
 Important Note 4) This mod has a sizeable codebase and patches a number of vanilla systems. Most unrelated mods should work fine, but compatibility issues are possible, especially with other mods that also heavily modify the same systems. If you found any compatibility problems with other mods, please post them on the same github link above. I cannot promise compatibility with every mod or that every conflict will be fixable, but I will do my best to investigate them when time allows.
 
-Patch notes:
-1.0.0: First release
-1.0.1: Updated forge objective description
+Patch notes:\
+1.0.0: First release\
+1.0.1: Updated forge objective description\
 1.0.2: Fixed bug with flowers unable to be collected by the crude axe
