@@ -28,30 +28,7 @@ public class SettlementContainerObjectStorageActionMultiLevelPatch {
 		if (SettlementMultiLevelSystem.getSurfaceIdentifier(level.getIdentifier()) == null
 				|| level.getIdentifier().equals(SettlementMultiLevelSystem.getSurfaceIdentifier(level.getIdentifier()))) return;
 
-		manager.openSettlementStorageConfig = (EmptyCustomAction)container.registerAction(new EmptyCustomAction() {
-			@Override
-			protected void run() {
-				if (!container.client.isServer()) return;
-				ServerClient serverClient = container.client.getServerClient();
-				ServerSettlementData settlement = container.getServerData();
-				if (serverClient == null || settlement == null) {
-					if (serverClient != null) new SettlementRemovedEvent(0).applyAndSendToClient(serverClient);
-					return;
-				}
-
-				SettlementLevelDomain domain = SettlementMultiLevelSystem.get(settlement);
-				if (domain == null || domain.getLevelType(level.getIdentifier()) == null) return;
-				if (!settlement.networkData.doesClientHaveAccess(serverClient)) {
-					new SettlementDataEvent(settlement).applyAndSendToClient(serverClient);
-					return;
-				}
-
-				SettlementInventory inventory = SettlementLevelStorageManager.assignStorage(settlement, level, manager.masterTileX, manager.masterTileY);
-				if (inventory != null) {
-					new SettlementOpenStorageConfigEvent(inventory).applyAndSendToClient(serverClient);
-					if (Logging.logEnabled) Logging.logMessage("[MultiLevelStorage] Opened object storage config settlement=" + settlement.uniqueID + " level=" + level.getIdentifier() + " tile=" + manager.masterTileX + "," + manager.masterTileY);
-				}
-			}
-		});
+		manager.openSettlementStorageConfig = (EmptyCustomAction)container.registerAction(
+				new MultiLevelStorageConfigAction(manager, container, level));
 	}
 }

@@ -255,7 +255,7 @@ public class CraftingStationLevelJob extends TileLevelJob {
 					}
 
 					if (selectedTaskRecipe.isForgeRecipe()) {
-						ForgeTaskSystem.QueueResult forgeResult = ForgeTaskSystem.queueOne(currentBoard, selectedTaskRecipe);
+						ForgeTaskSystem.QueueResult forgeResult = ForgeTaskSystem.queueOne(currentBoard, selectedTaskRecipe, selectedTask);
 						Logging.logMessage("[CraftingForgeJob] Worker " + uniqueID + " queue item="
 								+ selectedTask.itemID + " success=" + forgeResult.success
 								+ (forgeResult.problem == null ? "" : " problem=" + forgeResult.problem));

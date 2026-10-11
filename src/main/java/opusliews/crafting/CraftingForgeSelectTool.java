@@ -143,6 +143,9 @@ public class CraftingForgeSelectTool extends SelectTileGameTool {
 		}
 
 		if (container.stationEntity.hasLinkedForge(target)) return null;
+		if (container.stationEntity.getOtherForgeLinkOwner(target) != null) {
+			return new StaticMessage("Forge already linked to another anvil");
+		}
 		if (!(master.getObjectEntity() instanceof ProcessingForgeObjectEntity)) {
 			return new StaticMessage(Localization.translate("ui", "craftingforgerequired"));
 		}

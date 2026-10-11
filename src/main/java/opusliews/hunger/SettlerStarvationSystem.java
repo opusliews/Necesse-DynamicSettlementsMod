@@ -49,11 +49,41 @@ public final class SettlerStarvationSystem {
 
 		if (human == null || !human.isServer() || !human.isSettler() || human.removed()) return;
 
+		StarvationState hideState = starvationStates.get(human);
+		if (hideState != null && human.getHealthPercent() >= 0.8F) {
+			hideState.suppressLowHealthHiding = false;
+			hideState.combatHideOverride = false;
+		}
 		tickSleepingHunger(human);
 		debugCaveHunger(human);
 		tickEmergencyEating(human);
 		tickStarvation(human);
 
+	}
+
+	/** Starvation health loss is not an attack: do not cancel jobs or send settlers hiding. */
+	public static boolean shouldIgnoreLowHealthHide(HumanMob human) {
+		if (human == null || !human.isServer() || !human.isSettler()) return false;
+		StarvationState state = starvationStates.get(human);
+		if (state == null || !state.suppressLowHealthHiding) return false;
+		if (human.getHealthPercent() >= 0.8F) {
+			state.suppressLowHealthHiding = false;
+			state.combatHideOverride = false;
+			if (Logging.logEnabled) Logging.logMessage("[Starvation] Restored normal low-health hiding after recovery settler=" + human.getUniqueID());
+			return false;
+		}
+		return true;
+	}
+
+	/** Actual combat damage must always restore normal threat responses. */
+	public static void onCombatHit(HumanMob human) {
+		if (human == null) return;
+		StarvationState state = starvationStates.get(human);
+		if (state != null) {
+			if (state.suppressLowHealthHiding && Logging.logEnabled) Logging.logMessage("[Starvation] Restored low-health hiding due to combat hit settler=" + human.getUniqueID());
+			state.suppressLowHealthHiding = false;
+			state.combatHideOverride = true;
+		}
 	}
 
 	public static void resetTransientStateAfterDebugHungerChange(HumanMob human) {
@@ -474,6 +504,10 @@ public final class SettlerStarvationSystem {
 			human.setHealth(newHealth);
 			int actualDamage = beforeHealth - human.getHealth();
 			if (actualDamage > 0) {
+				if (human.getHealthPercent() <= 0.4F && !human.isHiding && !state.combatHideOverride) {
+					if (!state.suppressLowHealthHiding && Logging.logEnabled) Logging.logMessage("[Starvation] Suppressing low-health hiding for starvation-only damage settler=" + human.getUniqueID());
+					state.suppressLowHealthHiding = true;
+				}
 				revealStarvationJournal(human);
 				if (Logging.logEnabled) Logging.logMessage("[Starvation] Applied starvation damage settler=" + human.getStringID() + "#" + human.getUniqueID()
 						+ " damage=" + actualDamage + " health=" + human.getHealth() + " tick=" + state.damageTicks + "/" + starvationDamageTicksToDeath);
@@ -625,6 +659,8 @@ public final class SettlerStarvationSystem {
 		long nextEmergencyFoodCheckTime;
 		boolean emergencyEating;
 		boolean noFoodAtCriticalLogged;
+		boolean suppressLowHealthHiding;
+		boolean combatHideOverride;
 
 		StarvationState(long nextDamageTime, int startHealth) {
 			this.nextDamageTime = nextDamageTime;

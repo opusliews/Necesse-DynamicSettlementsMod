@@ -73,6 +73,10 @@ public final class SettlementLevelStorageManager {
 	private static SettlementWorkstation assignWorkstation(ServerSettlementData settlement, Level level, int tileX, int tileY, boolean persist) {
 
 		if (!isValidTarget(settlement, level, tileX, tileY, "workstation")) return null;
+		if (opusliews.forge.VanillaForgeWorkstationCleanup.isForge(level, tileX, tileY)) {
+			if (Logging.logEnabled) Logging.logMessage("[CraftingForgeJob] Rejected cave vanilla forge workstation assignment tile=" + tileX + "," + tileY);
+			return null;
+		}
 		if (level == settlement.getLevel()) return settlement.storageManager.assignWorkstation(tileX, tileY, false);
 
 		State state = getState(settlement);

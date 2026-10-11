@@ -66,14 +66,18 @@ public final class CraftingStoragePool {
 			InventoryRange bestRange = null;
 			int bestSlot = -1;
 			int bestDurability = Integer.MAX_VALUE;
+			boolean bestUnbreaking = false;
 			for (InventoryRange range : inputs) {
 				for (int slot = range.startSlot; slot <= range.endSlot; slot++) {
 					InventoryItem item = range.inventory.getItem(slot);
 					if (item == null || !itemStringID.equals(item.item.getStringID())) continue;
+					boolean unbreaking = opusliews.item.MoldItem.hasUnbreaking(item);
 					int durability = opusliews.durability.ItemDurabilitySystem.isBreakable(item)
 							? opusliews.durability.ItemDurabilitySystem.getDurability(item)
 							: Integer.MAX_VALUE - 1;
-					if (bestRange == null || durability < bestDurability) {
+					if (bestRange == null || (unbreaking && !bestUnbreaking)
+							|| (unbreaking == bestUnbreaking && durability < bestDurability)) {
+						bestUnbreaking = unbreaking;
 						bestRange = range;
 						bestSlot = slot;
 						bestDurability = durability;

@@ -249,7 +249,9 @@ public class GuideJournalFormRenderer {
 				y = addAnyRequiredItems(section, client, contentBox, width, y, textColor);
 			}
 
-			if (section.challenge != null && section.buttonText != null) {
+			// Auto Forging is completed by adding a Forge task, not by a manual button.
+			if (section.challenge != null && section.buttonText != null
+					&& !"dsjournal_dynamicsettlements_autoforging".equals(section.challengeStringID)) {
 				y = addCompletionRow(section, client, contentBox, width, y, textColor);
 			}
 			y += 18;

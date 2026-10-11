@@ -57,6 +57,9 @@ public class CraftingTaskBoardContainer extends Container {
 							&& (sourceType == opusliews.crafting.CraftingTask.SOURCE_FORGE
 							|| boardEntity.getLinkedStationEntity() instanceof AnvilObjectEntity)) {
 						GuideProgressionSystem.onAutomatedMetalworkingTaskCreated(client.getServerClient());
+						if (sourceType == opusliews.crafting.CraftingTask.SOURCE_FORGE) {
+							GuideProgressionSystem.onForgeAutomationTaskAdded(client.getServerClient());
+						}
 					}
 				}
 			}

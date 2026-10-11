@@ -45,6 +45,7 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 	private transient int assignedDay = -1;
 	private transient int nextTaskIndex;
 	private transient long nextStatusRefreshTime;
+	private transient long nextForgeFuelRefillTime;
 	private transient boolean linkCacheInitialized;
 	private transient boolean linkValidationDirty;
 
@@ -156,6 +157,7 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 			linkValidationDirty = false;
 		}
 		processForgeAssignments();
+		refillAssignedForgeFuel();
 		updateDailyAssignment();
 		ensureCraftingJob();
 
@@ -280,10 +282,10 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 
 	}
 
-	public void addForgeAssignment(Point forgePoint, int outputItemID, int outputAmount) {
+	public void addForgeAssignment(Point forgePoint, int outputItemID, int outputAmount, int inputSlot) {
 
 		if (forgePoint == null || outputItemID < 0 || outputAmount <= 0) return;
-		forgeAssignments.add(new ForgeAssignment(forgePoint.x, forgePoint.y, outputItemID, outputAmount));
+		forgeAssignments.add(new ForgeAssignment(forgePoint.x, forgePoint.y, outputItemID, outputAmount, inputSlot));
 		ForgeManualCleanupSystem.onBoardForgeAssignmentsChanged(this);
 		markDirty();
 
@@ -299,6 +301,26 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 
 	}
 
+	/** -1: no assignment; -2: more than one; otherwise relative input slot. */
+	public int getSingleForgeAssignmentSlot(Point point) {
+		if (point == null) return -1;
+		int found = -1;
+		for (ForgeAssignment assignment : forgeAssignments) {
+			if (assignment.forgeX != point.x || assignment.forgeY != point.y) continue;
+			if (found != -1) return -2;
+			found = assignment.inputSlot;
+		}
+		return found;
+	}
+
+	public int getForgeAssignmentOutput(Point point) {
+		if (point == null) return -1;
+		for (ForgeAssignment assignment : forgeAssignments) {
+			if (assignment.forgeX == point.x && assignment.forgeY == point.y) return assignment.outputItemID;
+		}
+		return -1;
+	}
+
 	public int getPendingForgeAmount(int itemID) {
 
 		int total = 0;
@@ -309,6 +331,16 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 
 	}
 
+	private void refillAssignedForgeFuel() {
+		if (forgeAssignments.isEmpty()) return;
+		long now = getLevel().getTime();
+		if (now < nextForgeFuelRefillTime) return;
+		nextForgeFuelRefillTime = now + 1000L;
+		for (ForgeAssignment assignment : forgeAssignments) {
+			ForgeTaskSystem.refillAssignedForgeFuel(this, new Point(assignment.forgeX, assignment.forgeY));
+		}
+	}
+
 	private void processForgeAssignments() {
 
 		if (!getLevel().isServer() || forgeAssignments.isEmpty()) return;
@@ -316,7 +348,17 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 		for (int i = forgeAssignments.size() - 1; i >= 0; i--) {
 			ForgeAssignment assignment = forgeAssignments.get(i);
 			Point forgePoint = new Point(assignment.forgeX, assignment.forgeY);
-			if (ForgeTaskSystem.collectAssignment(this, forgePoint, assignment.outputItemID, assignment.outputAmount)) {
+			int collected = ForgeTaskSystem.collectAssignmentAmount(this, forgePoint, assignment.outputItemID,
+					assignment.remainingOutputAmount);
+			if (collected > 0) {
+				assignment.remainingOutputAmount -= collected;
+				changed = true;
+				if (Logging.logEnabled) Logging.logMessage("[CraftingForgeJob] Partial output collected forge="
+						+ assignment.forgeX + "," + assignment.forgeY + " output=" + assignment.outputItemID
+						+ " collected=" + collected + " remaining=" + assignment.remainingOutputAmount);
+			}
+			if (assignment.remainingOutputAmount == 0) {
+				ForgeTaskSystem.returnAssignmentInputs(this, forgePoint, assignment.inputSlot);
 				forgeAssignments.remove(i);
 				onForgeAssignmentCompleted(assignment.outputItemID, assignment.outputAmount);
 				changed = true;
@@ -919,16 +961,22 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 		private final int forgeY;
 		private final int outputItemID;
 		private final int outputAmount;
+		private int remainingOutputAmount;
+		private final int inputSlot;
 
-		private ForgeAssignment(int forgeX, int forgeY, int outputItemID, int outputAmount) {
+		private ForgeAssignment(int forgeX, int forgeY, int outputItemID, int outputAmount, int inputSlot) {
 			this.forgeX = forgeX;
 			this.forgeY = forgeY;
 			this.outputItemID = outputItemID;
 			this.outputAmount = Math.max(1, outputAmount);
+			this.remainingOutputAmount = this.outputAmount;
+			this.inputSlot = inputSlot;
 		}
 
 		private ForgeAssignment(LoadData data) {
-			this(data.getInt("forgeX", 0), data.getInt("forgeY", 0), data.getInt("outputItemID", -1), data.getInt("outputAmount", 1));
+			this(data.getInt("forgeX", 0), data.getInt("forgeY", 0), data.getInt("outputItemID", -1), data.getInt("outputAmount", 1), data.getInt("inputSlot", 0));
+			this.remainingOutputAmount = Math.max(0, Math.min(outputAmount,
+					data.getInt("remainingOutputAmount", outputAmount)));
 		}
 
 		private void addSaveData(SaveData data) {
@@ -937,6 +985,8 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 			data.addInt("forgeY", forgeY);
 			data.addInt("outputItemID", outputItemID);
 			data.addInt("outputAmount", outputAmount);
+			data.addInt("remainingOutputAmount", remainingOutputAmount);
+			data.addInt("inputSlot", inputSlot);
 
 		}
 	}

@@ -29,4 +29,8 @@ Important Note 4) This mod has a sizeable codebase and patches a number of vanil
 Patch notes:\
 1.0.0: First release\
 1.0.1: Updated forge objective description\
-1.0.2: Fixed bug with flowers unable to be collected by the crude axe
+1.0.2: Fixed bug with flowers unable to be collected by the crude axe\
+1.0.3: Fixed:
+ - Issue with starving settlers running for their lives as if being literally attacked by hunger damage. Kinda funny though, ngl.
+ - Removed old vanilla forge automation
+ - Added new journal entry for help with forge automation

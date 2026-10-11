@@ -108,6 +108,9 @@ public class CrudeAnvilForgeSelectTool extends SelectTileGameTool {
 			return new StaticMessage(Localization.translate("ui", "craftingforgerange", "radius", STORAGE_LINK_RADIUS));
 		}
 		if (container.stationEntity.hasLinkedForge(target)) return null;
+		if (container.stationEntity.getOtherForgeLinkOwner(target) != null) {
+			return new StaticMessage("Forge already linked to another anvil");
+		}
 		if (!(master.getObjectEntity() instanceof ProcessingForgeObjectEntity)) {
 			return new StaticMessage(Localization.translate("ui", "craftingforgerequired"));
 		}

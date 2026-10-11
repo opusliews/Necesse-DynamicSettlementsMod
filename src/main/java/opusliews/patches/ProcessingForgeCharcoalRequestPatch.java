@@ -18,12 +18,6 @@ import opusliews.earlygame.CharcoalFuelSystem;
 public class ProcessingForgeCharcoalRequestPatch {
 	@Advice.OnMethodExit
 	public static void onExit(@Advice.Return(readOnly = false) SettlementRequestOptions result) {
-		result = new SettlementRequestOptions(5, 10) {
-			@Override
-			public SettlementStorageRecordsRegionData getRequestStorageData(SettlementStorageRecords records) {
-				return ((SettlementStorageItemIDIndex)records.getIndex(SettlementStorageItemIDIndex.class))
-						.getItem(CharcoalFuelSystem.charcoalStringID);
-			}
-		};
+		result = new CharcoalSettlementRequestOptions();
 	}
 }

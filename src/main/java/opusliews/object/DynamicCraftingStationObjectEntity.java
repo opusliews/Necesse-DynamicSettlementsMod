@@ -25,6 +25,7 @@ import opusliews.crafting.CraftingAutoStockSystem;
 import opusliews.crafting.CraftingInputProtectionSystem;
 import opusliews.crafting.CraftingStationLinkCache;
 import opusliews.forge.ForgeManualCleanupSystem;
+import opusliews.logging.Logging;
 import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
 
@@ -451,9 +452,30 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 
 	}
 
+	/** Returns the coordinates of another station that already owns this forge on this level. */
+	public Point getOtherForgeLinkOwner(Point forgePoint) {
+		if (forgePoint == null || getLevel() == null) return null;
+		for (Object object : getLevel().entityManager.objectEntities) {
+			if (!(object instanceof DynamicCraftingStationObjectEntity)) continue;
+			DynamicCraftingStationObjectEntity station = (DynamicCraftingStationObjectEntity)object;
+			if (station == this || station.removed() || !station.supportsForgeLinks()) continue;
+			if (station.hasLinkedForge(forgePoint)) return new Point(station.tileX, station.tileY);
+		}
+		return null;
+	}
+
 	public void addLinkedForge(Point point) {
 
 		if (!supportsForgeLinks() || point == null || containsPoint(linkedForges, point)) return;
+		if (!isValidLinkedForge(point)) {
+			if (Logging.logEnabled) Logging.logMessage("[ForgeLinks] Rejected invalid forge station=" + tileX + "," + tileY + " forge=" + point);
+			return;
+		}
+		Point owner = getOtherForgeLinkOwner(point);
+		if (owner != null) {
+			if (Logging.logEnabled) Logging.logMessage("[ForgeLinks] Rejected already-linked forge=" + point + " station=" + tileX + "," + tileY + " owner=" + owner);
+			return;
+		}
 		linkedForges.add(new Point(point));
 		if (getLevel().isServer()) {
 			CraftingStationLinkCache.refreshStation(this);

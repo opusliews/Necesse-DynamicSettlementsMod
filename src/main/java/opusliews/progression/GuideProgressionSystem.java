@@ -248,6 +248,20 @@ public final class GuideProgressionSystem {
 		complete(client, "stockmanagement");
 	}
 
+	public static void onForgeOpened(ServerClient client) {
+		if (client == null) return;
+		if (Logging.logEnabled) Logging.logMessage("[GuideProgression] Forge opened player=" + client.getName());
+		reveal(client, "autoforging");
+	}
+
+	public static void onForgeAutomationTaskAdded(ServerClient client) {
+		if (client == null) return;
+		if (Logging.logEnabled) Logging.logMessage("[GuideProgression] Forge automation task added player=" + client.getName());
+		// Mark discovered as well, so creating a task before opening a Forge still completes it.
+		reveal(client, "autoforging");
+		complete(client, "autoforging");
+	}
+
 	public static void onAutomatedMetalworkingTaskCreated(ServerClient client) {
 		reveal(client, "automatedmetalworking");
 	}

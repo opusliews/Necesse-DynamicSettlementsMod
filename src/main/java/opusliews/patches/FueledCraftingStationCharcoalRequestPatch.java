@@ -4,11 +4,7 @@ import necesse.engine.modLoader.annotations.ModMethodPatch;
 import necesse.level.gameObject.container.FueledCraftingStationObject;
 import necesse.level.maps.Level;
 import necesse.level.maps.levelData.settlementData.SettlementRequestOptions;
-import necesse.level.maps.levelData.settlementData.storage.SettlementStorageItemIDIndex;
-import necesse.level.maps.levelData.settlementData.storage.SettlementStorageRecords;
-import necesse.level.maps.levelData.settlementData.storage.SettlementStorageRecordsRegionData;
 import net.bytebuddy.asm.Advice;
-import opusliews.earlygame.CharcoalFuelSystem;
 
 @ModMethodPatch(
 		target = FueledCraftingStationObject.class,
@@ -18,12 +14,9 @@ import opusliews.earlygame.CharcoalFuelSystem;
 public class FueledCraftingStationCharcoalRequestPatch {
 	@Advice.OnMethodExit
 	public static void onExit(@Advice.Return(readOnly = false) SettlementRequestOptions result) {
-		result = new SettlementRequestOptions(5, 10) {
-			@Override
-			public SettlementStorageRecordsRegionData getRequestStorageData(SettlementStorageRecords records) {
-				return ((SettlementStorageItemIDIndex)records.getIndex(SettlementStorageItemIDIndex.class))
-						.getItem(CharcoalFuelSystem.charcoalStringID);
-			}
-		};
+		// This advice is inlined into the vanilla target class. Do not instantiate an
+		// anonymous subclass here: its generated $1 class is not public and cannot
+		// be accessed from FueledCraftingStationObject after transformation.
+		result = new CharcoalSettlementRequestOptions();
 	}
 }
