@@ -48,6 +48,35 @@ public final class CraftingTime {
 		return get(recipe.resultItem.item);
 	}
 
+	// Player-only crafting speed. NPC timing intentionally continues using get(recipe).
+	public static long getManual(Recipe recipe, String stationID) {
+		long base = get(recipe);
+		int tier = getManualStationTier(stationID);
+		return Math.max(1L, base / (1L << tier));
+	}
+
+	private static int getManualStationTier(String stationID) {
+		if (stationID == null) return 0;
+		switch (stationID) {
+			case "demonicworkstationduo":
+			case "demonicanvil":
+			case "voidalchemytable":
+				return 1;
+			case "tungstenworkstation":
+			case "tungstenanvil":
+			case "caveglowalchemytable":
+			case "tungstencarpentersbench":
+				return 2;
+			case "fallenworkstation":
+			case "fallenanvil":
+			case "fallenalchemytable":
+			case "fallencarpentersbench":
+				return 3;
+			default:
+				return 0;
+		}
+	}
+
 	public static float getSeconds(Item item) {
 		return get(item) / 1000.0F;
 	}

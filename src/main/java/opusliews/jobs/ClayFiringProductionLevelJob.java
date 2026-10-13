@@ -28,6 +28,7 @@ import opusliews.clayfiring.ClayFiringBlockedNotification;
 import opusliews.clayfiring.ClayFiringCatalog;
 import opusliews.clayfiring.ClayFiringZone;
 import opusliews.item.FirestarterItem;
+import opusliews.earlygame.FiringDuration;
 import opusliews.logging.Logging;
 import opusliews.network.PacketBuilderTilePlaceSound;
 import opusliews.tile.*;
@@ -303,7 +304,7 @@ public class ClayFiringProductionLevelJob extends TileLevelJob {
 				if (now < ignitionDone) return ActiveJobResult.PERFORMING;
 				if (getLevel().getTileID(tileX, tileY) != TileRegistry.getTileID(FiringPitLogTile.stringID)) return ActiveJobResult.FAILED;
 
-				long fullDayDuration = (long)getLevel().getWorldEntity().getDayTimeMax() * 1000L;
+				long fullDayDuration = FiringDuration.FULL_CYCLE_MS;
 				automation.releaseActiveProduction(tileX, tileY);
 				activeProductionClaimed = false;
 				automation.markAutomatedBurn(tileX, tileY, zone.getUniqueID());

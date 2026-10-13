@@ -1,6 +1,7 @@
 package opusliews.forge;
 
 import opusliews.DSItemRegistry;
+import opusliews.earlygame.FiringDuration;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,13 +27,13 @@ public final class ForgeCookingRecipeRegistry {
 	}
 
 	private static void registerOtherRecipes() {
-		register(ForgeCookingRecipe.fractionOfDay(
+		register(new ForgeCookingRecipe(
 				"brick_forge_cooked",
 				ForgeCookingInput.consume(DSItemRegistry.unfiredBrickStringID, 1),
 				null,
 				DSItemRegistry.brickStringID,
 				1,
-				0.5f
+				FiringDuration.FULL_CYCLE_MS
 		), false);
 
 	}

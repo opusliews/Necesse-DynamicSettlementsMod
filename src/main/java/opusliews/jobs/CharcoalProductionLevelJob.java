@@ -40,6 +40,7 @@ import opusliews.charcoal.CharcoalProductionBlockedNotification;
 import opusliews.charcoal.CharcoalProductionZone;
 import opusliews.clay.ClayPackageSystem;
 import opusliews.item.FirestarterItem;
+import opusliews.earlygame.FiringDuration;
 import opusliews.logging.Logging;
 import opusliews.network.PacketBuilderTilePlaceSound;
 import opusliews.tile.CharcoalPitLevelData;
@@ -478,7 +479,7 @@ public class CharcoalProductionLevelJob extends TileLevelJob {
 					return ActiveJobResult.PERFORMING;
 				}
 
-				long fullDayDuration = (long)getLevel().getWorldEntity().getDayTimeMax() * 1000L;
+				long fullDayDuration = FiringDuration.FULL_CYCLE_MS;
 				long burnEndWorldTime = getLevel().getWorldEntity().getWorldTime() + fullDayDuration;
 				pitData.igniteCharcoalPit(tileX, tileY, burnEndWorldTime);
 				pitData.clearProductionRecoveryState(tileX, tileY);

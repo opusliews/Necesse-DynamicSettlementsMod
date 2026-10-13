@@ -34,3 +34,7 @@ Patch notes:\
  - Issue with starving settlers running for their lives as if being literally attacked by hunger damage. Kinda funny though, ngl.
  - Removed old vanilla forge automation
  - Added new journal entry for help with forge automation
+
+1.0.4:
+ - Clay pit firing, charcoal pit burning, and firing raw clay in the forge now take a fixed 16 minutes (one default day/night cycle), regardless of custom world day/night lengths.
+ - Manual crafting at upgraded Workstations, Anvils and Alchemy Tables is twice as fast per tier (2s / 1s / 0.5s / 0.25s); Carpenter Benches skip the second tier (2s / 0.5s / 0.25s). Settler crafting speeds are unchanged.

@@ -13,6 +13,7 @@ import necesse.inventory.item.toolItem.shovelToolItem.ShovelToolItem;
 import necesse.level.maps.Level;
 import opusliews.item.DirtPileItem;
 import opusliews.item.FirestarterItem;
+import opusliews.earlygame.FiringDuration;
 import opusliews.item.CrudeTorchItem;
 import opusliews.item.FireableMatItem;
 import opusliews.deephole.DeepHoleSystem;
@@ -260,7 +261,7 @@ public final class CharcoalPitSystem {
 		for (StoredLog log : data.getLogs(tileX, tileY)) storedLogAmount += Math.max(0, log.amount);
 		if (storedLogAmount < requiredBrickFiringLogs) return;
 
-		long fullDayDuration = (long)level.getWorldEntity().getDayTimeMax() * 1000L;
+		long fullDayDuration = FiringDuration.FULL_CYCLE_MS;
 		data.igniteFiringPit(tileX, tileY, level.getWorldEntity().getWorldTime() + fullDayDuration);
 	}
 
@@ -339,7 +340,7 @@ public final class CharcoalPitSystem {
 			return;
 		}
 
-		long fullDayDuration = (long)level.getWorldEntity().getDayTimeMax() * 1000L;
+		long fullDayDuration = FiringDuration.FULL_CYCLE_MS;
 		long burnEndWorldTime = level.getWorldEntity().getWorldTime() + fullDayDuration;
 		data.igniteCharcoalPit(tileX, tileY, burnEndWorldTime);
 	}

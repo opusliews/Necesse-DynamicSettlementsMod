@@ -187,7 +187,7 @@ public class DynamicCraftingStationContainer extends CraftingStationContainer {
 					client.playerMob,
 					recipe,
 					inventories,
-					CraftingTime.get(recipe)
+					CraftingTime.getManual(recipe, stationEntity.getObject().getStringID())
 			)) return 0;
 			if (client.isClient()) {
 				ForgeRequirementSystem.Status status = ForgeRequirementSystem.getStatus(stationEntity, recipe, inventories);
@@ -200,7 +200,7 @@ public class DynamicCraftingStationContainer extends CraftingStationContainer {
 		craftingRecipeID = recipeID;
 		craftingRecipeHash = recipeHash;
 		craftingStartTime = System.currentTimeMillis();
-		craftingDurationMs = CraftingTime.get(recipe);
+		craftingDurationMs = CraftingTime.getManual(recipe, stationEntity.getObject().getStringID());
 
 		if (client.isServer()) stationEntity.onPlayerCraftStarted(client.playerMob, recipe);
 		return 1;
