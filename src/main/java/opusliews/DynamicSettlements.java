@@ -240,6 +240,7 @@ public class DynamicSettlements {
 		TileRegistry.registerTile(BurningCharcoalPitTile.stringID, new BurningCharcoalPitTile(), 0.0F, false);
 		TileRegistry.registerTile(ThinDirtTile.stringID, new ThinDirtTile(), 0.0F, false);
 
+		ObjectRegistry.registerObject(StringWeavedSackObject.stringID, new StringWeavedSackObject(), 12.0F, true);
 		ObjectRegistry.registerObject("blueprintworkstation",
 				new BlueprintWorkstationObject(), 100.0F, true);
 		ObjectRegistry.registerObject(

@@ -30,17 +30,8 @@ public final class WorldgenSpecialLootGatingSystem {
 	}
 
 	public static void refreshTrialEntrance(TrialEntranceObjectEntity entity) {
-		if (entity == null || entity.getLevel() == null) return;
-		WorldgenLootTier tier = null;
-		for (Object rawList : entity.lootList) {
-			if (!(rawList instanceof List)) continue;
-			for (Object rawItem : (List)rawList) {
-				if (rawItem instanceof InventoryItem) tier = WorldgenLootTier.max(tier, WorldgenContentTierResolver.getItemTier((InventoryItem)rawItem));
-			}
-		}
-		if (tier == null) return;
-		WorldgenGatingLevelData data = WorldgenGatingLevelData.get(entity.getLevel(), true);
-		data.markSpecial(0, entity.tileX, entity.tileY, WorldgenGatingData.NaturalType.LOCKED_CONTAINER, tier);
+		// Trial entrances contain reward loot but are level transitions, not chests.
+		// Kept as a no-op because existing ByteBuddy hooks invoke this method.
 	}
 
 	public static void writeMimicSpawnState(Mob mob, PacketWriter writer) {

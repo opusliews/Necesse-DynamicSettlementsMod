@@ -88,6 +88,17 @@ public class WorldgenGatingLevelData extends LevelData implements
 			entries.remove(key(objectLayerID, tileX, tileY));
 			return null;
 		}
+		// Reject legacy or incorrectly tagged non-container objects (e.g. trial entrances).
+		// This also cleans up saved entries from worlds created before this fix.
+		if (entry.type == WorldgenGatingData.NaturalType.LOCKED_CONTAINER
+				&& WorldgenObjectClassifier.getNaturalType(entry.objectStringID) != WorldgenGatingData.NaturalType.LOCKED_CONTAINER
+				&& !(objectLayerID == 0 && "sprucedisplay".equals(entry.objectStringID)
+					&& level.gndData.getBoolean(pirateDisplayMarkerKey(tileX, tileY)))) {
+			entries.remove(key(objectLayerID, tileX, tileY));
+			Logging.logMessage("[WorldgenGating] Removed invalid locked-container entry object=" + entry.objectStringID
+					+ " pos=" + tileX + "," + tileY);
+			return null;
+		}
 		return entry;
 	}
 
@@ -98,6 +109,14 @@ public class WorldgenGatingLevelData extends LevelData implements
 					+ " layer=" + objectLayerID + " pos=" + tileX + "," + tileY
 					+ " object=" + (object == null ? "null" : object.getStringID())
 					+ " playerPlaced=" + level.objectLayer.isPlayerPlaced(objectLayerID, tileX, tileY));
+			return;
+		}
+		// Only actual container types may be tagged as locked containers.
+		if (type == WorldgenGatingData.NaturalType.LOCKED_CONTAINER
+				&& WorldgenObjectClassifier.getNaturalType(object.getStringID()) != WorldgenGatingData.NaturalType.LOCKED_CONTAINER
+				&& !(objectLayerID == 0 && "sprucedisplay".equals(object.getStringID()))) {
+			Logging.logMessage("[WorldgenGating] Ignored non-container lock request object=" + object.getStringID()
+					+ " pos=" + tileX + "," + tileY);
 			return;
 		}
 		Entry existing = getEntry(objectLayerID, tileX, tileY);

@@ -83,6 +83,8 @@ public class DSRecipeRegistry {
 		register(unfiredThickPlateMoldStringID, 1, CrudeWorkbenchFeature.tech, ingredient("clay", 1));
 		register(unfiredThickPlateMoldStringID, 1, RecipeTechRegistry.WORKSTATION, ingredient("clay", 1));
 
+		register(StringWeavedSackObject.stringID, 1, CrudeWorkbenchFeature.tech, ingredient(stringStringID, 16));
+		register(StringWeavedSackObject.stringID, 1, RecipeTechRegistry.WORKSTATION, ingredient(stringStringID, 16));
 		register("blueprintItem", 1, RecipeTechRegistry.WORKSTATION, ingredient("stackofpaper", 1), ingredient("quillandparchment", 1));
 		register("blueprintworkstation", 1, RecipeTechRegistry.WORKSTATION, ingredient("anylog", 15), ingredient("tungstenbar", 3), ingredient("stackofpaper", 1));
 		register("builderhat", 1, RecipeTechRegistry.WORKSTATION, ingredient("wool", 12), ingredient("ironbar", 1));
