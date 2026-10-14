@@ -23,6 +23,7 @@ import opusliews.crafting.CraftingInputProtectionSystem;
 import opusliews.crafting.CraftingStationLinkCache;
 import opusliews.crafting.CraftingTaskRecipe;
 import opusliews.forge.ForgeTaskSystem;
+import opusliews.forge.ManaworksGeneratorFuelSystem;
 import opusliews.forge.ForgeRequirementSystem;
 import opusliews.forge.ForgeManualCleanupSystem;
 import opusliews.crafting.CraftingTask;
@@ -46,6 +47,7 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 	private transient int nextTaskIndex;
 	private transient long nextStatusRefreshTime;
 	private transient long nextForgeFuelRefillTime;
+	private transient long nextManaFuelRefillTime;
 	private transient boolean linkCacheInitialized;
 	private transient boolean linkValidationDirty;
 
@@ -158,6 +160,7 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 		}
 		processForgeAssignments();
 		refillAssignedForgeFuel();
+		refillManaworksGenerators();
 		updateDailyAssignment();
 		ensureCraftingJob();
 
@@ -329,6 +332,41 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 		}
 		return total;
 
+	}
+
+	private void refillManaworksGenerators() {
+		if (!getLevel().isServer()) return;
+		boolean needsForgeHeat = false;
+		DynamicCraftingStationObjectEntity station = getLinkedStationEntity();
+		if (station == null) return;
+		for (CraftingTask task : tasks) {
+			if (task.paused || task.amount <= 0) continue;
+			if (task.sourceType == CraftingTask.SOURCE_FORGE) {
+				needsForgeHeat = true;
+				break;
+			}
+			CraftingTaskRecipe taskRecipe = CraftingTaskLogic.getTaskRecipe(this, task);
+			if (taskRecipe != null && ForgeRequirementSystem.requiresRunningForge(station, taskRecipe.recipe)) {
+				needsForgeHeat = true;
+				break;
+			}
+		}
+		// A linked mana Forge may also be needed for *manual* FRRs, which have
+		// no task-board task at all. Keep its generator ready in that case.
+		if (!needsForgeHeat) {
+			boolean linkedManaForge = false;
+			for (ObjectEntity forge : station.getValidLinkedForgeEntities()) {
+				if (opusliews.forge.ForgeLinkCompatibility.isManaworks(forge)) {
+					linkedManaForge = true;
+					break;
+				}
+			}
+			if (!linkedManaForge) return;
+		}
+		long now = getLevel().getTime();
+		if (now < nextManaFuelRefillTime) return;
+		nextManaFuelRefillTime = now + 3000L;
+		ManaworksGeneratorFuelSystem.refill(this, CraftingTaskLogic.getStoragePool(this));
 	}
 
 	private void refillAssignedForgeFuel() {
@@ -861,7 +899,7 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 						status = CraftingTask.STATUS_PROBLEM;
 						details = Collections.singletonList(Localization.translate("ui", "statusmissingforgefuel"));
 					} else if (taskRecipe.isForgeRecipe()
-							&& (getLinkedStationEntity() == null || getLinkedStationEntity().getValidLinkedForges().isEmpty())) {
+							&& (getLinkedStationEntity() == null || getLinkedStationEntity().getCompatibleLinkedForges().isEmpty())) {
 						status = CraftingTask.STATUS_PROBLEM;
 						details = Collections.singletonList(Localization.translate("ui", "craftingrequireslinkedforge"));
 					} else {
@@ -888,10 +926,15 @@ public class CraftingTaskBoardObjectEntity extends ObjectEntity {
 								details = missingDetails;
 							}
 						} else if (!pendingCoversCraftUnits && taskRecipe.isForgeRecipe()
-								&& ForgeTaskSystem.hasAvailableForge(this, taskRecipe)
-								&& !ForgeTaskSystem.hasFuelAvailable(this, taskRecipe)) {
+								&& ForgeTaskSystem.hasAssignableForgeSlot(this, taskRecipe)
+								&& !ForgeTaskSystem.hasFuelAvailable(this, taskRecipe)
+								&& !ForgeTaskSystem.isManaPowerBlocked(this, taskRecipe)) {
 							status = CraftingTask.STATUS_PROBLEM;
 							details = Collections.singletonList(Localization.translate("ui", "statusmissingforgefuel"));
+						} else if (taskRecipe.isForgeRecipe()
+								&& ForgeTaskSystem.isManaPowerBlocked(this, taskRecipe)) {
+							status = CraftingTask.STATUS_PROBLEM;
+							details = Collections.singletonList(Localization.translate("ui", "statusmissingforgepower"));
 						} else if (!pendingCoversCraftUnits && !CraftingTaskLogic.canFitResult(this, taskRecipe)) {
 							status = CraftingTask.STATUS_PROBLEM;
 							details = Collections.singletonList(

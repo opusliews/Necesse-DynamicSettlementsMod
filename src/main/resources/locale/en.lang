@@ -433,6 +433,7 @@ statuspaused=Paused
 statusproblem=Problem
 statusinprogress=In Progress
 statusmissingforgefuel=Missing Forge Fuel
+statusmissingforgepower=Forge requires mana power
 statusfinished=Finished
 resumebutton=Resume
 pausebutton=Pause

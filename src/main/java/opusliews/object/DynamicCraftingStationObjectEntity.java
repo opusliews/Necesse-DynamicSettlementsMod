@@ -25,6 +25,7 @@ import opusliews.crafting.CraftingAutoStockSystem;
 import opusliews.crafting.CraftingInputProtectionSystem;
 import opusliews.crafting.CraftingStationLinkCache;
 import opusliews.forge.ForgeManualCleanupSystem;
+import opusliews.forge.ForgeLinkCompatibility;
 import opusliews.logging.Logging;
 import necesse.level.maps.Level;
 import necesse.level.maps.LevelObject;
@@ -260,7 +261,7 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		LevelObject master = (LevelObject)object.getMasterLevelObject().orElse(null);
 		if (master == null || master.tileX != point.x || master.tileY != point.y) return false;
 
-		return master.getObjectEntity() instanceof ProcessingForgeObjectEntity;
+		return ForgeLinkCompatibility.isSupported(master.getObjectEntity());
 
 	}
 
@@ -515,6 +516,35 @@ public abstract class DynamicCraftingStationObjectEntity extends ObjectEntity im
 		markDirty();
 		syncContent();
 
+	}
+
+	/** All linked Forge entities, including optional Manaworks Forges. */
+	public ArrayList<ObjectEntity> getValidLinkedForgeEntities() {
+		ArrayList<ObjectEntity> result = new ArrayList<>();
+		for (Point point : linkedForges) {
+			if (!isValidLinkedForge(point)) continue;
+			ObjectEntity entity = getLevel().entityManager.getObjectEntity(point.x, point.y);
+			if (ForgeLinkCompatibility.isSupported(entity)) result.add(entity);
+		}
+		return result;
+	}
+
+	/** Generic linked Forge access for the optional Manaworks processing entities. */
+	public necesse.entity.objectEntity.FueledProcessingTechInventoryObjectEntity getCompatibleLinkedForge(Point point) {
+		if (!hasLinkedForge(point) || !isValidLinkedForge(point)) return null;
+		ObjectEntity entity = getLevel().entityManager.getObjectEntity(point.x, point.y);
+		if (!ForgeLinkCompatibility.isSupported(entity)) return null;
+		return entity instanceof necesse.entity.objectEntity.FueledProcessingTechInventoryObjectEntity
+				? (necesse.entity.objectEntity.FueledProcessingTechInventoryObjectEntity)entity : null;
+	}
+
+	public ArrayList<necesse.entity.objectEntity.FueledProcessingTechInventoryObjectEntity> getCompatibleLinkedForges() {
+		ArrayList<necesse.entity.objectEntity.FueledProcessingTechInventoryObjectEntity> result = new ArrayList<>();
+		for (Point point : linkedForges) {
+			necesse.entity.objectEntity.FueledProcessingTechInventoryObjectEntity forge = getCompatibleLinkedForge(point);
+			if (forge != null) result.add(forge);
+		}
+		return result;
 	}
 
 	public ProcessingForgeObjectEntity getLinkedForge(Point point) {

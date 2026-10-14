@@ -12,7 +12,8 @@ import necesse.engine.localization.Localization;
 import necesse.engine.localization.message.GameMessage;
 import necesse.engine.localization.message.StaticMessage;
 import necesse.entity.mobs.PlayerMob;
-import necesse.entity.objectEntity.ProcessingForgeObjectEntity;
+import opusliews.forge.ForgeLinkCompatibility;
+import opusliews.logging.Logging;
 import necesse.gfx.Renderer;
 import necesse.gfx.camera.GameCamera;
 import necesse.gfx.drawOptions.DrawOptions;
@@ -90,6 +91,7 @@ public class CrudeAnvilForgeSelectTool extends SelectTileGameTool {
 		}
 		LevelObject master = getMaster(pos);
 		Point target = master == null ? new Point(pos.tileX, pos.tileY) : new Point(master.tileX, master.tileY);
+		if (Logging.logEnabled) Logging.logMessage("[ForgeLinks] CLIENT_CLICK station=" + container.stationEntity.tileX + "," + container.stationEntity.tileY + " target=" + target + " entity=" + (master == null || master.getObjectEntity() == null ? "null" : master.getObjectEntity().getClass().getName()));
 		container.setForge.runAndSend(target.x, target.y);
 		return false;
 	}
@@ -111,7 +113,7 @@ public class CrudeAnvilForgeSelectTool extends SelectTileGameTool {
 		if (container.stationEntity.getOtherForgeLinkOwner(target) != null) {
 			return new StaticMessage("Forge already linked to another anvil");
 		}
-		if (!(master.getObjectEntity() instanceof ProcessingForgeObjectEntity)) {
+		if (!ForgeLinkCompatibility.isSupported(master.getObjectEntity())) {
 			return new StaticMessage(Localization.translate("ui", "craftingforgerequired"));
 		}
 		return null;

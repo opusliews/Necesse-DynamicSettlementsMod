@@ -38,3 +38,7 @@ Patch notes:\
 1.0.4:
  - Clay pit firing, charcoal pit burning, and firing raw clay in the forge now take a fixed 16 minutes (one default day/night cycle), regardless of custom world day/night lengths.
  - Manual crafting at upgraded Workstations, Anvils and Alchemy Tables is twice as fast per tier (2s / 1s / 0.5s / 0.25s); Carpenter Benches skip the second tier (2s / 0.5s / 0.25s). Settler crafting speeds are unchanged.
+
+1.0.5: Added compatibility with Manaworks Forges. Mana-powered Forges can now be linked to Anvils and used to process Dynamic Settlements recipes, both manually and through settler automation. Organic materials can be automatically pulled from linked input chests to fuel connected mana generators, without requiring generators to be linked manually. Mana Forges also support Anvil Forge-Requiring Recipes (FRRs), even when not actively processing items.
+
+Vanilla settlement workstation automation is disabled for Mana Forges; instead, they use Dynamic Settlements' Anvil linking and Crafting Task Boards, just like regular Forges.

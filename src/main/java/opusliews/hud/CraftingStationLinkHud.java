@@ -9,7 +9,7 @@ import java.util.WeakHashMap;
 import necesse.engine.gameLoop.tickManager.TickManager;
 import necesse.entity.mobs.PlayerMob;
 import necesse.entity.objectEntity.ObjectEntity;
-import necesse.entity.objectEntity.ProcessingForgeObjectEntity;
+import opusliews.forge.ForgeLinkCompatibility;
 import necesse.entity.objectEntity.interfaces.OEInventory;
 import necesse.gfx.camera.GameCamera;
 import necesse.gfx.drawOptions.DrawOptionsList;
@@ -219,7 +219,7 @@ public class CraftingStationLinkHud {
 			Color color
 	) {
 		LevelObject master = point == null ? null : getStoredMaster(level, point);
-		if (master != null && master.getObjectEntity() instanceof ProcessingForgeObjectEntity) {
+		if (master != null && ForgeLinkCompatibility.isSupported(master.getObjectEntity())) {
 			addMasterOutline(options, camera, master, color);
 		}
 	}

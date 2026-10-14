@@ -2,6 +2,7 @@ package opusliews.forge;
 
 import necesse.entity.mobs.PlayerMob;
 import necesse.entity.objectEntity.ProcessingForgeObjectEntity;
+import necesse.entity.objectEntity.ObjectEntity;
 import necesse.inventory.Inventory;
 import necesse.inventory.InventoryItem;
 import necesse.inventory.item.Item;
@@ -10,6 +11,9 @@ import necesse.inventory.recipe.Recipe;
 import necesse.level.maps.Level;
 import opusliews.crafting.CraftingComponentCategories;
 import opusliews.crafting.CraftingStoragePool;
+import opusliews.crafting.CraftingTaskLogic;
+import opusliews.object.CraftingTaskBoardObjectEntity;
+import java.awt.Point;
 import opusliews.object.DynamicCraftingStationObjectEntity;
 
 import java.util.Collection;
@@ -102,7 +106,10 @@ public final class ForgeRequirementSystem {
 		if (!requiresRunningForge(station, recipe)) return Status.NOT_REQUIRED;
 
 		List<ProcessingForgeObjectEntity> forges = station.getValidLinkedForges();
-		if (forges.isEmpty()) return Status.NO_LINKED_FORGE;
+		if (station.getValidLinkedForgeEntities().isEmpty()) return Status.NO_LINKED_FORGE;
+		for (ObjectEntity forgeEntity : station.getValidLinkedForgeEntities()) {
+			if (ForgeLinkCompatibility.isPowered(forgeEntity)) return Status.READY;
+		}
 
 		for (ProcessingForgeObjectEntity forge : forges) {
 			if (ForgeHeatSystem.isRunning(forge) || ForgeHeatSystem.hasStoredFuel(forge)) return Status.READY;
@@ -119,7 +126,10 @@ public final class ForgeRequirementSystem {
 		if (!requiresRunningForge(station, recipe)) return Status.NOT_REQUIRED;
 
 		List<ProcessingForgeObjectEntity> forges = station.getValidLinkedForges();
-		if (forges.isEmpty()) return Status.NO_LINKED_FORGE;
+		if (station.getValidLinkedForgeEntities().isEmpty()) return Status.NO_LINKED_FORGE;
+		for (ObjectEntity forgeEntity : station.getValidLinkedForgeEntities()) {
+			if (ForgeLinkCompatibility.isPowered(forgeEntity)) return Status.READY;
+		}
 
 		for (ProcessingForgeObjectEntity forge : forges) {
 			if (ForgeHeatSystem.isRunning(forge) || ForgeHeatSystem.hasStoredFuel(forge)) return Status.READY;
@@ -137,7 +147,13 @@ public final class ForgeRequirementSystem {
 		if (!requiresRunningForge(station, recipe)) return true;
 		if (!station.getLevel().isServer()) return false;
 
+		// An FRR needs a powered Forge even when the Forge has no recipe inputs.
+		// Refuel generators on demand as well as through the task-board's periodic check.
+		tryRefuelManaForFRR(station);
 		List<ProcessingForgeObjectEntity> forges = station.getValidLinkedForges();
+		for (ObjectEntity forgeEntity : station.getValidLinkedForgeEntities()) {
+			if (ForgeLinkCompatibility.isPowered(forgeEntity)) return true;
+		}
 		if (forges.isEmpty()) return false;
 
 		long required = Math.max(1L, requiredDurationMs + 250L);
@@ -156,13 +172,29 @@ public final class ForgeRequirementSystem {
 		if (!requiresRunningForge(station, recipe)) return true;
 		if (!station.getLevel().isServer()) return false;
 
+		// An FRR needs a powered Forge even when the Forge has no recipe inputs.
+		// Refuel generators on demand as well as through the task-board's periodic check.
+		tryRefuelManaForFRR(station);
 		List<ProcessingForgeObjectEntity> forges = station.getValidLinkedForges();
+		for (ObjectEntity forgeEntity : station.getValidLinkedForgeEntities()) {
+			if (ForgeLinkCompatibility.isPowered(forgeEntity)) return true;
+		}
 		if (forges.isEmpty()) return false;
 
 		long required = Math.max(1L, requiredDurationMs + 250L);
 		ProcessingForgeObjectEntity forge = selectForge(forges, required);
 		if (forge == null) return false;
 		return ensureHeat(forge, player, inventories, required);
+	}
+
+	private static void tryRefuelManaForFRR(DynamicCraftingStationObjectEntity station) {
+		Point boardPoint = station.getTaskBoard();
+		if (boardPoint == null) return;
+		ObjectEntity entity = station.getLevel().entityManager.getObjectEntity(boardPoint.x, boardPoint.y);
+		if (!(entity instanceof CraftingTaskBoardObjectEntity)) return;
+		CraftingTaskBoardObjectEntity board = (CraftingTaskBoardObjectEntity)entity;
+		if (board.getLinkedStationEntity() != station) return;
+		ManaworksGeneratorFuelSystem.refill(board, CraftingTaskLogic.getStoragePool(board));
 	}
 
 	private static ProcessingForgeObjectEntity selectForge(List<ProcessingForgeObjectEntity> forges, long requiredDurationMs) {

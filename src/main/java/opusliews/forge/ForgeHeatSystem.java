@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import necesse.entity.objectEntity.AnyLogFueledProcessingTechInventoryObjectEntity;
 import necesse.entity.objectEntity.FueledProcessingInventoryObjectEntity;
 import necesse.entity.objectEntity.ProcessingForgeObjectEntity;
+import necesse.entity.objectEntity.FueledProcessingInventoryObjectEntity;
 
 public final class ForgeHeatSystem {
 	private static final ThreadLocal<ProcessingForgeObjectEntity> allowedIdleFuelStart = new ThreadLocal<>();
@@ -24,11 +25,11 @@ public final class ForgeHeatSystem {
 	private ForgeHeatSystem() {
 	}
 
-	public static boolean isRunning(ProcessingForgeObjectEntity forge) {
+	public static boolean isRunning(FueledProcessingInventoryObjectEntity forge) {
 		return forge != null && forge.isFuelRunning();
 	}
 
-	public static int getRemainingFuelTime(ProcessingForgeObjectEntity forge) {
+	public static int getRemainingFuelTime(FueledProcessingInventoryObjectEntity forge) {
 		if (forge == null) return 0;
 		try {
 			return Math.max(0, remainingFuelTimeField.getInt(forge));
@@ -37,11 +38,11 @@ public final class ForgeHeatSystem {
 		}
 	}
 
-	public static boolean hasStoredFuel(ProcessingForgeObjectEntity forge) {
+	public static boolean hasStoredFuel(FueledProcessingInventoryObjectEntity forge) {
 		return forge != null && forge.canUseFuel();
 	}
 
-	public static void ensureFuelUnpaused(ProcessingForgeObjectEntity forge) {
+	public static void ensureFuelUnpaused(FueledProcessingInventoryObjectEntity forge) {
 		if (forge == null || getRemainingFuelTime(forge) <= 0) return;
 		try {
 			if (fuelPausedField.getBoolean(forge)) {

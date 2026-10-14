@@ -2,7 +2,7 @@ package opusliews.forge;
 
 import necesse.engine.localization.Localization;
 import necesse.engine.registries.ItemRegistry;
-import necesse.entity.objectEntity.ProcessingForgeObjectEntity;
+import necesse.entity.objectEntity.FueledProcessingTechInventoryObjectEntity;
 import necesse.inventory.InventoryItem;
 import necesse.inventory.item.Item;
 import necesse.inventory.recipe.Ingredient;
@@ -62,12 +62,44 @@ public final class ForgeTaskSystem {
 		if (station == null || !station.supportsForgeLinks()) return false;
 		InventoryItem result = taskRecipe.getResultItem();
 		if (result == null) return false;
-		for (ProcessingForgeObjectEntity forge : station.getValidLinkedForges()) {
+		for (FueledProcessingTechInventoryObjectEntity forge : station.getCompatibleLinkedForges()) {
+			if ((!ForgeLinkCompatibility.isManaworks(forge) || ForgeLinkCompatibility.isPowered(forge))
+					&& (isAvailableForNewTask(forge, result) || getSharedInputSlot(board, taskRecipe, forge) >= 0)) return true;
+		}
+		return false;
+	}
+
+
+	/** Whether a linked Forge has room for this task, regardless of its current fuel or mana supply.
+	 * Keep this separate from hasAvailableForge(), which intentionally excludes unpowered mana Forges.
+	 */
+	public static boolean hasAssignableForgeSlot(CraftingTaskBoardObjectEntity board, CraftingTaskRecipe taskRecipe) {
+		if (board == null || taskRecipe == null || !taskRecipe.isForgeRecipe()) return false;
+		DynamicCraftingStationObjectEntity station = board.getLinkedStationEntity();
+		if (station == null || !station.supportsForgeLinks()) return false;
+		InventoryItem result = taskRecipe.getResultItem();
+		if (result == null) return false;
+		for (FueledProcessingTechInventoryObjectEntity forge : station.getCompatibleLinkedForges()) {
 			if (isAvailableForNewTask(forge, result) || getSharedInputSlot(board, taskRecipe, forge) >= 0) return true;
 		}
 		return false;
 	}
 
+
+
+	/** A Forge task is waiting on mana when all linked Forges are Manaworks Forges and none is powered. */
+	public static boolean isManaPowerBlocked(CraftingTaskBoardObjectEntity board, CraftingTaskRecipe taskRecipe) {
+		if (board == null || taskRecipe == null || !taskRecipe.isForgeRecipe()) return false;
+		DynamicCraftingStationObjectEntity station = board.getLinkedStationEntity();
+		if (station == null || !station.supportsForgeLinks()) return false;
+		boolean foundManaForge = false;
+		for (FueledProcessingTechInventoryObjectEntity forge : station.getCompatibleLinkedForges()) {
+			if (!ForgeLinkCompatibility.isManaworks(forge)) return false;
+			foundManaForge = true;
+			if (ForgeLinkCompatibility.isPowered(forge)) return false;
+		}
+		return foundManaForge;
+	}
 
 	public static boolean hasFuelAvailable(CraftingTaskBoardObjectEntity board, CraftingTaskRecipe taskRecipe) {
 		if (board == null || taskRecipe == null || !taskRecipe.isForgeRecipe()) return false;
@@ -81,8 +113,12 @@ public final class ForgeTaskSystem {
 		boolean externalFuelAvailable = pool.getExactAmount(CHARCOAL_ID) > 0;
 		Item charcoalItem = ItemRegistry.getItem(CHARCOAL_ID);
 
-		for (ProcessingForgeObjectEntity forge : station.getValidLinkedForges()) {
+		for (FueledProcessingTechInventoryObjectEntity forge : station.getCompatibleLinkedForges()) {
 			if (!isAvailableForNewTask(forge, result) && getSharedInputSlot(board, taskRecipe, forge) < 0) continue;
+			if (ForgeLinkCompatibility.isManaworks(forge)) {
+				if (ForgeLinkCompatibility.isPowered(forge)) return true;
+				continue;
+			}
 			if (ForgeHeatSystem.isRunning(forge) || ForgeHeatSystem.hasStoredFuel(forge)) return true;
 			if (!externalFuelAvailable || charcoalItem == null) continue;
 
@@ -126,10 +162,11 @@ public final class ForgeTaskSystem {
 			return QueueResult.problem(Localization.translate("ui", "statusmissingforgefuel"));
 		}
 
-		ProcessingForgeObjectEntity forge = selectForge(station.getValidLinkedForges(), result);
+		FueledProcessingTechInventoryObjectEntity forge = selectForge(station.getCompatibleLinkedForges(), result);
 		int inputSlot = 0;
 		if (forge == null) {
-			for (ProcessingForgeObjectEntity candidate : station.getValidLinkedForges()) {
+			for (FueledProcessingTechInventoryObjectEntity candidate : station.getCompatibleLinkedForges()) {
+				if (ForgeLinkCompatibility.isManaworks(candidate) && !ForgeLinkCompatibility.isPowered(candidate)) continue;
 				int sharedSlot = getSharedInputSlot(board, taskRecipe, candidate);
 				if (sharedSlot < 0) continue;
 				forge = candidate;
@@ -152,6 +189,9 @@ public final class ForgeTaskSystem {
 				? preloadMoldBatch(board, task, taskRecipe.forgeRecipe, pool, forge, result)
 				: preloadSingleInputBatch(board, task, taskRecipe, pool, forge, result, inputSlot);
 		int outputAmount = result.getAmount() * crafts;
+		if (Logging.logEnabled && ForgeLinkCompatibility.isManaworks(forge))
+			Logging.logMessage("[CraftingForgeJob] Manaworks queue entity=" + forge.getClass().getName()
+					+ " powered=" + ForgeLinkCompatibility.isPowered(forge) + " slots=" + forge.inputSlots + "/" + forge.outputSlots);
 		if (Logging.logEnabled) Logging.logMessage("[CraftingForgeJob] Batch preload crafts=" + crafts
 				+ " output=" + result.item.getStringID() + " requested=" + (task == null ? "unknown" : task.amount));
 
@@ -175,7 +215,7 @@ public final class ForgeTaskSystem {
 
 	/** Preload ore against a single mold's remaining guaranteed crafting uses. */
 	private static int preloadMoldBatch(CraftingTaskBoardObjectEntity board, CraftingTask task,
-			ForgeCookingRecipe recipe, CraftingStoragePool pool, ProcessingForgeObjectEntity forge, InventoryItem output) {
+			ForgeCookingRecipe recipe, CraftingStoragePool pool, FueledProcessingTechInventoryObjectEntity forge, InventoryItem output) {
 		if (task == null || task.conditionType != CraftingTask.CONDITION_CRAFT_UNITS
 				|| recipe == null || recipe.firstInput == null || recipe.secondInput == null
 				|| recipe.firstInput.resultBehavior != ForgeCookingInput.ResultBehavior.CONSUME
@@ -221,7 +261,7 @@ public final class ForgeTaskSystem {
 
 	/** Adds more of the *same* consumable input, never another recipe or mold. */
 	private static int preloadSingleInputBatch(CraftingTaskBoardObjectEntity board, CraftingTask task,
-			CraftingTaskRecipe recipe, CraftingStoragePool pool, ProcessingForgeObjectEntity forge, InventoryItem output, int inputSlot) {
+			CraftingTaskRecipe recipe, CraftingStoragePool pool, FueledProcessingTechInventoryObjectEntity forge, InventoryItem output, int inputSlot) {
 		if (task == null || output == null || output.getAmount() <= 0) return 1;
 		String inputID;
 		int perCraft;
@@ -290,8 +330,8 @@ public final class ForgeTaskSystem {
 	 * are excluded. The original Forge processing code remains authoritative.
 	 */
 	private static int getSharedInputSlot(CraftingTaskBoardObjectEntity board,
-			CraftingTaskRecipe requested, ProcessingForgeObjectEntity forge) {
-		if (board == null || requested == null || forge == null || forge.inputSlots < 2) return -1;
+			CraftingTaskRecipe requested, FueledProcessingTechInventoryObjectEntity forge) {
+		if (board == null || requested == null || forge == null || forge.inputSlots != 2) return -1;
 		CraftingTask first = null;
 		CraftingTask second = null;
 		for (CraftingTask candidate : board.getTasks()) {
@@ -349,7 +389,7 @@ public final class ForgeTaskSystem {
 	}
 
 	private static boolean loadSharedSingleInput(CraftingStoragePool pool,
-			ProcessingForgeObjectEntity forge, CraftingTaskRecipe recipe, int relativeSlot) {
+			FueledProcessingTechInventoryObjectEntity forge, CraftingTaskRecipe recipe, int relativeSlot) {
 		if (relativeSlot != 1 || !forge.inventory.isSlotClear(forge.fuelSlots + relativeSlot)) return false;
 		InventoryItem taken;
 		if (recipe.type == CraftingTaskRecipe.Type.CUSTOM_FORGE) {
@@ -370,18 +410,19 @@ public final class ForgeTaskSystem {
 		return true;
 	}
 
-	private static ProcessingForgeObjectEntity selectForge(List<ProcessingForgeObjectEntity> forges, InventoryItem result) {
-		ArrayList<ProcessingForgeObjectEntity> candidates = new ArrayList<>();
-		for (ProcessingForgeObjectEntity forge : forges) {
-			if (isAvailableForNewTask(forge, result)) candidates.add(forge);
+	private static FueledProcessingTechInventoryObjectEntity selectForge(List<FueledProcessingTechInventoryObjectEntity> forges, InventoryItem result) {
+		ArrayList<FueledProcessingTechInventoryObjectEntity> candidates = new ArrayList<>();
+		for (FueledProcessingTechInventoryObjectEntity forge : forges) {
+			if (isAvailableForNewTask(forge, result)
+					&& (!ForgeLinkCompatibility.isManaworks(forge) || ForgeLinkCompatibility.isPowered(forge))) candidates.add(forge);
 		}
 		candidates.sort(Comparator
-				.comparing((ProcessingForgeObjectEntity forge) -> !ForgeHeatSystem.isRunning(forge))
+				.comparing((FueledProcessingTechInventoryObjectEntity forge) -> !ForgeHeatSystem.isRunning(forge))
 				.thenComparingInt(forge -> -ForgeHeatSystem.getRemainingFuelTime(forge)));
 		return candidates.isEmpty() ? null : candidates.get(0);
 	}
 
-	private static boolean isAvailableForNewTask(ProcessingForgeObjectEntity forge, InventoryItem result) {
+	private static boolean isAvailableForNewTask(FueledProcessingTechInventoryObjectEntity forge, InventoryItem result) {
 		if (forge == null || result == null) return false;
 		if (forge.getNextProcessTask() != null) return false;
 		for (int slot = forge.fuelSlots; slot < forge.fuelSlots + forge.inputSlots; slot++) {
@@ -393,7 +434,7 @@ public final class ForgeTaskSystem {
 		return forge.canAddOutput(result.copy());
 	}
 
-	private static boolean loadCustomRecipe(CraftingStoragePool pool, ProcessingForgeObjectEntity forge, ForgeCookingRecipe recipe) {
+	private static boolean loadCustomRecipe(CraftingStoragePool pool, FueledProcessingTechInventoryObjectEntity forge, ForgeCookingRecipe recipe) {
 		if (recipe == null) return false;
 
 		InventoryItem first = null;
@@ -432,8 +473,15 @@ public final class ForgeTaskSystem {
 		return true;
 	}
 
-	private static boolean loadVanillaRecipe(CraftingStoragePool pool, ProcessingForgeObjectEntity forge, Recipe recipe) {
+	private static boolean loadVanillaRecipe(CraftingStoragePool pool, FueledProcessingTechInventoryObjectEntity forge, Recipe recipe) {
 		if (recipe == null || recipe.ingredients.length == 0 || recipe.ingredients.length > forge.inputSlots) return false;
+		// Manaworks adds input slots, but DS deliberately automates only the two-slot
+		// vanilla Forge layout. Extra slots remain under Manaworks/manual control.
+		if (ForgeLinkCompatibility.isManaworks(forge) && recipe.ingredients.length > 2) {
+			if (Logging.logEnabled) Logging.logMessage("[CraftingForgeJob] Skipped Manaworks recipe needing "
+					+ recipe.ingredients.length + " inputs; compatibility automation supports at most 2");
+			return false;
+		}
 		ArrayList<InventoryItem> taken = new ArrayList<>();
 		for (Ingredient ingredient : recipe.ingredients) {
 			InventoryItem item = pool.takeIngredient(ingredient);
@@ -451,7 +499,8 @@ public final class ForgeTaskSystem {
 		return true;
 	}
 
-	private static boolean ensureForgeFuel(CraftingStoragePool pool, ProcessingForgeObjectEntity forge, int processTime) {
+	private static boolean ensureForgeFuel(CraftingStoragePool pool, FueledProcessingTechInventoryObjectEntity forge, int processTime) {
+		if (ForgeLinkCompatibility.isManaworks(forge)) return ForgeLinkCompatibility.isPowered(forge);
 		int remainingHeat = ForgeHeatSystem.getRemainingFuelTime(forge);
 		if (remainingHeat >= processTime || ForgeHeatSystem.hasStoredFuel(forge)) return true;
 
@@ -470,8 +519,8 @@ public final class ForgeTaskSystem {
 		try {
 			DynamicCraftingStationObjectEntity station = board.getLinkedStationEntity();
 			if (station == null) return;
-			ProcessingForgeObjectEntity forge = station.getLinkedForge(forgePoint);
-			if (forge == null || forge.fuelSlots <= 0) return;
+			FueledProcessingTechInventoryObjectEntity forge = station.getCompatibleLinkedForge(forgePoint);
+			if (forge == null || ForgeLinkCompatibility.isManaworks(forge) || forge.fuelSlots <= 0) return;
 			// Only replenish the fuel inventory when it is empty. Never touch recipe inputs.
 			if (ForgeHeatSystem.hasStoredFuel(forge)) return;
 			CraftingStoragePool pool = CraftingTaskLogicBridge.getStoragePool(board);
@@ -506,7 +555,7 @@ public final class ForgeTaskSystem {
 		if (board == null || forgePoint == null || remainingAmount <= 0) return 0;
 		DynamicCraftingStationObjectEntity station = board.getLinkedStationEntity();
 		if (station == null) return 0;
-		ProcessingForgeObjectEntity forge = station.getLinkedForge(forgePoint);
+		FueledProcessingTechInventoryObjectEntity forge = station.getCompatibleLinkedForge(forgePoint);
 		if (forge == null) return 0;
 		CraftingStoragePool pool = CraftingTaskLogicBridge.getStoragePool(board);
 		Item outputItem = ItemRegistry.getItem(outputItemID);
@@ -543,7 +592,7 @@ public final class ForgeTaskSystem {
 	public static void returnAssignmentInputs(CraftingTaskBoardObjectEntity board, Point forgePoint, int inputSlot) {
 		if (board == null || forgePoint == null) return;
 		DynamicCraftingStationObjectEntity station = board.getLinkedStationEntity();
-		ProcessingForgeObjectEntity forge = station == null ? null : station.getLinkedForge(forgePoint);
+		FueledProcessingTechInventoryObjectEntity forge = station == null ? null : station.getCompatibleLinkedForge(forgePoint);
 		if (forge == null) return;
 		CraftingStoragePool pool = CraftingTaskLogicBridge.getStoragePool(board);
 		returnInputSlotToPool(pool, forge, inputSlot);
@@ -559,7 +608,7 @@ public final class ForgeTaskSystem {
 
 	public static boolean isAssignmentStillProcessing(CraftingTaskBoardObjectEntity board, Point forgePoint) {
 		DynamicCraftingStationObjectEntity station = board == null ? null : board.getLinkedStationEntity();
-		ProcessingForgeObjectEntity forge = station == null ? null : station.getLinkedForge(forgePoint);
+		FueledProcessingTechInventoryObjectEntity forge = station == null ? null : station.getCompatibleLinkedForge(forgePoint);
 		if (forge == null) return false;
 		if (forge.getNextProcessTask() != null) return true;
 		for (int slot = forge.fuelSlots; slot < forge.fuelSlots + forge.inputSlots; slot++) {
@@ -568,7 +617,7 @@ public final class ForgeTaskSystem {
 		return false;
 	}
 
-	private static void returnInputSlotToPool(CraftingStoragePool pool, ProcessingForgeObjectEntity forge, int inputSlot) {
+	private static void returnInputSlotToPool(CraftingStoragePool pool, FueledProcessingTechInventoryObjectEntity forge, int inputSlot) {
 		if (inputSlot < 0 || inputSlot >= forge.inputSlots) return;
 		int slot = forge.fuelSlots + inputSlot;
 		InventoryItem item = forge.inventory.getItem(slot);
@@ -578,7 +627,7 @@ public final class ForgeTaskSystem {
 				+ forge.tileX + "," + forge.tileY + " slot=" + inputSlot);
 	}
 
-	private static void returnInputsToPool(CraftingStoragePool pool, ProcessingForgeObjectEntity forge) {
+	private static void returnInputsToPool(CraftingStoragePool pool, FueledProcessingTechInventoryObjectEntity forge) {
 		for (int slot = forge.fuelSlots; slot < forge.fuelSlots + forge.inputSlots; slot++) {
 			InventoryItem item = forge.inventory.getItem(slot);
 			if (item == null) continue;

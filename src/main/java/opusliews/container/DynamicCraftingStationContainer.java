@@ -14,7 +14,8 @@ import necesse.engine.network.server.ServerClient;
 import necesse.engine.registries.JournalChallengeRegistry;
 import necesse.entity.mobs.friendly.human.HumanMob;
 import necesse.entity.objectEntity.ObjectEntity;
-import necesse.entity.objectEntity.ProcessingForgeObjectEntity;
+import opusliews.forge.ForgeLinkCompatibility;
+import opusliews.logging.Logging;
 import necesse.entity.objectEntity.interfaces.OEInventory;
 import necesse.inventory.Inventory;
 import necesse.inventory.InventoryItem;
@@ -187,7 +188,7 @@ public class DynamicCraftingStationContainer extends CraftingStationContainer {
 					client.playerMob,
 					recipe,
 					inventories,
-					CraftingTime.getManual(recipe, stationEntity.getObject().getStringID())
+					CraftingTime.get(recipe)
 			)) return 0;
 			if (client.isClient()) {
 				ForgeRequirementSystem.Status status = ForgeRequirementSystem.getStatus(stationEntity, recipe, inventories);
@@ -200,7 +201,7 @@ public class DynamicCraftingStationContainer extends CraftingStationContainer {
 		craftingRecipeID = recipeID;
 		craftingRecipeHash = recipeHash;
 		craftingStartTime = System.currentTimeMillis();
-		craftingDurationMs = CraftingTime.getManual(recipe, stationEntity.getObject().getStringID());
+		craftingDurationMs = CraftingTime.get(recipe);
 
 		if (client.isServer()) stationEntity.onPlayerCraftStarted(client.playerMob, recipe);
 		return 1;
@@ -352,21 +353,37 @@ public class DynamicCraftingStationContainer extends CraftingStationContainer {
 	}
 
 	private void applyForgeLink(int x, int y) {
-		if (!isCurrentStationEntity() || !stationEntity.supportsForgeLinks()) return;
+		boolean current = isCurrentStationEntity();
+		boolean supports = stationEntity.supportsForgeLinks();
+		if (Logging.logEnabled) Logging.logMessage("[ForgeLinks] SERVER_ACTION station=" + stationEntity.tileX + "," + stationEntity.tileY + " target=" + x + "," + y + " current=" + current + " supports=" + supports);
+		if (!current || !supports) return;
 
 		LevelObject master = getStorageMaster(x, y);
-		if (master == null) return;
-
-		Point target = new Point(master.tileX, master.tileY);
-		if (!stationEntity.isWithinStorageLinkRange(target.x, target.y)) return;
-
-		if (stationEntity.hasLinkedForge(target)) {
-			stationEntity.removeLinkedForge(target);
+		if (master == null) {
+			if (Logging.logEnabled) Logging.logMessage("[ForgeLinks] SERVER_REJECT reason=no-master target=" + x + "," + y);
 			return;
 		}
 
-		if (!(master.getObjectEntity() instanceof ProcessingForgeObjectEntity)) return;
+		Point target = new Point(master.tileX, master.tileY);
+		if (!stationEntity.isWithinStorageLinkRange(target.x, target.y)) {
+			if (Logging.logEnabled) Logging.logMessage("[ForgeLinks] SERVER_REJECT reason=range target=" + target);
+			return;
+		}
+
+		if (stationEntity.hasLinkedForge(target)) {
+			stationEntity.removeLinkedForge(target);
+			if (Logging.logEnabled) Logging.logMessage("[ForgeLinks] SERVER_UNLINK target=" + target);
+			return;
+		}
+
+		ObjectEntity entity = master.getObjectEntity();
+		if (!ForgeLinkCompatibility.isSupported(entity)) {
+			if (Logging.logEnabled) Logging.logMessage("[ForgeLinks] SERVER_REJECT reason=unsupported entity=" + (entity == null ? "null" : entity.getClass().getName()) + " target=" + target);
+			return;
+		}
+		if (Logging.logEnabled) Logging.logMessage("[ForgeLinks] SERVER_ACCEPT target=" + target + " entity=" + entity.getClass().getName());
 		stationEntity.addLinkedForge(target);
+		if (Logging.logEnabled) Logging.logMessage("[ForgeLinks] SERVER_RESULT target=" + target + " linked=" + stationEntity.hasLinkedForge(target));
 	}
 
 	private boolean isCurrentStationEntity() {

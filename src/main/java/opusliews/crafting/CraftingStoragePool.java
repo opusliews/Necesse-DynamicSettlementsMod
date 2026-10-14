@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 import necesse.entity.objectEntity.ObjectEntity;
 import necesse.entity.objectEntity.interfaces.OEInventory;
 import necesse.inventory.Inventory;
@@ -57,6 +58,22 @@ public final class CraftingStoragePool {
 			}
 		}
 		return total;
+	}
+
+	/** Take one matching item from linked input storage without losing its original item data. */
+	public InventoryItem takeFirstMatching(Predicate<InventoryItem> predicate) {
+		if (predicate == null) return null;
+		for (InventoryRange range : inputs) {
+			for (int slot = range.startSlot; slot <= range.endSlot; slot++) {
+				InventoryItem source = range.inventory.getItem(slot);
+				if (source == null || source.getAmount() <= 0 || !predicate.test(source)) continue;
+				InventoryItem taken = source.copy(1);
+				if (source.getAmount() == 1) range.inventory.clearSlot(slot);
+				else { source.setAmount(source.getAmount() - 1); range.inventory.markDirty(slot); }
+				return taken;
+			}
+		}
+		return null;
 	}
 
 	public InventoryItem takeExactItem(String itemStringID, int amount, boolean preferMostDamaged) {
