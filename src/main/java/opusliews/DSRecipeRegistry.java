@@ -206,7 +206,7 @@ public class DSRecipeRegistry {
 		register(rubyplateStringID, 1, RecipeTechRegistry.TUNGSTEN_ANVIL, ingredient("ruby", 2), ingredient(demonicplateStringID, 1));
 		register(amethystplateStringID, 1, RecipeTechRegistry.DEMONIC_ANVIL, ingredient("amethyst", 2), ingredient(demonicplateStringID, 1));
 		register(bloodplateplateStringID, 1, RecipeTechRegistry.DEMONIC_ANVIL, ingredient(demonicplateStringID, 1), ingredient("batwing", 1));
-		register(spiderplateStringID, 1, RecipeTechRegistry.FALLEN_ANVIL, ingredient("cavespidergland", 2), ingredient(spideriteplateStringID, 1));
+		register(spiderplateStringID, 1, RecipeTechRegistry.IRON_ANVIL, ingredient("cavespidergland", 2), ingredient(ironplateStringID, 1));
 		register(voidplateStringID, 1, RecipeTechRegistry.DEMONIC_ANVIL, ingredient(demonicplateStringID, 1), ingredient("voidshard", 2));
 
 		// Blades
@@ -241,7 +241,7 @@ public class DSRecipeRegistry {
 		registerArmorPanelRecipe(rubypanelStringID, rubyplateStringID, RecipeTechRegistry.TUNGSTEN_ANVIL);
 		registerArmorPanelRecipe(amethystpanelStringID, amethystplateStringID, RecipeTechRegistry.DEMONIC_ANVIL);
 		registerArmorPanelRecipe(bloodplatepanelStringID, bloodplateplateStringID, RecipeTechRegistry.DEMONIC_ANVIL);
-		registerArmorPanelRecipe(spiderpanelStringID, spiderplateStringID, RecipeTechRegistry.FALLEN_ANVIL);
+		registerArmorPanelRecipe(spiderpanelStringID, spiderplateStringID, RecipeTechRegistry.IRON_ANVIL);
 		registerArmorPanelRecipe(voidpanelStringID, voidplateStringID, RecipeTechRegistry.DEMONIC_ANVIL);
 		registerArmorPanelRecipe(dryadpanelStringID, dryadplateStringID, RecipeTechRegistry.TUNGSTEN_CARPENTER);
 		if (Logging.logEnabled) Logging.logMessage("[ArmorPanels] Registered 21 new material panel recipes");
