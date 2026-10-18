@@ -1,6 +1,9 @@
 package opusliews.item;
 
 import necesse.engine.network.gameNetworkData.GNDItemMap;
+import java.awt.Point;
+import necesse.gfx.camera.GameCamera;
+import opusliews.earlygame.StoneControllerAim;
 import necesse.engine.util.GameMath;
 import necesse.entity.mobs.GameDamage;
 import necesse.entity.mobs.PlayerMob;
@@ -22,6 +25,16 @@ public class SharpenedStoneItem extends Item {
 		super(500);
 		rarity = Rarity.NORMAL;
 		setItemCategory("materials", "stone");
+	}
+
+	@Override
+	public Point getControllerAttackLevelPos(Level level, float aimDirX, float aimDirY, PlayerMob player, InventoryItem item) {
+		return StoneControllerAim.getTarget(level, aimDirX, aimDirY, player, true);
+	}
+
+	@Override
+	public void drawControllerAimPos(GameCamera camera, Level level, PlayerMob player, InventoryItem item) {
+		StoneControllerAim.drawAim(this, camera, level, player, true);
 	}
 
 	@Override

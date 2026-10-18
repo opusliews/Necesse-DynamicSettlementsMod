@@ -46,3 +46,5 @@ Vanilla settlement workstation automation is disabled for Mana Forges; instead, 
 1.0.6:
  - Fixed bug with gated dungeon stairs
  - Added new early storage alternative
+
+1.0.7: Added controller support

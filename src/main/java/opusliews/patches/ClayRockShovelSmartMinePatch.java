@@ -1,6 +1,11 @@
 package opusliews.patches;
 
 import necesse.engine.modLoader.annotations.ModMethodPatch;
+import necesse.engine.Settings;
+import necesse.engine.input.Input;
+import necesse.engine.input.controller.ControllerInput;
+import necesse.engine.registries.TileRegistry;
+import opusliews.tile.ThinDirtTile;
 import necesse.engine.registries.ObjectLayerRegistry;
 import necesse.engine.registries.ObjectRegistry;
 import necesse.engine.util.GameMath;
@@ -34,6 +39,19 @@ public class ClayRockShovelSmartMinePatch {
 		int tileX = GameMath.getTileCoordinate(mouseX);
 		int tileY = GameMath.getTileCoordinate(mouseY);
 		if (!tool.isTileInRange(level, tileX, tileY, player, null, item)) {
+			return;
+		}
+
+		// Only directional controller input with Smart Mining disabled may target
+		// ordinary dirt for Dynamic Settlements' shallow-hole interaction.
+		// Keep vanilla smart target search for all other cases.
+		if (Input.lastInputIsController && !ControllerInput.isCursorVisible()
+				&& !Settings.smartMining && level.isTileWithinBounds(tileX, tileY)
+				&& (level.getTileID(tileX, tileY) == TileRegistry.dirtID
+						|| level.getTileID(tileX, tileY) == TileRegistry.getTileID(ThinDirtTile.stringID))
+				&& "air".equals(level.getObject(tileX, tileY).getStringID())
+				&& !level.isProtected(tileX, tileY)) {
+			result = new ToolDamageItem.SmartMineTarget(level, tileX, tileY, false, -1);
 			return;
 		}
 

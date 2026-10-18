@@ -1,6 +1,11 @@
 package opusliews.item;
 
 import java.util.NoSuchElementException;
+import necesse.engine.input.Input;
+import necesse.engine.input.controller.ControllerInput;
+import necesse.engine.registries.ObjectLayerRegistry;
+import necesse.engine.util.GameMath;
+import necesse.inventory.item.toolItem.ToolDamageItem.SmartMineTarget;
 import necesse.engine.registries.ObjectRegistry;
 import necesse.inventory.InventoryItem;
 import necesse.inventory.item.toolItem.axeToolItem.CustomAxeToolItem;
@@ -52,6 +57,56 @@ public class CrudeAxeItem extends CustomAxeToolItem {
 				|| object instanceof TrapdoorObject
 				|| object instanceof HoleCaveLadderObject
 				|| object instanceof HoleCaveLadderUpObject;
+	}
+
+	/**
+	 * Vanilla controller smart mining can snap to objects that our intentionally
+	 * restricted crude axe cannot damage. Keep mouse/free-cursor targeting vanilla,
+	 * but select an explicitly allowed object when using the directional reticle.
+	 */
+	@Override
+	public SmartMineTarget getFirstSmartHitTile(Level level, PlayerMob player,
+			InventoryItem item, int targetX, int targetY) {
+		if (!Input.lastInputIsController || ControllerInput.isCursorVisible()) {
+			return super.getFirstSmartHitTile(level, player, item, targetX, targetY);
+		}
+		float dx = targetX - player.x;
+		float dy = targetY - player.y;
+		float len = (float)Math.sqrt(dx * dx + dy * dy);
+		if (len < 0.001F) return null;
+		dx /= len;
+		dy /= len;
+		int range = getMiningRange(item, player);
+		SmartMineTarget best = null;
+		float bestScore = Float.MAX_VALUE;
+		int minX = GameMath.getTileCoordinate(player.x - range - 32);
+		int maxX = GameMath.getTileCoordinate(player.x + range + 32);
+		int minY = GameMath.getTileCoordinate(player.y - range - 32);
+		int maxY = GameMath.getTileCoordinate(player.y + range + 32);
+		for (int x = minX; x <= maxX; x++) {
+			for (int y = minY; y <= maxY; y++) {
+				if (!level.isTileWithinBounds(x, y)
+						|| !isTileInRange(level, x, y, player, null, item)) continue;
+				float vx = x * 32 + 16 - player.x;
+				float vy = y * 32 + 16 - player.y;
+				float forward = vx * dx + vy * dy;
+				if (forward <= 0.0F) continue;
+				float lateral = Math.abs(vx * dy - vy * dx);
+				// Require the aimed line to pass near the tile, avoiding sideways snaps.
+				if (lateral > 24.0F) continue;
+				for (int layer = 0; layer < ObjectLayerRegistry.getTotalLayers(); layer++) {
+					GameObject object = level.getObject(layer, x, y);
+					if (object.getID() == 0 || !toolType.canDealDamageTo(object.toolType)
+							|| !canDamageTile(level, layer, x, y, player, item)) continue;
+					float score = forward + lateral * 2.0F;
+					if (score < bestScore) {
+						bestScore = score;
+						best = new SmartMineTarget(level, x, y, true, layer);
+					}
+				}
+			}
+		}
+		return best;
 	}
 
 	@Override

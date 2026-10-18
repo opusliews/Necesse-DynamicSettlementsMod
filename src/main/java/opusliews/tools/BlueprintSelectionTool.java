@@ -5,6 +5,7 @@ import necesse.engine.gameLoop.tickManager.TickManager;
 import necesse.engine.gameTool.GameTool;
 import necesse.engine.input.InputEvent;
 import necesse.engine.input.controller.ControllerEvent;
+import necesse.engine.input.controller.ControllerInput;
 import necesse.engine.localization.Localization;
 import necesse.engine.registries.ObjectLayerRegistry;
 import necesse.engine.state.State;
@@ -34,6 +35,7 @@ public class BlueprintSelectionTool implements GameTool {
 	private final Level level;
 	private HudDrawElement hudElement;
 	private Point mouseDownTile;
+	private Point controllerDownTile;
 	private Point ctrlMouseDownTile;
 	private GameTexture xIcon;
 	private Rectangle selection;
@@ -118,13 +120,14 @@ public class BlueprintSelectionTool implements GameTool {
 	}
 
 	private Rectangle getCurrentSelection(GameCamera camera) {
-		if (mouseDownTile == null) {
+		Point anchor = controllerDownTile != null ? controllerDownTile : mouseDownTile;
+		if (anchor == null) {
 			return selection;
 		}
 
 		int tileX = camera.getMouseLevelTilePosX();
 		int tileY = camera.getMouseLevelTilePosY();
-		return makeRectangle(mouseDownTile.x, mouseDownTile.y, tileX, tileY);
+		return makeRectangle(anchor.x, anchor.y, tileX, tileY);
 	}
 
 	private Rectangle makeRectangle(int x1, int y1, int x2, int y2) {
@@ -246,7 +249,29 @@ public class BlueprintSelectionTool implements GameTool {
 
 	@Override
 	public boolean controllerEvent(ControllerEvent event) {
-		return false;
+		if (event.isUsed() || !event.isButton || event.getState() != ControllerInput.INTERACT) return false;
+
+		State currentState = GlobalData.getCurrentState();
+		if (currentState == null) return false;
+		if (event.buttonState && currentState.getFormManager() != null
+				&& currentState.getFormManager().isMouseOver(WindowManager.getWindow().getInput().mousePos())) return false;
+
+		GameCamera camera = currentState.getCamera();
+		int tileX = camera.getMouseLevelTilePosX();
+		int tileY = camera.getMouseLevelTilePosY();
+
+		if (event.buttonState) {
+			controllerDownTile = new Point(tileX, tileY);
+		} else if (controllerDownTile != null) {
+			selection = makeRectangle(controllerDownTile.x, controllerDownTile.y, tileX, tileY);
+			controllerDownTile = null;
+			excludedTiles.clear();
+		} else {
+			return false;
+		}
+
+		event.use();
+		return true;
 	}
 
 	@Override
