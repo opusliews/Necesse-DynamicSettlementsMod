@@ -47,7 +47,9 @@ public class InventoryCraftingActionPatch {
 		}
 		if (result <= 0 || container == null || container.client == null || !container.client.isServer()) return;
 		Recipe recipe = container.getRecipe(recipeID);
-		if (recipe != null) WorldgenStationProgressionSystem.recordCraftedRecipe(container.client.playerMob, recipe);
-			GuideProgressionSystem.recordCraftedRecipe(container.client.playerMob, recipe);
+		if (recipe != null) {
+			WorldgenStationProgressionSystem.recordCraftedRecipe(container.client.playerMob, recipe);
+			GuideProgressionSystem.recordCraftedRecipe(container.client.playerMob, recipe, result);
+		}
 	}
 }

@@ -36,6 +36,7 @@ import opusliews.clayfiring.ClayFiringBlockedNotification;
 import opusliews.clayfiring.ClayFiringZone;
 import opusliews.container.BlueprintWorkstationContainer;
 import opusliews.commands.ListSettlementSettlersCommand;
+import opusliews.commands.RepairCookingGuideCommand;
 import opusliews.commands.SetSettlerHungerCommand;
 import opusliews.container.CrudeWorkbenchContainer;
 import opusliews.crafting.CraftingStationFeature;
@@ -196,6 +197,7 @@ public class DynamicSettlements {
 		// Registrations
 		CommandsManager.registerServerCommand(new ListSettlementSettlersCommand());
 		CommandsManager.registerServerCommand(new SetSettlerHungerCommand());
+		CommandsManager.registerServerCommand(new RepairCookingGuideCommand());
 
 		BuffRegistry.registerBuff(MalignanceGogglesItem.buffStringID, new MalignanceGogglesBuff());
 		BuffRegistry.registerBuff(TrapdoorHiddenBuff.stringID, new TrapdoorHiddenBuff());

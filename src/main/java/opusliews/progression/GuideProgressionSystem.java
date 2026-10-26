@@ -54,15 +54,35 @@ public final class GuideProgressionSystem {
 	}
 
 	public static void recordCraftedRecipe(PlayerMob player, Recipe recipe) {
-		if (player == null || recipe == null || recipe.resultItem == null || recipe.resultItem.item == null) return;
-		recordCraftedItem(player, recipe.resultItem.item.getStringID());
+		recordCraftedRecipe(player, recipe, 1);
+	}
+
+	/** craftCount is the number of successfully completed crafts, not the requested batch size. */
+	public static void recordCraftedRecipe(PlayerMob player, Recipe recipe, int craftCount) {
+		if (player == null || recipe == null || recipe.resultItem == null || recipe.resultItem.item == null || craftCount <= 0) return;
+		long amount = (long)recipe.resultAmount * craftCount;
+		recordCraftedItem(player, recipe.resultItem.item.getStringID(), (int)Math.min(Integer.MAX_VALUE, amount));
 	}
 
 	public static void recordCraftedItem(PlayerMob player, String itemStringID) {
-		if (player == null || itemStringID == null || itemStringID.isEmpty()) return;
+		recordCraftedItem(player, itemStringID, 1);
+	}
+
+	public static void recordCraftedItem(PlayerMob player, String itemStringID, int amount) {
+		if (player == null || itemStringID == null || itemStringID.isEmpty() || amount <= 0) return;
 		PlayerData data = getData(player);
-		if (!data.craftedItems.add(itemStringID)) return;
-		if (Logging.logEnabled) Logging.logMessage("[GuideProgression] Recorded crafted item player=" + player.getDisplayName() + " item=" + itemStringID);
+		// Guide 20 needs a persistent cumulative count; cap it at the objective threshold.
+		// Do not track quantities for every recipe, which would bloat character packets.
+		if ("unfiredbrick".equals(itemStringID)) {
+			data.craftedUnfiredBricks = Math.min(8, data.craftedUnfiredBricks + Math.min(8, amount));
+		}
+		if (data.craftedItems.add(itemStringID) && Logging.logEnabled) {
+			Logging.logMessage("[GuideProgression] Recorded crafted item player=" + player.getDisplayName() + " item=" + itemStringID);
+		}
+	}
+
+	public static int getCraftedUnfiredBrickAmount(PlayerMob player) {
+		return player == null ? 0 : getData(player).craftedUnfiredBricks;
 	}
 
 	public static boolean hasEverCrafted(PlayerMob player, String itemStringID) {
@@ -464,6 +484,7 @@ public final class GuideProgressionSystem {
 		PlayerData data = getData(player);
 		SaveData root = new SaveData(saveKey);
 		if (!data.craftedItems.isEmpty()) root.addStringHashSet("craftedItems", new HashSet<>(data.craftedItems));
+		root.addInt("craftedUnfiredBricks", data.craftedUnfiredBricks);
 		root.addBoolean("placedJobRequestBulletin", data.placedJobRequestBulletin);
 		if (data.foundStationFamily != null) {
 			root.addUnsafeString("foundStationFamily", data.foundStationFamily);
@@ -476,12 +497,14 @@ public final class GuideProgressionSystem {
 		if (player == null || save == null) return;
 		PlayerData data = getData(player);
 		data.craftedItems.clear();
+		data.craftedUnfiredBricks = 0;
 		data.placedJobRequestBulletin = false;
 		data.foundStationFamily = null;
 		data.foundStationTier = -1;
 		LoadData root = save.getFirstLoadDataByName(saveKey);
 		if (root == null) return;
 		data.craftedItems.addAll(root.getStringHashSet("craftedItems", new HashSet<>(), false));
+		data.craftedUnfiredBricks = Math.max(0, Math.min(8, root.getInt("craftedUnfiredBricks", 0, false)));
 		data.placedJobRequestBulletin = root.getBoolean("placedJobRequestBulletin", false, false);
 		data.foundStationFamily = root.getUnsafeString("foundStationFamily", null, false);
 		data.foundStationTier = root.getInt("foundStationTier", -1, false);
@@ -491,6 +514,7 @@ public final class GuideProgressionSystem {
 		PlayerData data = getData(player);
 		writer.putNextShortUnsigned(data.craftedItems.size());
 		for (String item : data.craftedItems) writer.putNextString(item);
+		writer.putNextInt(data.craftedUnfiredBricks);
 		writer.putNextBoolean(data.placedJobRequestBulletin);
 		writer.putNextBoolean(data.foundStationFamily != null);
 		if (data.foundStationFamily != null) {
@@ -504,6 +528,7 @@ public final class GuideProgressionSystem {
 		data.craftedItems.clear();
 		int count = reader.getNextShortUnsigned();
 		for (int i = 0; i < count; i++) data.craftedItems.add(reader.getNextString());
+		data.craftedUnfiredBricks = Math.max(0, Math.min(8, reader.getNextInt()));
 		data.placedJobRequestBulletin = reader.getNextBoolean();
 		if (reader.getNextBoolean()) {
 			data.foundStationFamily = reader.getNextString();
@@ -517,6 +542,7 @@ public final class GuideProgressionSystem {
 
 	private static final class PlayerData {
 		private final Set<String> craftedItems = Collections.synchronizedSet(new HashSet<>());
+		private int craftedUnfiredBricks;
 		private boolean placedJobRequestBulletin;
 		private String foundStationFamily;
 		private int foundStationTier = -1;

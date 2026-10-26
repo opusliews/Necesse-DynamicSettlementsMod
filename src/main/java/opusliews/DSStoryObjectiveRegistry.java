@@ -151,7 +151,7 @@ public class DSStoryObjectiveRegistry {
 				"guide12",
 				new LocalMessage("storyguide", "guide12title"),
 				new LocalMessage("storyguide", "guide12objective"),
-				objective -> hasItem(objective.getPlayer(), "trapdoor")
+				objective -> hasCraftedOrHasItem(objective.getPlayer(), "trapdoor")
 		);
 
 		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
@@ -186,7 +186,7 @@ public class DSStoryObjectiveRegistry {
 				"guide17",
 				new LocalMessage("storyguide", "guide17title"),
 				new LocalMessage("storyguide", "guide17objective"),
-				objective -> hasItem(objective.getPlayer(), "holecaveladder")
+				objective -> hasCraftedOrHasItem(objective.getPlayer(), "holecaveladder")
 		);
 
 		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
@@ -208,17 +208,18 @@ public class DSStoryObjectiveRegistry {
 				"guide20",
 				new LocalMessage("storyguide", "guide20title"),
 				new LocalMessage("storyguide", "guide20objective"),
-				objective -> getItemAmount(objective.getPlayer(), "unfiredbrick") >= 8
-						&& hasItem(objective.getPlayer(), "unfiredsawblademold")
-						&& hasItem(objective.getPlayer(), "unfiredthickplatemold")
+				objective -> (GuideProgressionSystem.getCraftedUnfiredBrickAmount(objective.getPlayer()) >= 8
+						|| getItemAmount(objective.getPlayer(), "unfiredbrick") >= 8)
+						&& hasCraftedOrHasItem(objective.getPlayer(), "unfiredsawblademold")
+						&& hasCraftedOrHasItem(objective.getPlayer(), "unfiredthickplatemold")
 		);
 
 		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
 				"guide21",
 				new LocalMessage("storyguide", "guide21title"),
 				new LocalMessage("storyguide", "guide21objective"),
-				objective -> hasItem(objective.getPlayer(), "campfire")
-						&& hasItem(objective.getPlayer(), "roastingstation")
+				objective -> hasCraftedOrHasItem(objective.getPlayer(), "campfire")
+						&& hasCraftedOrHasItem(objective.getPlayer(), "roastingstation")
 		);
 
 		GuideStoryObjectiveRegistry.registerBeforeFirstVanilla(
@@ -328,6 +329,10 @@ public class DSStoryObjectiveRegistry {
 				new LocalMessage("storyguide", "guide34objective"),
 				objective -> GuideProgressionSystem.hasEverCrafted(objective.getPlayer(), "malignancegoggles")
 		);
+	}
+
+	private static boolean hasCraftedOrHasItem(PlayerMob player, String itemStringID) {
+		return GuideProgressionSystem.hasEverCrafted(player, itemStringID) || hasItem(player, itemStringID);
 	}
 
 	private static boolean hasItem(PlayerMob player, String itemStringID) {

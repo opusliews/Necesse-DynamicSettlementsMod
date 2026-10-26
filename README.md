@@ -50,3 +50,5 @@ Vanilla settlement workstation automation is disabled for Mana Forges; instead, 
 1.0.7: Added controller support
 
 1.0.8: Updated recipes
+
+1.0.9: Fixed bugs with objective completion requirements
